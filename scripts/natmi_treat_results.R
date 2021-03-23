@@ -5,7 +5,7 @@
 library("dplyr")
 library("tidyverse")
 
-setwd("~/bulk_analysis/")
+setwd("~/BulkAnalysis_plusNetwork/")
 
 odir <- "graphmatrices/"
 
@@ -17,6 +17,29 @@ lrmat <- read.table(paste0(natmiVizOut,"Edges.csv"),sep=",",header=T)
 dplyr::sample_n(lrmat,10)
 colnames(lrmat)
 
+
+# compare values with those sent in input (meanTPM)
+age="Young"
+day="D7"
+youngD7 <- read.table(paste0("data/meanTPM",age,day,".txt"), sep='\t',
+                         header=T)
+
+
+# check if coverage is ok there:
+metadata <- readRDS("data/metadata.rds")
+coverage <- read.table("data/COVmatrix.csv", sep="\t", header=T)
+rownames(coverage) <- coverage$Gene.ID
+coverage$Gene.ID <- NULL
+covCOLNAMES <- metadata[match(colnames(coverage), metadata$sample),]$newname
+coverage <- coverage[,!is.na(covCOLNAMES)] # drop out bad samples
+
+genesZeroCoverage <- coverage %>% filter(rowSums(coverage) == 0)
+
+badgenes <- rownames(youngD7)[rownames(youngD7) %in% rownames(genesZeroCoverage)]
+goodgenes <- rownames(youngD7)[!rownames(youngD7) %in% rownames(genesZeroCoverage)]
+
+#> max(as.numeric(unlist(coverage)))
+#[1] 270906.8
 
 # > summary(lrmat$Ligand.average.expression.value)
 # Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
