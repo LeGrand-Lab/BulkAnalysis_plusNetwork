@@ -11,7 +11,7 @@ yields into 'data/' TPM FPKM Covariance (type csv), and a rds object containing 
 		- `data/protcod_counts.rds`
 		- `data/protcod_TPM.rds`
 
-- `matrices_prefiltering` : outs:
+- `matrices_prefiltering` : accepts in input protein-coding counts and TPM, yields outs:
 		- "plotsPrelim/" : several PCA
 		- "data/prefiltered_counts.rds"
 		- "data/prefiltered_TPM.rds"

@@ -7,7 +7,10 @@ cranpkg <- c("Rcpp", "curl", "xml2", "stringr", "dplyr","tidyverse", "ggplot2",
 	"Matrix", "reshape2", "gridExtra", "matrixStats",
 	"boot", "class", "nnet", #required for DropletUtils
 	"future", "future.apply", 
-	"MASS", "sctransform", "Seurat")
+	"MASS", "sctransform", "Seurat",
+	"reticulate", # for python interface
+	"rmarkdown", 
+	"igraph", "shiny", "networkD3")
 
 # installing cran or other R packages
 sapply(cranpkg, function(x) {
@@ -34,7 +37,8 @@ installbd <- function(pks){
 	)	
   }	
 
-bioc_or_dev <- c("harmony", "SingleCellExperiment", "scater", "scran", "DropletUtils")
+bioc_or_dev <- c("harmony", "SingleCellExperiment", "scater", 
+                 "scran", "DropletUtils")
 	
 installbd(bioc_or_dev)
 lapply(bioc_or_dev, require, character.only=TRUE, quietly=F)
@@ -51,3 +55,4 @@ sapply(libs4bulk, function(x){
     })
 })
 
+# note: a package installed from unknown source : "HSMMSingleCell"
