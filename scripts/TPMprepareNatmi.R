@@ -14,6 +14,8 @@ TPM.y <- fTPM[, str_detect(colnames(fTPM),"Young")]
 TPM.o <- fTPM[, str_detect(colnames(fTPM),"Old")]
 
 # split into young and old, and filter out very low TPM:
+# NOTE: plotsPrelim/pre_filtering_figuresA show that low TPM are under 1e-3
+#   * remember : sum(logical vector) gives the COUNT of TRUE items in vector
 keep.y <- apply(TPM.y, 1, function(row) sum(row >= 0.001) >= 3 )
 keep.o <- apply(TPM.o, 1, function(row) sum(row >= 0.001) >= 3 )
 TPM.y <- TPM.y[keep.y, ]
@@ -106,3 +108,26 @@ for (day in days){
   write.table(newmx, paste0(odir, paste0("meanTPM",age,day,".txt"), sep='\t',
                             col.names = T, row.names = F))
 }
+
+
+####  see coverage and other minimal verification
+# compare values with those sent in meanTPM_age_day
+age="Young"
+day="D7"
+youngD7 <- read.table(paste0("data/meanTPM",age,day,".txt"), sep='\t',
+                      header=T)
+# check if coverage is ok there:
+metadata <- readRDS("data/metadata.rds")
+coverage <- read.table("data/COVmatrix.csv", sep="\t", header=T)
+rownames(coverage) <- coverage$Gene.ID
+coverage$Gene.ID <- NULL
+covCOLNAMES <- metadata[match(colnames(coverage), metadata$sample),]$newname
+coverage <- coverage[,!is.na(covCOLNAMES)] # drop out bad samples
+
+genesZeroCoverage <- coverage %>% filter(rowSums(coverage) == 0)
+
+badgenes <- rownames(youngD7)[rownames(youngD7) %in% rownames(genesZeroCoverage)]
+goodgenes <- rownames(youngD7)[!rownames(youngD7) %in% rownames(genesZeroCoverage)]
+
+#> max(as.numeric(unlist(coverage)))
+#[1] 270906.8

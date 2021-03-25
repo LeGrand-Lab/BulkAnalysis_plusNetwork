@@ -38,7 +38,7 @@ installbd <- function(pks){
   }	
 
 bioc_or_dev <- c("harmony", "SingleCellExperiment", "scater", 
-                 "scran", "DropletUtils")
+                 "scran", "DropletUtils", "clusterProfiler")
 	
 installbd(bioc_or_dev)
 lapply(bioc_or_dev, require, character.only=TRUE, quietly=F)

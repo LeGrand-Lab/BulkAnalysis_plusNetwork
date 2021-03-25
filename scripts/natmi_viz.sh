@@ -1,7 +1,7 @@
 cd ~/NATMI
 
 python VisInteractions.py \
-  --sourceFolder ~/bulk_analysis/natmiD7/ \
+  --sourceFolder ~/bulk_analysis/natmiOut/Young_D7/ \
   --interDB lrc2p \
   --weightType mean \
   --detectionThreshold 0.2 \

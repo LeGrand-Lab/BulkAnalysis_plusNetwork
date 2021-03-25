@@ -1,68 +1,92 @@
 ##
-# prepare data to yield 
-# adjacency list ???
+# prepare data, add GO and KEGG terms 
+# johaGL 2021
 ##
 library("dplyr")
 library("tidyverse")
 
 setwd("~/BulkAnalysis_plusNetwork/")
 
-odir <- "graphmatrices/"
+odir <- "data/"
 
-natmiVizOut <- "natmiD7/Network_exp_0_spe_0_det_0.2_top_0_signal_lrc2p_weight_mean/"
+## input
+itpm <- read.table("data/meanTPMYoungD7.txt",sep="\t",header=T)
+genesinfo <- read.table("data/genesinfo.csv",sep="\t",header=T)
+
+natmiVizOut <- paste0("natmiOut/Young_D7/",  
+   "Network_exp_0_spe_0_det_0.2_top_0_signal_lrc2p_weight_mean/")
 
 ## as bulk rnaseq was used, 'cluster' and celltype are the same!
-lrmat <- read.table(paste0(natmiVizOut,"Edges.csv"),sep=",",header=T)
+lr_df <- read.table(paste0(natmiVizOut,"Edges.csv"),sep=",",header=T)
 
-dplyr::sample_n(lrmat,10)
-colnames(lrmat)
-
-
-# compare values with those sent in input (meanTPM)
-age="Young"
-day="D7"
-youngD7 <- read.table(paste0("data/meanTPM",age,day,".txt"), sep='\t',
-                         header=T)
+dplyr::sample_n(lr_df,10)
+colnames(lr_df)
 
 
-# check if coverage is ok there:
-metadata <- readRDS("data/metadata.rds")
-coverage <- read.table("data/COVmatrix.csv", sep="\t", header=T)
-rownames(coverage) <- coverage$Gene.ID
-coverage$Gene.ID <- NULL
-covCOLNAMES <- metadata[match(colnames(coverage), metadata$sample),]$newname
-coverage <- coverage[,!is.na(covCOLNAMES)] # drop out bad samples
 
-genesZeroCoverage <- coverage %>% filter(rowSums(coverage) == 0)
-
-badgenes <- rownames(youngD7)[rownames(youngD7) %in% rownames(genesZeroCoverage)]
-goodgenes <- rownames(youngD7)[!rownames(youngD7) %in% rownames(genesZeroCoverage)]
-
-#> max(as.numeric(unlist(coverage)))
-#[1] 270906.8
-
-# > summary(lrmat$Ligand.average.expression.value)
+# > summary(lr_df$Ligand.average.expression.value)
 # Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
 # 0.034    1.800    9.231   91.413   39.655 6033.696 
-# > summary(lrmat$Receptor.average.expression.value)
+# > summary(lr_df$Receptor.average.expression.value)
 # Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
 # 0.0339    1.9007    8.8838   29.9446   37.1832 2062.6146 
-# > summary(lrmat$Ligand.derived.specificity.of.average.expression.value)
-# Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-# 0.0001041 0.0923763 0.2651131 0.3623238 0.5803305 1.0000000 
-# > summary(lrmat$Receptor.derived.specificity.of.average.expression.value)
-# Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-# 0.0002535 0.1070957 0.2661628 0.3387904 0.4822131 1.0000000 
-# > summary(lrmat$Edge.average.expression.weight)
+# > summary(lr_df$Edge.average.expression.weight)
 # Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
 # 0.0       9.7      67.8    3498.8     503.7 1735602.3 
-# > summary(lrmat$Edge.average.expression.derived.specificity)
+# > summary(lr_df$Ligand.derived.specificity.of.average.expression.value)
+# Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+# 0.0001041 0.0923763 0.2651131 0.3623238 0.5803305 1.0000000 
+# > summary(lr_df$Receptor.derived.specificity.of.average.expression.value)
+# Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+# 0.0002535 0.1070957 0.2661628 0.3387904 0.4822131 1.0000000 
+# > summary(lr_df$Edge.average.expression.derived.specificity)
 # Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
 # 0.0000002 0.0111042 0.0524927 0.1239200 0.1588310 1.0000000 
+###
 
-hist(lrmat$Ligand.average.expression.value[
-  lrmat$Ligand.average.expression.value > 3000])
-VERYHIGHLIGEXP <- lrmat[
-  lrmat$Ligand.average.expression.value > 3000,]
+# filter by L and R specificity index (keep >= fixed minimal specificity)
+minspec = 0.15
+filtered_lr <- lr_df %>% 
+  filter(Ligand.derived.specificity.of.average.expression.value >= minspec) %>%
+  filter(Receptor.derived.specificity.of.average.expression.value >= minspec)
+dim(filtered_lr)
 
-dim(VERYHIGHLIGEXP)
+# check TPM genes are unique
+print(all(length(unique(itpm$ensembl)) == length(itpm$ensembl)))
+tpmids <- itpm$ensembl
+names(tpmids) <- genesinfo[match(ensemblids,genesinfo$Geneid),]$symbol
+# import clusterProfiler
+library("clusterProfiler")
+geneList <- d[,2] ##  numeric vector: tau? log(TPM+1) 
+names(geneList) <- as.character(d[,1])  ##  named vector
+####### ===================================================================
+##### appendix : 
+# 1.
+### check differences between tau index and NATMI specificity indexes:
+# example by hand tau specificity from Yanai:
+thing <- c(0, 8, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0)
+num <- sum(1-(thing/max(thing)))
+den <- length(thing)-1
+num/den
+# tau on real data:
+
+# I pick gene ENSMUSG00000023224, which in table lr_df is :
+irow = itpm[itpm$ensembl=='ENSMUSG00000023224',c(-1)]
+tau_pick = (sum(1-(irow/max(irow))))/(length(irow)-1)
+spec_indexNATMI <- lr_df %>% filter(Ligand.symbol=='Serping1') %>%
+  select(Sending.cluster,
+         Ligand.derived.specificity.of.average.expression.value) %>% unique()
+spec_indexNATMI
+## consider completing this script by filtering meanTPMAgeDay matrices based on 
+## Yanai's tau index.
+
+
+# 2. see the very highly expressed genes (colagen...)
+hist(lr_df$Ligand.average.expression.value[
+lr_df$Ligand.average.expression.value > 1000])
+VERYHIGHEXP <- lr_df[
+  lr_df$Ligand.average.expression.value > 1000,]
+
+dim(VERYHIGHEXP)
+View(VERYHIGHEXP)
+
