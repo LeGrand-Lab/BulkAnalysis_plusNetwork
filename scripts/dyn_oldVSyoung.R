@@ -41,6 +41,14 @@ fmat <- readRDS(prefil_cou)
 metadata <- readRDS(metadata.rds)
 metadata <- metadata %>% mutate(timetype=paste0(time,".",type)) 
 
+
+# verify batches correspond to cell type:
+batchesinfo <- read.table("data/batchesinfo.csv",sep="\t",header=T)
+head(batchesinfo)
+metadata$batch = batchesinfo[match(metadata$sample, batchesinfo$sample),]$batch
+type_batch = metadata %>% select(type,batch) %>% unique()
+
+##  set which rows to keep :
 keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 

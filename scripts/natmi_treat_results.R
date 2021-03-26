@@ -9,8 +9,6 @@ setwd("~/BulkAnalysis_plusNetwork/")
 
 odir <- "data/"
 
-## input
-itpm <- read.table("data/meanTPMYoungD7.txt",sep="\t",header=T)
 genesinfo <- read.table("data/genesinfo.csv",sep="\t",header=T)
 
 natmiVizOut <- paste0("natmiOut/Young_D7/",  
@@ -21,8 +19,6 @@ lr_df <- read.table(paste0(natmiVizOut,"Edges.csv"),sep=",",header=T)
 
 dplyr::sample_n(lr_df,10)
 colnames(lr_df)
-
-
 
 # > summary(lr_df$Ligand.average.expression.value)
 # Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
@@ -51,14 +47,39 @@ filtered_lr <- lr_df %>%
   filter(Receptor.derived.specificity.of.average.expression.value >= minspec)
 dim(filtered_lr)
 
-# check TPM genes are unique
-print(all(length(unique(itpm$ensembl)) == length(itpm$ensembl)))
-tpmids <- itpm$ensembl
-names(tpmids) <- genesinfo[match(ensemblids,genesinfo$Geneid),]$symbol
-# import clusterProfiler
 library("clusterProfiler")
-geneList <- d[,2] ##  numeric vector: tau? log(TPM+1) 
+# establishing GO and KEGG on specific age_day TPM matrices?:
+#  PROBLEM: this will re-run repeatedly the same genes, 
+#       so solution: look for genes that change A LOT, so for
+#       the others we conclude their expression is 'constant' across time points 
+# custom strategy: 
+#       build a 3D matrix for each age:
+#             - x,y,z will be  genes * samples * time
+#               we have 4 time, but not for all cells!
+#               calculate delta between z_2 and z_1
+#                 then between z_3  z_2 and 
+#                 then between z_4  z_3
+#               stock all these deltas in a temporary vector 
+#               and pick absolute max delta (with its sign)
+
+# get enrichment by age :
+
+changes = list()
+itpm <- read.table(paste0("data/meanTPM",age,day,".txt"),sep=' ',header=T)
+
+## repare separator 
+
+# DO NOT set ensemble ids as rownames ! 
+# print(all(length(unique(itpm$ensembl)) == length(itpm$ensembl)))
+# tpmids <- itpm$ensembl
+# names(tpmids) <- genesinfo[match(tpmids,genesinfo$Geneid),]$symbol
+
+
+
+geneList <-  ##  numeric vector: tau? , log(TPM+1) 
 names(geneList) <- as.character(d[,1])  ##  named vector
+
+
 ####### ===================================================================
 ##### appendix : 
 # 1.
@@ -77,9 +98,8 @@ spec_indexNATMI <- lr_df %>% filter(Ligand.symbol=='Serping1') %>%
   select(Sending.cluster,
          Ligand.derived.specificity.of.average.expression.value) %>% unique()
 spec_indexNATMI
-## consider completing this script by filtering meanTPMAgeDay matrices based on 
-## Yanai's tau index.
-
+## consider completing this script by filtering meanTPMAgeDay matrices 
+## based on Yanai's tau index.
 
 # 2. see the very highly expressed genes (colagen...)
 hist(lr_df$Ligand.average.expression.value[
@@ -89,4 +109,5 @@ VERYHIGHEXP <- lr_df[
 
 dim(VERYHIGHEXP)
 View(VERYHIGHEXP)
+
 
