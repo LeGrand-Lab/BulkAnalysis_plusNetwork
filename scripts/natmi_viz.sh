@@ -1,9 +1,9 @@
 
 cd ~/NATMI
 
-for i in ~/BulkAnalysis_plusNetwork/data/meanTPM-*; do 
-	echo $i | awk -F '[-.]' '{print $2}'
-	CW=$(echo $i | awk -F '[-.]' '{print $2}')
+for i in $(ls ~/BulkAnalysis_plusNetwork/data/meanTPM_*); do 
+	echo $i | awk -F '[_.]' '{print $3}'
+	CW=$(echo $i | awk -F '[_.]' '{print $3}')
 	python VisInteractions.py \
 	  --sourceFolder ~/BulkAnalysis_plusNetwork/natmiOut/${CW}/ \
 	  --interDB lrc2p \

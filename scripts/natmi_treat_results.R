@@ -65,7 +65,7 @@ library("clusterProfiler")
 # get enrichment by age :
 
 changes = list()
-itpm <- read.table(paste0("data/meanTPM",age,day,".txt"),sep=' ',header=T)
+itpm <- read.table(paste0("data/meanTPMat",age,day,".txt"),sep='\t',header=T)
 
 ## repare separator 
 
