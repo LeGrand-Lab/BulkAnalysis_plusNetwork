@@ -37,7 +37,8 @@ installbd <- function(pks){
 	)	
   }	
 
-bioc_or_dev <- c("harmony", "SingleCellExperiment", "scater", 
+bioc_or_dev <- c("AnnotationDbi","org.Mm.eg.db", "harmony", "SingleCellExperiment", 
+                 "scater", 
                  "scran", "DropletUtils", "clusterProfiler")
 	
 installbd(bioc_or_dev)

@@ -23,12 +23,13 @@ metadata.rds <- "data/metadata.rds"
 # REDO here: enlever AllNEg, et aussi les REDO
 # preliminary counts and TPM matrices formatting
 # =========================================================================
-pc.mat <- readRDS("data/protcod_counts.rds")
+# load protein coding matrices :
+pc.mat <- readRDS("data/protcod_counts.rds") 
 pc.TPM <- readRDS("data/protcod_TPM.rds")
 design <- read.table("data/design.csv",header=T,sep=",", row.names=1)
 
 # filter out all-zeroes count rows:
-fTPM <- pc.TPM[!rowSums(pc.mat)==0,]  #c'est bien fmat criterium, MUST first!
+fTPM <- pc.TPM[!rowSums(pc.mat)==0,]  #c'est bien pc.mat criterium
 fmat <- pc.mat[!rowSums(pc.mat)==0,]  
 
 fTPM <- as.matrix(fTPM, dim=dim(fTPM))
