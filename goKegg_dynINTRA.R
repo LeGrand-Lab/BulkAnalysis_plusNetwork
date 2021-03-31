@@ -21,25 +21,11 @@ library(AnnotationDbi)
 setwd("~/BulkAnalysis_plusNetwork")
 resdir = "plotsDE/"
 DEdir = "signaturestypes/"
-
+prefil_cou <- "data/prefiltered_counts.rds"
+metadata.rds <- "data/metadata.rds"
 # https://cran.r-project.org/web/packages/msigdbr/vignettes/msigdbr-intro.html
-library("msigdbr") # install.packages("msigdbr")
 
-all_gene_sets = msigdbr(species = "Mus musculus")
-setsli <- list()
-setsli[["H"]] = msigdbr(species = "Mus musculus", category = "H")
-setsli[["C2"]] = msigdbr(species = "Mus musculus", category = "C2")
-
-saveRDS(setsli, file=paste0(DEdir,"DATABASE.rds"))
-
-View(msigdbr_collections())
-
-
-age = "Old"
-vrs = "vA"  # TODO: file version to open
-df <- read.table(paste0("signaturestypes/edger_dynINTRA_",age,vrs,".txt"), 
-             sep='\t', header=T)
-
+vrs = "vB"  # TODO: file version 
 
 ens2entrez <- function(vectorensemblids){
   res <- AnnotationDbi::select(org.Mm.eg.db,
@@ -48,15 +34,23 @@ ens2entrez <- function(vectorensemblids){
                                keytype = "ENSEMBL")
   return(res) # a dataframe columns ENSEMBL and ENTREZID
 }
+# ========================  part Edger with limma kegg and go
 
-haha <- ens2entrez(c("ENSMUSG00000001305", "ENSMUSG00000001143"))
-
+fmat <- readRDS(prefil_cou)
+metadata <- readRDS(metadata.rds)
+metadata <- metadata %>% mutate(timetype=paste0(time,".",type)) 
+# rows to keep
+keep <- apply(fmat, 1, function(row) ifelse(sum(row >=5)>= 3, TRUE, FALSE) )
+fmat <- fmat[keep,]
+allct <- sort(unique(metadata$type))
+allct <- allct[allct !="Neutro"]  #  "ECs"  "FAPs" "M1"   "M2"   "sCs" 
 ages=c("Young","Old")
+
 # kegg by pairwise: 
-for (ag in ages[1]){
+for (ag in ages){
   resu_l <- list()
   gokegg <- list()
-  for (ct in allct[3]){
+  for (ct in allct){
     agectmx <- fmat[,str_detect(colnames(fmat), ag) & str_detect(colnames(fmat), ct)]
     acmeta <- metadata %>% filter(age==ag & type==ct)
     timeps <- sort(unique(acmeta$time))
@@ -88,26 +82,44 @@ for (ag in ages[1]){
       basecontrast[k] <- 1
       print(basecontrast)
       qlf <- glmQLFTest(fit, contrast=basecontrast)
+      dynamicN <- ifelse(Ntp==2, 300 ,ifelse(Ntp==3, 150, 80))
       keg <- kegga(qlf,species="Mm")
       go <- goana(qlf, species="Mm")
-      gr <- topGO(go)
-      kr <- topKEGG(keg)
-      dynamicN <- ifelse(Ntp==2, 300 ,ifelse(Ntp==3, 150, 80))
+      gr <- topGO(go, ontology=c("BP","CC", "MF"), 
+                   number=dynamicN)
+      kr <- topKEGG(keg, number=Inf)
       tr = as.data.frame(topTags(qlf, sort.by="logFC",p.value=0.3, n=dynamicN))
       tr$type = ct
       thiscontrast = paste0(c(timeps[k],timeps[j]),collapse="vs")
       tr$contrast = thiscontrast
-      tr$ensemblid = rownames(tr)
+      tr$id = rownames(tr)
       tmp_l[[thiscontrast]] <- tibble(tr)
       go_l[[thiscontrast]] <- gr
       ke_l[[thiscontrast]] <- kr
       basecontrast <- rep(0,Ntp) # reinitialize base contrast
     }
-    gokegg[["go"]] <- ke_l
-    gokegg[["kegg"]] <- go_l
+    gokegg[[paste0(ct,"_go")]] <- go_l
+    gokegg[[paste0(ct,"_kegg")]] <- ke_l
     resu_l[[ct]] <- bind_rows(tmp_l)
   }#end for ct
   kkk <- bind_rows(resu_l)
   write.table(kkk, file=paste0(DEdir,"edger_dynINTRA_",ag,vrs,".txt"), sep='\t',
               col.names=T, row.names=F)
+  saveRDS(gokegg, file=paste0(DEdir,"edger_dynINTRAkeggo",ag,vrs,".rds"))
 }#end for
+
+
+# ========================  part cool
+allkegggenes = getGeneKEGGLinks(species.KEGG = "mmu", convert = FALSE)
+
+#  Note: VERY USEFUL FOR GSEA:
+# library("msigdbr") # install.packages("msigdbr")
+#all_gene_sets = msigdbr(species = "Mus musculus")
+#View(msigdbr_collections())
+#setsli <- list()
+#setsli[["H"]] = msigdbr(species = "Mus musculus", category = "H")
+#setsli[["C2"]] = msigdbr(species = "Mus musculus", category = "C2")
+#saveRDS(setsli, file=paste0(DEdir,"DATABASE.rds"))
+#setsli <- readRDS(paste0(DEdir,"DATABASE.rds"))
+#View(as_tibble(unique(setsli[["C2"]]$gs_name))) # str_detec REACTOME and KEGG to extract
+#setsli[["H"]] is hallmark . REACTOME and KEGG could be enough

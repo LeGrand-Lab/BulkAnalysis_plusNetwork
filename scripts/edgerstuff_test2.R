@@ -22,11 +22,9 @@ DEdir = "signaturestypes/"
 fmat <- readRDS(prefil_cou)
 metadata <- readRDS(metadata.rds)
 metadata <- metadata %>% mutate(timetype=paste0(time,".",type)) 
-
 # rows to keep
 keep <- apply(fmat, 1, function(row) ifelse(sum(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
-
 allct <- sort(unique(metadata$type))
 allct <- allct[allct !="Neutro"]  #  "ECs"  "FAPs" "M1"   "M2"   "sCs" 
 
