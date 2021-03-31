@@ -14,9 +14,10 @@ library(reshape2)
 library(ggthemes)
 library(scales) # 'viridis_pal' et autres pal
 library(ggrepel) # for labels to points
-register(MulticoreParam(4)) # TODO:  set n of cores depending of available
-library(org.Mm.eg.db)
+library(org.Mm.eg.db)  
 library(AnnotationDbi)
+library(edgeR)
+
 
 setwd("~/BulkAnalysis_plusNetwork")
 resdir = "plotsDE/"
@@ -32,6 +33,13 @@ ens2entrez <- function(vectorensemblids){
                                key=vectorensemblids,
                                columns="ENTREZID", 
                                keytype = "ENSEMBL")
+  return(res) # a dataframe columns ENSEMBL and ENTREZID
+}
+entrez2symbol <- function(vectorensemblids){
+  res <- AnnotationDbi::select(org.Mm.eg.db,
+                               key=vectorensemblids,
+                               columns="SYMBOL", 
+                               keytype = "ENTREZID")
   return(res) # a dataframe columns ENSEMBL and ENTREZID
 }
 # ========================  part Edger with limma kegg and go
@@ -109,9 +117,131 @@ for (ag in ages){
 }#end for
 
 
-# ========================  part cool
-allkegggenes = getGeneKEGGLinks(species.KEGG = "mmu", convert = FALSE)
+# ========================  doing in form of heat map, only for M1
 
+allkeggenes = getGeneKEGGLinks(species.KEGG = "mmu", convert = FALSE)
+dim(allkeggenes) # 36015     2
+gokegg <- readRDS( file=paste0(DEdir,"edger_dynINTRAkeggo","Old",vrs,".rds"))
+DYNgenes <- read.table(paste0(DEdir,"edger_dynINTRA_","Old",vrs,".txt"), sep='\t',
+                       header=T)
+DYNkegg_df <- allkeggenes[allkeggenes$GeneID %in% unique(DYNgenes$id),]
+dim(DYNkegg_df) # [1] 2032 2  (only including our more dynamic genes )
+
+names(gokegg[["M1_kegg"]])
+trast <- "D4vsD2"
+tmpkegg_t_t <- gokegg[["M1_kegg"]][[trast]] %>% 
+  filter(N >= mean(tmpkegg_t_t$N))  #  has unique pathway ids as rownames ('path:mmu04933')
+localgenes <- DYNgenes %>% filter(type=="M1" & contrast==trast)
+DYNkegg_t <- allkeggenes %>% filter(PathwayID %in% rownames(tmpkegg_t_t) &
+            GeneID %in% unique(localgenes$id))
+
+matrixlfc <- array(0,dim=c(length(unique(localgenes$id)), 
+                           length(unique(DYNkegg_t$PathwayID))  ) )
+rownames(matrixlfc) <- unique(localgenes$id)
+colnames(matrixlfc) <- unique(DYNkegg_t$PathwayID)
+for (gene in localgenes$id){
+  #print(localgenes[localgenes$id==gene,]$logFC)
+  thesepaths <- DYNkegg_t[DYNkegg_t$GeneID == gene,] 
+  for (path in thesepaths$PathwayID){
+    matrixlfc[as.character(gene),path] <- localgenes[localgenes$id==gene,]$logFC
+  }
+}
+# transform column and rows to names useful to eyes:
+labeledm <- matrixlfc
+colnames(labeledm) <- tmpkegg_t_t[colnames(matrixlfc),]$Pathway
+rownames(labeledm) <- entrez2symbol(rownames(matrixlfc))$SYMBOL
+keep <- apply(labeledm,1, function(x) sum(x)==0)
+names(keep) <- as.character(names(keep))
+
+colorgenes <- rep(c("red","blue"), length(rownames(labeledm))+1)
+
+pheatmap(labeledm[!keep,], border_color="white",
+         clustering_distance_cols = "correlation",
+         color = colorRampPalette(rev(brewer.pal(n = 7, 
+                                                 name = "PuOr")))(100),
+         fontsize = 7,
+         angle_col = 45,
+         main = "M1 : D4vsD2")
+
+
+p <- pheatmap(labeledm[!keep,], border_color="white",
+              clustering_distance_cols = "correlation",
+              color = colorRampPalette(rev(brewer.pal(n = 7, 
+                                                      name = "PuOr")))(100),
+              fontsize = 7,
+              angle_col = 45,
+              main = "M1 : D4vsD2") + theme_bw()
+
+my_gtable = p$gtable
+my_gtable$grobs[[6]]$gp=grid::gpar(col=colorgenes, fontsize=8)
+pdf(paste0(resdir,"dynamicTOPgenes_M1.pdf"))
+plot(my_gtable)
+dev.off()
+
+# ========================  doing in form of Alluvial
+
+library(ggalluvial) ## include in pkg install 
+library(purrr)  ##include in pkg install 
+
+options(stringsAsFactors = F)
+
+#Generate dummy data
+myData = map_df(paste0("Person", 1:9), function(x){
+  data.frame(     Person = x, 
+             Characteristic = paste0("Characteristic ",
+                                     sample(1:5, sample(2:5, 1))))
+})
+myData$other <- rep(c("otherC","otherB","otherA"), (dim(myData)[1]/3) )
+myData$lfc <- rep(c(-2,-1,0,2,3,1.5, 2.2), ((dim(myData)[1]/6)))[1:33]
+ #https://cran.r-project.org/web/packages/ggalluvial/vignettes/labels.html
+#Create the alluvial plot
+ggplot(data = myData,
+       aes(axis1 = other, axis2=Person, axis3 = Characteristic, y = 0.5)) +
+  scale_x_discrete(expand = c(.4, 0)) +
+  geom_alluvium(aes(fill = lfc), show.legend = FALSE) +
+  geom_stratum() + geom_text(aes(label = Person),
+                             stat = "stratum", size = 3) +
+  theme_void() + ggtitle("Alluvial plot") + 
+  scale_fill_distiller(type = 'seq', palette = 'GnBu',
+                       direction = -1, 
+                       labels = comma, 
+                       guide = "colourbar", 
+                       aesthetics = "fill") + 
+  ggrepel::geom_text_repel(
+    aes(label =  as.character(other)),
+    stat = "stratum", size = 4, direction = "y", nudge_x = -.5
+  ) + 
+  ggrepel::geom_text_repel(
+    aes(label =  as.character(Characteristic)),
+    stat = "stratum", size = 4, direction = "y", nudge_x = .5
+  )
+  #guides(fill = guide_colorbar(barwidth = 0.5, barheight = 10, title="Value"))
+  
+  
+
+
+
+ggplot(myData,
+       aes(x = other, stratum = Person, alluvium = Characteristic, y = 0.5,
+           fill = response)) +
+  scale_x_discrete(expand = c(.4, 0)) +
+  geom_flow(width = 1/4) +
+  geom_stratum(alpha = .5, width = 1/4) +
+  scale_linetype_manual(values = c("blank", "solid")) +
+  ggrepel::geom_text_repel(
+    aes(label = ifelse(as.numeric(survey) == 1, as.character(response), NA)),
+    stat = "stratum", size = 4, direction = "y", nudge_x = -.5
+  ) +
+  ggrepel::geom_text_repel(
+    aes(label = ifelse(as.numeric(survey) == 3, as.character(response), NA)),
+    stat = "stratum", size = 4, direction = "y", nudge_x = .5
+  ) +
+  theme(legend.position = "none") +
+  ggtitle("vaccination survey responses", "labeled using `geom_text_repel()`")
+
+
+colorRampPalette(rev(brewer.pal(n = 7, 
+                                name = "PuOr")))(100),
 #  Note: VERY USEFUL FOR GSEA:
 # library("msigdbr") # install.packages("msigdbr")
 #all_gene_sets = msigdbr(species = "Mus musculus")
