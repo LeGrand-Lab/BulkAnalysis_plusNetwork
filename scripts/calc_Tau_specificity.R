@@ -27,7 +27,7 @@ library(ggrepel) # for labels to points
 library("BiocParallel")
 register(MulticoreParam(12)) # TODO:  set n of cores depending of available
 
-setwd("~/BulkAnalysis_plusNetworks/")
+setwd("~/BulkAnalysis_plusNetwork/")
 
 genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
 
@@ -51,8 +51,9 @@ calculateTau <- function(vec){
   return(tau.index)
 }
 
-# function that parses the all days for given age
-#   1. saves the dataframe AND 2. returns TPM matrices into a list
+# function that parses the all days for given age, TWO different outputs:
+#   1. saves the Tau dataframes to Tau/ ,.txt  separately by day
+#  AND 2. returns TPM matrices into a list
 saveTau.bytissue <- function(age, cts = list(), days=c("D0")){
   listofmatrices <- list() # will be returned by this function
   for (i in days){
@@ -92,6 +93,7 @@ saveTau.bytissue <- function(age, cts = list(), days=c("D0")){
   }# end for i in days
   return(listofmatrices) # ** filled by line 61
 }
+# here matrices go into variables : 
 youngMatrices <- saveTau.bytissue("Young", days=c("D0","D2","D4","D7"))
 oldMatrices <- saveTau.bytissue("Old", days =c("D0","D2","D4","D7") )
 
@@ -115,21 +117,22 @@ saveTPM.bytime.tiss <- function(age,lom){  #lom : list of matrices
     fussi <- full_join(fussi, lom[[i]], by=c("id"))
   }
   fussi[is.na(fussi)] <- 0
-  write.table(fussi, paste0("data/meanTPMalldays_",age,".txt"), 
+  write.table(fussi, paste0("Tau/Tau_TimeType/meanTPMalldays_",age,".txt"), 
               sep='\t', col.names=T, row.names=T)
 }
 saveTPM.bytime.tiss("Young", youngMatrices)
 saveTPM.bytime.tiss("Old", oldMatrices)
 
-
-# calculate tau for these matrices
-tau.bytimeandtype <- function(age, fileprefix,extension){
+# calculate for "meanTPMalldays
+tau.bytimeandtype <- function( fileprefix,age,extension){
   t <- read.table(paste0(fileprefix,age, extension), 
-                  sep='\t', col.names=T, row.names=T)
+                  sep='\t', header=T)
+  print(head(t))
   rownames(t) <- t$id
   t$id <- NULL
   log.t <- log(t+1)
   samples <- colnames(log.t)
+  print(samples)
   whichMAX <- c()
   nbMAX <- c()
   for (j in 1:dim(log.t)[1]){
@@ -144,10 +147,35 @@ tau.bytimeandtype <- function(age, fileprefix,extension){
     }
     nbMAX <- c(nbMAX, length(wmax))
   }
-  write.table(XXXX, paste0("Tau/TauSpecificity_TimeType_",age,".txt"), 
+  write.table(paste0("Tau/TauSpecificity_TimeType_",age,".txt"), 
               sep='\t', col.names=T, row.names=T)
 }
 
+mooo <- tau.bytimeandtype( "Tau/Tau_TimeType/meanTPMalldays_", "Young",".txt")
+write.table(paste0("Tau/TauSpecificity_TimeType_",age,".txt"), 
+            sep='\t', col.names=T, row.names=T)
+
+
+## ====================================================================
+# Filter Tau matrices : 
+## ====================================================================
+
+
+ages = c("Young", "Old")
+days = c("D0","D2","D4","D7")
+for (age in ages){
+  for (day in days){
+    itab <- read.table(paste0("Tau/TauSpecificity_",age,day,".txt"), sep='\t',
+                       header = T)
+    itab <- itab %>% filter(Tau >= 0.8) 
+    if(length(itab$symbol)==unique(length(itab$symbol))){
+      print("ok happy news")
+    }
+    print(dim(itab))
+    write.table(itab, paste0("Tau/filtered/TauSpecificity_",age,day,".txt"), sep='\t',
+                col.names=T, row.names=T)
+  }
+}
 
 
 
