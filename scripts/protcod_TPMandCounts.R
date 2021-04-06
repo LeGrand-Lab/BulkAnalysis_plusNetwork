@@ -137,22 +137,30 @@ ggrawcounts <- ggplot(df_counts, aes(x=log10(mean_counts), y=log10(variance_coun
 saveRDS(protcod.mat, file=out.counts)
 saveRDS(protcodTPM, file=out.tpm)
 
-# ### OLD: establishing TPM threshold : 
-# #cutoff = 0.01
-# #genes.over.cutoff = names(meanTPM[meanTPM>0.01])
-# protcod.mat <- protcod.mat[genes.over.cutoff,]
-# protcodTPM <- protcodTPM[genes.over.cutoff,]
-# # 17420 genes retained 
-
-
 #### print plots to pdf
 pdf(out1.pdf)
 ggbiotypes
 plot_grid(ggtpm1,ggtpm2, ggtpm3, ggrawcounts,ncol=2)
 dev.off()
-
-# #coord_cartesian(xlim = c(0, 1e+05), ylim =c(0, 1e+09)) +
-# 
-# geom_line(data= tibble("mean"=log10(x),"variance"=x*(1+x/modNB$theta)), 
-#           aes(mean,variance), color="salmon") + 
-
+# ======================================================================
+# NEW !!! another filtering strategy:
+# ======================================================================
+# NOTE: manually saved figure as provisoire.pdf
+# TODO : fix all figures for this script:
+#     - put mean counts by mean variance alone alongside biotypes,
+#     - and add line y=2x or fit linear
+#     -in second page: only TPM data,
+#           add meanTPM by day by age, AND include this last one  : 
+EV = 1e-1
+LprotcodTPM <- log10(protcodTPM+(1*EV))
+keep <- apply(LprotcodTPM, 1, function(row) sum(row > log10(EV)) == length(row))
+fi_protcodTPM <- protcodTPM[keep,]
+filtered_meanTPM <- apply(fi_protcodTPM,1,mean)
+ggplot(as_tibble(filtered_meanTPM),aes(log10(value+(1*EV)))) + 
+  ggtitle("Filtered mean TPM distribution across genes") + 
+  geom_histogram(aes(y=..density..), color="white",fill="#dd9c00",alpha=.7,
+                 bins=60) + 
+  geom_density( color="gold", alpha=.2) +
+  theme_bw() + labs(x=paste0("Log10(TPM+",EV,")"),
+    caption =paste0("Retaining only log10(values) superior to min cutoff: \n",
+    "keep <- apply(LogTPM,1, function(x) sum(x > ", EV,") == length(x))"))
