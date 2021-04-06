@@ -17,7 +17,6 @@ library(openxlsx)
 library(ggplot2)
 library(cowplot)
 library(RColorBrewer)
-library(DESeq2)
 library(ggsci) # publishing palettes
 library(gridExtra)
 library(reshape2)
@@ -53,15 +52,15 @@ calculateTau <- function(vec){
 
 # function that parses the all days for given age:
 #   output: saves the Tau dataframes to Tau/ ,.txt  separately by day
-saveTau.bytissue <- function(age, cts = list(), days=c("D0")){
+saveTau.bytissue <- function(age,  days){
   for (i in days){
     ktab <- read.table(paste0("data/meanTPM_",age,i,".txt"), sep='\t', header=T,
                        row.names=1) 
     logtab <- log10(ktab+1) 
-    q25 = quantile(unlist(logtab), 0.25)
+    q.cutoff <- quantile(unlist(logtab),0.10)
     keep <- apply(logtab, 1, function(x) sum(x >= 0) == length(x) &
-                    sum(x > q25) > 1)  #and at least one over median
-    logtab <- logtab[keep,] # for tau calc purposes
+                    sum(x > q.cutoff) >= 1)  #and at least one over this value
+    logtab <- logtab[keep,] 
     print(dim(logtab))
     tau_res <- tibble("id"=rownames(logtab))
     tau_res$symbol <- genes_df[match(rownames(logtab),genes_df$Geneid),]$symbol
@@ -90,14 +89,13 @@ saveTau.bytissue <- function(age, cts = list(), days=c("D0")){
     }
     tau_res <- cbind(tau_res,whichMAX,nbMAX, maxlog10TPM)
     tau_res$day <- i
-    cts[[i]] <- tau_res
-    write.table(bind_rows(cts), paste0("Tau/TauSpecificity_",age,i,".txt"), sep='\t',
+    write.table(tau_res, paste0("Tau/TauSpecificity_",age,i,".txt"), sep='\t',
                 col.names=T, row.names=T)
   }# end for i in days
   return("tau calculated & txt files saved into 'Tau/'")
 }
-print( saveTau.bytissue("Young", days=c("D0","D2","D4","D7")) )
-print( saveTau.bytissue("Old",  days=c("D0","D2","D4","D7")) ) 
+#print( saveTau.bytissue("Young", days=c("D0","D2","D4","D7")) )
+#print( saveTau.bytissue("Old",  days=c("D0","D2","D4","D7")) ) 
 
 ## ====================================================================
 # Filter generated Tau matrices : 
@@ -109,7 +107,7 @@ for (age in ages){
     itab <- read.table(paste0("Tau/TauSpecificity_",age,day,".txt"), sep='\t',
                        header = T)
     hist(itab$Tau, main=paste0(age,":", day))
-    itab <- itab %>% filter(Tau >= 0.7) 
+    itab <- itab %>% filter(class == "specific") 
     if(length(itab$symbol)==unique(length(itab$symbol))){
       print("ok happy news")
     }
@@ -125,7 +123,7 @@ for (age in ages){
       addWorksheet(wb, ty )
       writeDataTable(wb, sheet = ty , 
                      x = itab %>% filter(whichMAX==ty & 
-                                           maxlog10TPM>median(maxlog10TPM)),
+                                           maxlog10TPM > 0.5),
                      colNames = TRUE, rowNames = F)
     }
     saveWorkbook(wb, xfile, overwrite = TRUE)

@@ -14,11 +14,10 @@ savee <- function(age, cts = list(), days=c("D0")){
     ktab <- read.table(paste0("data/meanTPM_",age,i,".txt"), sep='\t', header=T,
                        row.names=1) 
     logtab <- log10(ktab+1) 
-    hist(unlist(logtab), col="lightblue")
-    q25 = quantile(unlist(logtab), 0.25)
+    q.cutoff <- quantile(unlist(logtab),0.3)
     keep <- apply(logtab, 1, function(x) sum(x >= 0) == length(x) &
-                    sum(x > q25) > 1)  #and at least one over median
-    logtab <- logtab[keep,] # for tau calc purposes
+                    sum(x > q.cutoff) >= 1)  #and at least one over this value
+    logtab <- logtab[keep,] 
     hist(unlist(logtab), col="cyan", main="filterdone")
     print(dim(logtab))
     tau_res <- tibble("id"=rownames(logtab))
@@ -26,7 +25,7 @@ savee <- function(age, cts = list(), days=c("D0")){
     tau_res$Tau <- apply(logtab, 1, function(row) calculateTau(row))
     hist(tau_res$Tau, col="wheat", main=paste(age,": ",i))
   }
-  return("tau calculated & txt files saved into 'Tau/'")
+  return("figures shown")
 }
 print( savee("Young", days=c("D0","D2","D4","D7")) )
 print( savee("Old",  days=c("D0","D2","D4","D7")) ) 
