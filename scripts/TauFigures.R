@@ -14,11 +14,15 @@ savee <- function(age, cts = list(), days=c("D0")){
     ktab <- read.table(paste0("data/meanTPM_",age,i,".txt"), sep='\t', header=T,
                        row.names=1) 
     logtab <- log10(ktab+1) 
+    hist(unlist(log10(ktab)),xlim=c(-6,6), col="gold", prob=T, main="log10")
+    lines(density(unlist(log(ktab))),  col="red")
+    text(3,0.3,"log base 2", col="red")
+    hist(unlist(logtab), col="gold")
     q.cutoff <- quantile(unlist(logtab),0.3)
     keep <- apply(logtab, 1, function(x) sum(x >= 0) == length(x) &
                     sum(x > q.cutoff) >= 1)  #and at least one over this value
     logtab <- logtab[keep,] 
-    hist(unlist(logtab), col="cyan", main="filterdone")
+    hist(unlist(logtab), col="cyan", main="filterdone, log(value+1)")
     print(dim(logtab))
     tau_res <- tibble("id"=rownames(logtab))
     tau_res$symbol <- genes_df[match(rownames(logtab),genes_df$Geneid),]$symbol
