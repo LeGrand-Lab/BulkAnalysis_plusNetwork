@@ -1,14 +1,15 @@
-library(reshape2)
+###
+# Takes multiple files from StringTie results
+# outputs expression csv and counts rds files
+# -
+# johaGL 2021
+##
+
+#library(reshape2)
 library(tidyverse)
-library(forcats) # tools categorical vars
-library(UpSetR) #visuals intersecting sets
-library(ggpubr)
-library(kml)
-library(ggplotify)
 library(stringr)
 
-# library(umap)
-setwd("~/bulk_analysis/")
+setwd("~/BulkAnalysis_plusNetwork/")
 data_p <- "/media/bioinfo/Stockage/DATA_RNAageing/DATA/"
 m_p <- "merged_gene_counts/"
 d_p <- "StringtieFPKM_gene_abund_all_batch/"
@@ -135,7 +136,6 @@ noccurs[noccurs$Freq >1,]
 write.table(featdf, paste0(odir,outfeat), sep="\t", col.names = T, row.names = F)
 rowsfull = unique(featdf$Gene.ID)
 # for simplicity, took unique Gene.ID from this df
-
 
 TPM = data.frame("Gene.ID"=rowsfull)
 FPKM = data.frame("Gene.ID"=rowsfull)

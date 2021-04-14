@@ -1,3 +1,9 @@
+###
+# Takes 'geneID_bc_matrix.rds'.
+# to get the biotype information: "data/biotype_bulk.csv".  
+# johaGL 2021
+## 
+
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
@@ -5,11 +11,8 @@ library(cowplot)
 library(biomaRt)
 library("AnnotationHub")
 library(EnsDb.Mmusculus.v79)
-###
-# initial_expl.R has produced 'geneID_bc_matrix.rds'.
-# here import it to get the biotype information
-##
-setwd("~/bulk_analysis/")
+
+setwd("~/BulkAnalysis_plusNetwork/")
 fileout <- "data/biotype_bulk.csv"
 df <- readRDS("data/geneID_samp_matrix.rds")
 
@@ -43,7 +46,7 @@ infmart <- rbind(uniqmart,dupmart)
 infmart$source <- "MART_ENSEMBL"
 infmart$strain_name[infmart$strain_name==""] <- "canonical" #fill if empty
 
-## take strains datasets:
+## take strains datasets, will be useful if some genes not found in canonical:
 allstrains <- listDatasets(useMart(host = "www.ensembl.org", biomart = "ENSEMBL_MART_MOUSE"))$dataset
 # give good format to allstrains vector (relocating dba as first, ...etc)
 if (allstrains[1] != "mmdba2j_gene_ensembl"){
@@ -54,10 +57,13 @@ if (allstrains[1] != "mmdba2j_gene_ensembl"){
                          "129S1/SVIMJ", "FVB/NJ", "LP/J", "NOD/SHILTJ", 
                          "NZO/HLLTJ", "PWK/PHJ","WSB/EIJ")
 }
-# for not yet found genes, create empty tibble to fillup with strains datasets 
+# check if some genes not found in canonical
 absent = rownames(df)[!rownames(df) %in% infmart$ensembl_gene_id]
+# for not yet found genes, create empty tibble to fillup with strains datasets 
 dfstrains <- infmart %>% dplyr::filter(n()>5) 
 # parse all mart datasets:
+print(paste("some genes not found in consensus, parsing all Mart strains datasets",
+      "this can take a looooong time, go for a 20 min walk"))
 for (i in 1:length(allstrains)){
   x = names(allstrains)[i]
   martx = useMart("ENSEMBL_MART_MOUSE", dataset=allstrains[x], host="www.ensembl.org")
@@ -81,7 +87,6 @@ for (i in 1:length(allstrains)){
   print(paste("after",x, "dataset matching, absent left:" ))
   print(length(absent))
 }
-
 
 # WITH annotationdbi
 # keytypes(EnsDb.Mmusculus.v79)
