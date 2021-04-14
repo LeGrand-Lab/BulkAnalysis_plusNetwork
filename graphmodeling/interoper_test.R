@@ -34,5 +34,19 @@ plot(g, vertex.label=V(g)$genesym,
 #               rootlevel = numeric(), mode = c("all"), 
 #               flip.y = TRUE)
 
+plot(g,edge.width=E(g)$weight*20,
+     vertex.sizes=(log10(V(g)$averagexp))*10, vertex.label=V(g)$genesym,
+     vertex.label.color="black", edge.curved=.2 )
+
+
+gg <- make_ring(10)
+values <- lapply(1:10, function(x) sample(1:10,3))
+if (interactive()) {
+  plot(gg, vertex.shape="pie", vertex.pie=values,
+       vertex.pie.color=list(heat.colors(5)),
+       vertex.size=seq(10,30,length=10), vertex.label=NA)
+}
+
+
 
 
