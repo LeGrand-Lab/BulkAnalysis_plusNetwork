@@ -6,7 +6,7 @@
 cranpkg <- c("Rcpp", "curl", "xml2", "stringr", "dplyr","tidyverse", "ggplot2", 
 	"Matrix", "reshape2", "gridExtra", "matrixStats",
 	"boot", "class", "nnet", #required for DropletUtils
-	"future", "future.apply", 
+	"future", "future.apply", "glmpca",
 	"MASS", "sctransform", "Seurat",
 	"reticulate", # for python interface
 	"rmarkdown", 
@@ -36,6 +36,7 @@ installbd <- function(pks){
 		})
 	)	
   }	
+devtools::install_github("vqv/ggbipplot")
 
 bioc_or_dev <- c("AnnotationDbi","org.Mm.eg.db", "harmony", "SingleCellExperiment", 
                  "scater", 
