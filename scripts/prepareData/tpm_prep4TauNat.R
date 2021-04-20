@@ -1,8 +1,7 @@
 # Prepares TPM matrices for :
 # - Tau specificity index
 # - Natmi Ligand Receptor network 
-# As biological replicates will be subjected to geometric mean
-# CAUTION ! :
+# As biological replicates will be subjected to geometric mean, CAUTION ! :
 # when using **geometric mean** : 
 # MAKE SURE NO VALUES == ZERO ARE PRESENT IN THE MATRIX
 # JohaGL 2021
@@ -35,11 +34,65 @@ if (!file.exists(paste0(odir,"nullCoverageEnsemblids.txt"))){
   idszerocover <- rownames(genesZeroCoverage)
   write_lines(idszerocover, 
               file=paste0(odir,"nullCoverageEnsemblids.txt"), sep='\n')
-  
 }
 idszerocover = read_lines(file=paste0(odir,"nullCoverageEnsemblids.txt"))
 # filter out zero coverage rows from fTPM
 fTPM <- fTPM[!rownames(fTPM) %in% idszerocover,] 
+
+## explore means by gene
+# =========================================================================
+# take one gene at random
+#  samptpm <- fTPM[sample(nrow(fTPM), size=1),] # row at random
+# mediu <- apply(fTPM, 1, function(x) sum(x)> 2000 & sum(x) < 5000)
+# > sample(rownames(fTPM[mediu,]), 1)
+kgenes <- c("ENSMUSG00000058794", "ENSMUSG00000028059","ENSMUSG00000002944")
+kplots <- list()
+#highly expressed, medium and low expressed genes, respectively
+for (kgene in kgenes){
+  One <- metadata %>% dplyr::select(newname, time, age, type)
+  One$value <- fTPM[kgene,]
+  One <- One %>% mutate(mycolor = ifelse(age=="Old","black","gray"))
+  repli <- sapply(One$newname, function(x) str_split(x, "_")[[1]][2])
+  categ <- sapply(One$newname, function(x) str_split(x, "_")[[1]][1])
+  One$categ <- categ
+  prep <- data.frame("categ"=unique(categ),
+                     geommean = NA,
+                     arithmean =NA,
+                     median = NA)
+  rownames(prep) <- prep$categ
+  for (i in rownames(prep)){
+    thisvals <- One %>% filter(categ==prep[i,"categ"]) %>% pull(value)
+    nozerovals <- thisvals
+    nozerovals[nozerovals==0] <- 0.00001  # initial test with this ZERO treatment 
+    prep[i,"geommean"] = prod(nozerovals)^(1/length(nozerovals))
+    prep[i, "arithmean"] = mean(thisvals)
+    prep[i, "median"] = unname(quantile(thisvals, 0.5))
+  }
+  prep2 <- inner_join(prep, One, by="categ")
+  g <- ggplot(One, aes(x=age, y=value, fill=age)) +
+    geom_dotplot(binaxis='y', dotsize = 3, color="white", alpha=.3,
+                 show.legend=FALSE   ) +
+    geom_point(shape=18, data=prep2,aes( x=age, y=arithmean), 
+               color="purple" , size= 3, alpha=.3)+
+    geom_point(shape=18, data=prep2,aes( x=age, y=geommean), 
+               color="black", size = 3, alpha=.3 )+
+    geom_point(shape=9, data=prep2,aes( x=age, y=median), 
+               color="darkblue",size = 2, alpha=.3)+
+    facet_grid(vars(time), vars(type)) +
+    labs(title="Testing geometric mean", subtitle=kgene,
+         caption= "crossedDiamond = median; purpleDiamond = arithmethic mean; 
+       blackDiamond = geometric mean.   *Note: ignore righthand legend") +
+    theme(legend.position="none") +
+    theme_bw()
+  kplots[[kgene]] <- g
+}
+pdf(paste0("plotsPrelim/tpmmetrics_randomGenes.pdf"), width=8)
+kplots[[1]]
+kplots[[2]]
+kplots[[3]]
+dev.off()
+# ============================================================================
+# end explore means by gene
 
 ## DISCOVER MIN VAL FOR REPLACING ZEROES
 print("exploring minimal existing value not being ZERO TPM:")
@@ -48,6 +101,7 @@ lowestTPM = min(unlist(fTPM[hasNOzeros,]))
 print(paste("this is the min value admited, will replace zeroes",lowestTPM))
 print('replacing zero values by lowest found in entire matrix')
 fTPM[fTPM < lowestTPM] <- lowestTPM
+
 
 ages <- c("Young","Old")
 days <- c("D0","D2", "D4", "D7")

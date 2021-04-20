@@ -49,7 +49,7 @@ saveTau.bytissue <- function(age,  days, myquantile=0.25){
     # get rid homogeneously low rows in matrix, setting a min quantile cutoff
     q.cutoff <- quantile(unlist(logtab),myquantile)
     keep <- apply(logtab, 1, function(x) sum(x >= 0) == length(x) &
-                    sum(x > q.cutoff) >= 1)  #and at least one over this value
+                    sum(x > q.cutoff) >= 1)  #and at least one over this cutoff
     logtab <- logtab[keep,] 
     print(dim(logtab))
     tau_res <- tibble("id"=rownames(logtab))

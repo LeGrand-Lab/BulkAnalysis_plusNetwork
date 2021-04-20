@@ -1,3 +1,7 @@
+##
+# I. TPM across libraries Pheatmap. II. RAW COUNTS --> vst --> PCA.
+# johaGL 2021
+##
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
@@ -17,24 +21,23 @@ prefil_cou <- "data/prefiltered_counts.rds"
 prefil_tpm <- "data/prefiltered_TPM.rds"
 metadata.rds <- "data/metadata.rds"
 
-# NOTE: some bad quality already deleted from design.csv
-# preliminary counts and TPM matrices formatting
+
+# PRELIMINAR :  counts and TPM matrices formatting
 # =========================================================================
 # load protein coding matrices :
 pc.mat <- readRDS("data/protcod_counts.rds") 
 pc.TPM <- readRDS("data/protcod_TPM.rds")
 design <- read.table("data/design.csv",header=T,sep=",", row.names=1)
 
-# filter out all-zeroes count rows:
-fTPM <- pc.TPM[!rowSums(pc.mat)==0,]  #c'est bien pc.mat criterium
-fmat <- pc.mat[!rowSums(pc.mat)==0,]  
-
-fTPM <- as.matrix(fTPM, dim=dim(fTPM))
-fmat <- as.matrix(fmat, dim=dim(fmat))
+# make sure numeric format (as.matrix), and filter out all-zeroes rows:
+fTPM <- as.matrix(pc.TPM, dim=dim(pc.TPM))
+fmat <- as.matrix(pc.mat, dim=dim(pc.mat))
+fTPM <- fTPM[!rowSums(fmat)==0,]  # yes, c'est bien COUNTS criterium, OK 
+fmat <- fmat[!rowSums(fmat)==0,]  
 typeof(fmat[3000,50])
 #[1] "integer"
 badquality <- setdiff(colnames(fmat),design$sample)
-# bad quality libraries:
+# bad quality libraries , they were already deleted from design.csv:
 #[1] "X2.422363" "X2.422364" "X2.424030" "X2.424031" "X2.428151" "X2.428100" "X2.429794" "X2.429793"
 exclu <- fmat[,badquality]
 fmat <- fmat[,!(colnames(fmat) %in% badquality)]
@@ -48,7 +51,7 @@ fmat <- fmat[,colnames(fmat) %in% metadata$sample]
 fTPM <- fTPM[,colnames(fTPM) %in% metadata$sample]
 
 # rename sample names:
-# ==========================================================================
+#  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 metadata$type <- str_replace(str_replace(metadata$type,"-RNA",""),"-REDO","")
 metadata$group <- paste0(metadata$age,".",metadata$type)
 newnames <- paste0(metadata$age,".", metadata$type, ".", metadata$time)
@@ -60,12 +63,6 @@ for (i in 1:dim(replicnbs)[1]){
   nbs <- c(nbs,seq(1:replicnbs$n[i]))
 }
 dfnwn <- data.frame("sample"=names(newnames),"nwn"=newnames,"replicate"=nbs)
-# dfnwn <- dfnwn %>% mutate(
-#     newnames = str_replace(
-#       str_replace(
-#         paste0(str_replace(nwn,"-RNA",""),"_",replicate),
-#       "Old","O"),
-#       "Young","Y"))
 dfnwn <- dfnwn %>% mutate(newnames=paste0(nwn,"_",replicate))
 ## add these new names to the design
 metadata$newname = dfnwn$newnames[match(metadata$sample,dfnwn$sample)]
@@ -84,28 +81,23 @@ colnames(fmat) <- unname(tt)
 colnames(fTPM) <- unname(tt)
 #set same order 
 metadata <- metadata[match(colnames(fmat),rownames(metadata)),] 
-# ==========================================================================
+
 # end rename sample names
 # save these new matrices, and metadata
 saveRDS(fTPM, file=prefil_tpm)
 saveRDS(fmat, file=prefil_cou)
 saveRDS(metadata, file=metadata.rds)
+# ==========================================================================
+# END preliminar
 
-# =========================================================================
 fmat <- readRDS(prefil_cou)
 fTPM <- readRDS(prefil_tpm)
 metadata <- readRDS(metadata.rds)
 
 ##
-# **** SAMPLES HEATMAP ****
+# I. **** TPM libraries pheatmap ****
 ##
-print("exploring minimal existing value not being ZERO TPM:")
-hasNOzeros = apply(fTPM, 1, function(row) sum(row > 0) ==length(row))
-lowestTPM = min(unlist(fTPM[hasNOzeros,]))
-print(paste("this is the min value admited, will replace zeroes",lowestTPM))
-print('replacing zero values by lowest found in entire matrix')
-fTPM[fTPM < lowestTPM] <- lowestTPM
-
+# =========================================================================
 cor.mat <- cor(fTPM, method="spearman")
 
 batch = read.table("data/batchesinfo.csv") # to add in visuals
@@ -142,10 +134,14 @@ dev.off()
 
 # #  testing same cor function on log10(TPM+1) data : same result
 # cormatB <- cor(log10(fTPM+1))
-# pheatmap(cormatB, method="pearson",fontsize = 7)
-
+# pheatmap(cormatB, method="spearman",fontsize = 7)
 # =========================================================================
-# PCA: use vst , this requires DESeq2 object
+# end TPM libraries composition
+ 
+##
+# II. **** PCA  ****
+##
+# For PCA: this uses vst ,  requires DESeq2 object
 # =========================================================================
 ds.o <- DESeqDataSetFromMatrix(countData=fmat,
                                 colData=metadata,
@@ -303,4 +299,4 @@ ggplot(pca_dfC, aes(x=PC1,y=PC2, color=age)) +
   ggtitle("PCA on vst sub-matrices time_type")
 dev.off()
 # ==
-
+# END 

@@ -19,16 +19,17 @@ pdf files :
 .
 
 - `libraries_kept_andPCA` : accepts in input protein-coding counts and TPM,
- it does not filter any gene, kepts good quality libraries and yields outs:
+ drops out bad quality libraries as well as 'all zero count rows'. 
+ Yields *'prefiltered'* outs:
 	* "data/prefiltered_counts.rds"
 	* "data/prefiltered_TPM.rds"
 	* "data/metadata.rds"
-	* "plotsPrelim/" : several PCA, and a complex pheatmap
+	* "plotsPrelim/": several PCA (on vst counts),Spearman's correlation pheatmap,
+	.
 .	
 	
-- `tpm_prep4TauNat` : saves into `data/` the .txt matrices by age and day, 
-suitable for specificity index calculation (Tau) and Natmi Ligand Receptor 
-nework creation.
+- `tpm_prep4TauNat` : saves into `data/` the 'meanTPM(..).txt' matrices by age 
+and day, suitable for specificity index calculation (Tau) and Natmi Ligand Receptor nework creation.
 
 ##  Current folder:
 
@@ -38,15 +39,24 @@ related plots, all outputs saved into `Tau/` folder
 
 - `dynamics_intra.R` : 
 analyzes gene expression dynamics existing 'intra condition', i.e. separately
-for 'young' and 'old' age groups. Results saved into folder `dynamicsIntra/`.
+for 'young' and 'old' age groups. Uses pairwise DESeq2 approach. Results saved into folder `dynamicsIntra/`.
 
 - `
 
 
 - `;;;.R` : 
 
-- `;;;` : 
-- `dyn_oldVSyoung.R` : dynamics **by celltype subset** (Old vs Young across all days)
+dynamics_intra_edgergoKegg.R
+dynamics_intra_edgeR_vrs.R
+dynamics_intra.R
+dyn_inter_oldVSyoung.R
+natmi_cmd.sh
+natmi_treat_results.R
+natmi_viz.sh
+path_test.R ===> ??
+plotsTimeWiseDyn.R
+plotsTimewiseDynVB.R
+snapshots_exprs.R
 
 
 JohaGL 2021

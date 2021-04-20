@@ -19,8 +19,8 @@ calculateTau <- function(vec){
 }
 
 
-age =  "Young"
-#age = "Old"
+#age =  "Young"
+age = "Old"
 #see tau plots
 pdf(paste0("Tau/","ZplotDetailscalc_", age,".pdf"))
 days=c("D0","D2","D4","D7")
@@ -38,11 +38,11 @@ par(mfrow = c(4,3) )
     myquantile = 0.25
     q.cutoff <- quantile(unlist(logtab),myquantile)
     keep <- apply(logtab, 1, function(x) sum(x >= 0) == length(x) &
-                    sum(x > q.cutoff) >= 1)  #and at least one over this value
+                    sum(x > q.cutoff) >= 1)  #and at least one over this cutoff
     logtab <- logtab[keep,] 
     hist(unlist(logtab), col="dodgerblue", 
-         main=paste("Filtered rows log10(TPM+1)\n",
-        "having no values over quantile", myquantile, "(",round(q.cutoff,4),")"  ),
+         main=paste("After filter: retain rows log10(TPM+1)\n",
+        "having at least one value > quantile", myquantile, "(",round(q.cutoff,4),")"  ),
          cex.main=.7, xlab = "log10(TPM+1)")
     print(dim(logtab))
     tau_res <- tibble("id"=rownames(logtab))
