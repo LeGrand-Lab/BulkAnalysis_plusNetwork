@@ -2,13 +2,9 @@
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
-library(cowplot)
-library(forcats)
 library(RColorBrewer)
 library(MASS)
 library(pheatmap)
-library(ggsci) # publishing palettes
-library(cowplot)
 library(gridExtra)
 library(reshape2)
 library(ggthemes)
@@ -20,8 +16,7 @@ library(edgeR)
 
 
 setwd("~/BulkAnalysis_plusNetwork")
-resdir = "plotsDE/"
-DEdir = "signaturestypes/"
+resdir = "dynintra_edger_extended/"
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
 # https://cran.r-project.org/web/packages/msigdbr/vignettes/msigdbr-intro.html
@@ -112,26 +107,11 @@ for (ag in ages){
     resu_l[[ct]] <- bind_rows(tmp_l)
   }#end for ct
   kkk <- bind_rows(resu_l)
-  write.table(kkk, file=paste0(DEdir,"edger_dynINTRA_",ag,vrs,".txt"), sep='\t',
+  write.table(kkk, file=paste0(resdir,"edger_dynINTRA_",ag,vrs,".txt"), sep='\t',
               col.names=T, row.names=F)
-  saveRDS(gokegg, file=paste0(DEdir,"edger_dynINTRAkeggo",ag,vrs,".rds"))
+  saveRDS(gokegg, file=paste0(resdir,"edger_dynINTRAkeggo",ag,vrs,".rds"))
 }#end for
 # ============================================================ 
 # ============   end part Edger with limma kegg and go
 
 
-### interesting GSVA
-#https://www.bioconductor.org/packages/release/bioc/vignettes/GSVA/inst/doc/GSVA.pdf
-#  Note: VERY USEFUL FOR GSEA:
-# https://cran.r-project.org/web/packages/msigdbr/vignettes/msigdbr-intro.html
-
-# library("msigdbr") # install.packages("msigdbr")
-#all_gene_sets = msigdbr(species = "Mus musculus")
-#View(msigdbr_collections())
-#setsli <- list()
-#setsli[["H"]] = msigdbr(species = "Mus musculus", category = "H")
-#setsli[["C2"]] = msigdbr(species = "Mus musculus", category = "C2")
-#saveRDS(setsli, file=paste0(DEdir,"DATABASE.rds"))
-#setsli <- readRDS(paste0(DEdir,"DATABASE.rds"))
-#View(as_tibble(unique(setsli[["C2"]]$gs_name))) # str_detec REACTOME and KEGG to extract
-#setsli[["H"]] is hallmark . REACTOME and KEGG could be enough

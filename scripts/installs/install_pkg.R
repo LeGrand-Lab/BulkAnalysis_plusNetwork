@@ -6,7 +6,8 @@
 cranpkg <- c("Rcpp", "curl", "xml2", "stringr", "dplyr","tidyverse", "ggplot2", 
 	"Matrix", "reshape2", "gridExtra", "matrixStats",
 	"boot", "class", "nnet", #required for DropletUtils
-	"future", "future.apply", "glmpca",
+	"future", "future.apply", "glmpca", 
+	"gprofiler2",
 	"MASS", "sctransform", "Seurat",
 	"reticulate", # for python interface
 	"rmarkdown", 

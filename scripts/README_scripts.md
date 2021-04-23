@@ -28,35 +28,42 @@ pdf files :
 	.
 .	
 	
-- `tpm_prep4TauNat` : saves into `data/` the 'meanTPM(..).txt' matrices by age 
-and day, suitable for specificity index calculation (Tau) and Natmi Ligand Receptor nework creation.
+- `tpm_prep4Tau` : saves into `data/` the 'meanTPM(..).txt' matrices by age 
+and day, suitable for specificity index calculation (Tau) .
+
+- `tpm_prep4Nat` : saves into `inDataNatmi/` the TPM_(..).txt and annotation
+.txt files suitable for Natmi Ligand-Receptor network generation.
 
 ##  Current folder:
 
 - `calc_Tau_Specificity.R` and `calc_Tau_figures.R` are related, the first takes 
 TPM matrices for Tau tissue specificity index calculation. The second performs 
-related plots, all outputs saved into `Tau/` folder
+related plots, all outputs saved into `Tau/` folder.
 
-- `dynamics_intra.R` : 
-analyzes gene expression dynamics existing 'intra condition', i.e. separately
-for 'young' and 'old' age groups. Uses pairwise DESeq2 approach. Results saved into folder `dynamicsIntra/`.
+- `dynamics_intra_Spec.R` : 
+ONLY FOR TISSUE SPECIFIC GENES, analyzes gene expression dynamics  existing 'intra condition', i.e. separately
+for 'young' and 'old' age groups. Uses pairwise DESeq2 approach. Results saved into folder `dynamicsIntra_Spec/`.
 
-- `
+- `dynamics_intra_doGO.R` :  Takes results from previous script, and performs enrichment
+by means of gprofiler2. Preferred terms are Reactome (REACT) and GO. Results saved into
+`dynamicsIntra_Spec/Gprofiler2_res/`.
 
+- `dynamics_intra_edgeR_vrs.R`:  for both specific and housekeeping, i.e.  no previous filtering on counts matrix, analyzes global intra group expression dynamics with edgeR following same contrasts as done previously with DESeq2. `dynamics_intra_edgergoKegg.R` performs GO and KEGG enrichment, plots by `dynamics_intra_edgerkeggplots.R` . 
+All results saved into `dynintra_edger_extended/`. Too extensive for being interpretable. 
 
-- `;;;.R` : 
+- `dyn_inter_oldVSyoung.R` : uses LRT, but maybe Wald was more indicaated.
+working on **corrections** !! :: destiny folders will change!!.
 
-dynamics_intra_edgergoKegg.R
-dynamics_intra_edgeR_vrs.R
-dynamics_intra.R
-dyn_inter_oldVSyoung.R
-natmi_cmd.sh
-natmi_treat_results.R
-natmi_viz.sh
-path_test.R ===> ??
-plotsTimeWiseDyn.R
-plotsTimewiseDynVB.R
-snapshots_exprs.R
+- `get_static_DE.R` : performs classic DE test (Old vs Young) time point by time point (like a "snapshot" of  expression differences at each time point). 
+
+- natmi_cmd.sh and natmi_edges.sh: ran in this order, yield  L-R networks into
+natmiOut/ folder.
+
+- pathView_test.R : a simple test with pathView, results into 'path_classic_tools/'.
+
+- yieldsArbitraryKmeansPlot.R : a demo to show that, for "specific" genes,
+increasing 'k' yields repetitive patterns (a justification to use 
+silhouette testing up to k=8) after kmeans calc. Saves plots into dynamicsIntra/.
 
 
 JohaGL 2021

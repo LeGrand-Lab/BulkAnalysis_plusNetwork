@@ -17,8 +17,7 @@ genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
 
 vrs <- "vA"  ## TODO: give name to file version (A,B,C....)
 
-resdir = "plotsDE/"
-DEdir = "signaturestypes/"
+resdir = "dynintra_edger_extended/"
 fmat <- readRDS(prefil_cou)
 metadata <- readRDS(metadata.rds)
 metadata <- metadata %>% mutate(timetype=paste0(time,".",type)) 
@@ -67,7 +66,7 @@ for (ag in ages){
     resu_l[[ct]] <- bind_rows(tmp_l)
   }#end for ct
   kkk <- bind_rows(resu_l)
-  write.table(kkk, file=paste0(DEdir,"edger_dynINTRA_",ag,vrs,".txt"), sep='\t',
+  write.table(kkk, file=paste0(resdir,"edger_dynINTRA_",ag,vrs,".txt"), sep='\t',
               col.names=T, row.names=F)
 }#end for
 
