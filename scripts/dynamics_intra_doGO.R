@@ -62,7 +62,7 @@ for(cty in names(cellcolors)[!names(cellcolors)=="Neutro"]){
   relevantEnr = gp_mod %>% filter(Category %in% pickcat & FDR <= 0.05 ) %>%
     group_by(Cluster, Category) %>% 
     slice_min(order_by = FDR, n = 5) %>% 
-    mutate(enriched_terms=str_trunc(Description, 50, "right"))
+    mutate(enriched_terms = str_trunc(Description, 50, "right"))
 }
 
 allTOP.here.age <- bind_rows(topTerms)
