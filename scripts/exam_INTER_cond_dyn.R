@@ -6,17 +6,10 @@
 ##
 library(dplyr)
 library(tidyverse)
-library(ggplot2)
-library(cowplot)
 library(RColorBrewer)
 library(DESeq2)
-library(ggsci) # publishing palettes
 library(cowplot)
-library(gridExtra)
 library(reshape2)
-library(ggthemes)
-library(scales) # 'viridis_pal' et autres pal
-library(ggrepel) # for labels to points
 library("BiocParallel")
 register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 
@@ -46,6 +39,7 @@ type_batch
 ##  set which rows to keep :
 keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
+
 plotDispersionsTissues <- function( fmat, metadata, tisscol = "type",
                                     outfilename, nbco, nbro){
   tissues = sort(unique(metadata[[tisscol]]))
@@ -144,7 +138,7 @@ runInteracCustom_simple <- function(ct, fmat, metadata, resdir,
 # let loose cutoff for padj (as default ) because will undergo GSEA:
 runInteracCustom("FAPs", fmat, metadata, resdir=resdir)
 runInteracCustom("ECs", fmat, metadata, resdir=resdir)
-runInteracCustom_simple("M1", fmat, metadata, resdir=resdir)
+runInteracCustom_simple("M1", fmat, metadata, resdir=resdir, lfccutoff = 0.1)
 runInteracCustom("M2", fmat, metadata, resdir=resdir)
 runInteracCustom("sCs", fmat, metadata, resdir=resdir)
 

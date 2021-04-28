@@ -7,7 +7,7 @@ cranpkg <- c("Rcpp", "curl", "xml2", "stringr", "dplyr","tidyverse", "ggplot2",
 	"Matrix", "reshape2", "gridExtra", "matrixStats",
 	"boot", "class", "nnet", #required for DropletUtils
 	"future", "future.apply", "glmpca", 
-	"gprofiler2",
+	"gprofiler2", "msigdbr",
 	"MASS", "sctransform", "Seurat",
 	"reticulate", # for python interface
 	"rmarkdown", 
@@ -41,14 +41,14 @@ devtools::install_github("vqv/ggbipplot")
 
 bioc_or_dev <- c("AnnotationDbi","org.Mm.eg.db", "harmony", "SingleCellExperiment", 
                  "scater", 
-                 "scran", "DropletUtils", "clusterProfiler")
+                 "scran", "DropletUtils", "clusterProfiler",
+                 "gage", "fgsea", "forcats", "UpSetR","ggpubr","kml", "ggplotify")
 	
 installbd(bioc_or_dev)
 lapply(bioc_or_dev, require, character.only=TRUE, quietly=F)
 
-libs4bulk <- c("forcats", "UpSetR","ggpubr","kml", "ggplotify")
 
-sapply(libs4bulk, function(x){
+sapply(bioc_or_dev, function(x){
   tryCatch({install.packages(x)
     return(paste(x," ok "))},
     error=function(cond){

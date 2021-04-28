@@ -134,7 +134,7 @@ if (testneeded){
   #[1] "GO:MF" "KEGG"  "REAC"  "WP"    "HP"    "MIRNA" "GO:CC" "TF"   
   test = gp_mod %>% group_by(Cluster, Category) %>% 
     slice_min(order_by = FDR, n = testtopn)
-  pdf(paste0(enrdir,"windowsALL4Test_",cty,".pdf"), width=15, height=18)
+  pdf(paste0(enrdir,"categALLbyTest_",cty,".pdf"), width=15, height=18)
   ggplot(test, aes(Cluster,Description, size = GeneRatio, color=FDR)) +
     geom_point() +
     scale_color_continuous() +
