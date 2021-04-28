@@ -51,10 +51,10 @@ by means of gprofiler2. Preferred terms are Reactome (REACT) and GO. Results sav
 - `dynamics_intra_edgeR_vrs.R`:  for both specific and housekeeping, i.e.  no previous filtering on counts matrix, analyzes global intra group expression dynamics with edgeR following same contrasts as done previously with DESeq2. `dynamics_intra_edgergoKegg.R` performs GO and KEGG enrichment, plots by `dynamics_intra_edgerkeggplots.R` . 
 All results saved into `dynintra_edger_extended/`. Too extensive for being interpretable. 
 
-- `dyn_inter_oldVSyoung.R` : uses LRT, but maybe Wald was more indicaated.
-working on **corrections** !! :: destiny folders will change!!.
+- `exam_INTER_cond_dyn.R` : analyzes if dynamics in expression is differential between Young and Old conditions.
+Results saved into `exam_INTER_conditions/dynamic`.
 
-- `get_static_DE.R` : performs classic DE test (Old vs Young) time point by time point (like a "snapshot" of  expression differences at each time point). 
+- `exam_Inter_cond_sta.R` : performs classic DE test (Old vs Young) time point by time point (like a "snapshot" of  expression differences at each time point). Results saved into `exam_INTER_conditions/static`
 
 - natmi_cmd.sh and natmi_edges.sh: ran in this order, yield  L-R networks into
 natmiOut/ folder.

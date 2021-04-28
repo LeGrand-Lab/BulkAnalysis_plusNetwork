@@ -19,7 +19,7 @@ setwd("~/BulkAnalysis_plusNetwork/")
 enrdir = "dynamicsIntra_Spec/Gprofiler2_res/"
 here.age = "Young"  # our "reference"
 print("setting top n (lowest p.adjust) terms to select")
-nbtop <- 10
+topN <- 5
 print("setting databases source")
 pickcat <- c("GO:BP",  "GO:MF" , "REAC" )
 cellcolors = list(
@@ -61,7 +61,7 @@ for(cty in names(cellcolors)[!names(cellcolors)=="Neutro"]){
   print(unique(gp_mod$Category))  #   # Visualize across ALL enriched terms/databases, testing relevance:
   relevantEnr = gp_mod %>% filter(Category %in% pickcat & FDR <= 0.05 ) %>%
     group_by(Cluster, Category) %>% 
-    slice_min(order_by = FDR, n = 5) %>% 
+    slice_min(order_by = FDR, n = topN) %>% 
     mutate(enriched_terms = str_trunc(Description, 50, "right"))
 }
 
