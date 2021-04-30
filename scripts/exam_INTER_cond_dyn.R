@@ -28,7 +28,7 @@ metadata <- metadata %>% mutate(typetimeage=paste0(type,".",time,".",age))
 batchesinfo <- read.table("data/batchesinfo.csv",sep="\t",header=T)
 head(batchesinfo)
 metadata$batch = batchesinfo[match(metadata$sample, batchesinfo$sample),]$batch
-type_batch = metadata %>% select(type,batch) %>% unique()
+type_batch = metadata %>% select(type,batch) %>% distinct(type,batch, .keep_all=T)
 type_batch
 # Old.M1.D2_1         M1    B1
 # Old.M2.D7_3         M2    B1
