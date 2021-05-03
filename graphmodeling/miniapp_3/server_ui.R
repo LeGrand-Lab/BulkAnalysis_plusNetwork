@@ -12,13 +12,28 @@ edge_attr(g)$color <- edge_attr(g)$ecolor
 
 data <- toVisNetworkData(g)
 data$nodes$label = data$nodes$genesym
-data$nodes$value = log(data$nodes$averagexp)*10
+data$nodes$value = log2(data$nodes$averagexp)*10
 data$nodes$groupname = data$nodes$celltype
 data$edges$width = data$edges$weight*10
 #nodes = as.data.frame(vertex_attr(g))
 #edges = as.data.frame(edge_attr(g))
+MAXWEIGHT.EDGE = max(data$edges$width)
 
-u <- shinyUI(fluidPage(
+# tryig to make shadows on groups by vertex cell type
+v <- as_data_frame(g, "vertices")
+v$numid.num<- sapply(v$id, function(x) stringr::str_replace(x,"n", ""))
+plot(g,
+     mark.groups = list(
+       unlist(v %>% filter(celltype=="M2" ) %>% select(numid.num)),
+       unlist(v %>% filter(celltype=="M1" )  %>% select(numid.num)),
+       unlist(v %>% filter(celltype=="FAPs")  %>% select(numid.num)),
+       unlist(v %>% filter(celltype=="sCs") %>% select(numid.num))
+     ),mark.col=c("#C5E5E7","#ECD89A","#C5E5E7",
+                  "#ECD89A","#E66101"), mark.border=NA)
+####  Error in simple_vs_index(x, ii, na_ok) : Unknown vertex selected
+
+
+ui <- shinyUI(fluidPage(
   titlePanel("very small test, by joha 2021"),
   
   sidebarLayout(position = "left",
@@ -53,8 +68,10 @@ u <- shinyUI(fluidPage(
   )
 ))
 
-s <- function(input, output){
+server <- function(input, output){
+  
   output$testigraph <- renderPlot({
+    
     gg <- make_ring(10)
     values <- lapply(1:10, function(x) sample(1:10,3))
     if (interactive()) {
@@ -64,6 +81,7 @@ s <- function(input, output){
     } # end if interactive
     } )
   output$testigraph_b <- renderPlot({
+    
     plot.igraph(g, layout=layout.mds)
   })
   net <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
@@ -85,6 +103,9 @@ s <- function(input, output){
     net_y$edges <- data$edges %>% filter(from %in% net_y$nodes$id)
     print(net_y$edges)
     
+    print("!!!!!")
+    print(input$range)
+    
     output$haha <- renderText({"OLD"})
     output$young <- renderVisNetwork({ 
       req(net$edges)
@@ -95,7 +116,7 @@ s <- function(input, output){
                            physics = FALSE) %>%
         visEdges(shadow=T, arrows="to", physics=FALSE) %>%
         visInteraction(navigationButtons = TRUE) %>%
-        visGroups(groupname="M1")
+        visGroups(groupname="M2")
       netout
       
     })# ebd renderVisNetwork 
@@ -114,7 +135,6 @@ s <- function(input, output){
       
     })# ebd renderVisNetwork old
     
-    
     output$networkstat <- renderText({
       sprintf("\nNodes:%d  Edges:%d Groups:%d",
               nrow(net$nodes),nrow(net$edges),nrow(net$groups))
@@ -124,4 +144,4 @@ s <- function(input, output){
   ) # end observeEvent
 }
 
-shinyApp(u,s)
+shinyApp(ui,server)
