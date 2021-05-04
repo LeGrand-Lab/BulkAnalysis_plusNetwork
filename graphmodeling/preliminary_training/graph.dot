@@ -1,0 +1,13 @@
+digraph "" {
+	graph [age_day=Young_D7];
+	mooA	[celltype=A,
+		color=red,
+		genesym=uuu,
+		specif=0.01];
+	mooA -> mooA	[origtype=A];
+	mooB	[celltype=B,
+		color=blue,
+		genesym=uuu,
+		specif=0.2];
+	mooA -> mooB	[origtype=A];
+}
