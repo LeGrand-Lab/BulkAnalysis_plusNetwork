@@ -15,17 +15,20 @@ register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 library(gprofiler2)
 library(msigdbr)
 library(fgsea)
+library(ggforce)
 setwd("~/BulkAnalysis_plusNetwork/")
 # TODO : collapsedPathways returned empty, reload RDS file to save complete tabular
 #  i.e give the choice to use entire thing if collapsed is empty
 
-ct = "M2"
+ct = "sCs"
+pathFDR = 0.025
 gseaneeded <- F # set T if needed
-gologfoldcutoff = 1
-gopadjcutoff =  0.1
-topgopath = 20
+gologfoldcutoff = 1.5
+gopadjcutoff =  0.0005
+topgopath = 8
 gsealogfoldcutoff = 0.8
 gseapadjcutoff = 1
+
 
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
@@ -98,16 +101,17 @@ gp_mod = as_tibble(gp_mod) %>%
 #                 '  p<=',gopadjcutoff, '  n=',length(querygenes)) )
 # dev.off()
 
-## make clearer optimal viz, exclude KEGG and TF for this M2 celltype
-refilter = gp_mod %>%  filter(!Category %in% c("KEGG", "TF"))
+## make clearer optimal viz, exclude categories few genes matching:
+refilter = gp_mod %>%  filter(!Category %in% c("KEGG", "TF", "GO:BP")) %>%
+  filter(FDR <= pathFDR)
 gg_go <- ggplot(refilter, 
        aes( enriched_terms, Count, fill=FDR)) +
   geom_bar(stat="identity", width=0.8) +
   scale_fill_continuous(type = "viridis", direction=-1, alpha=.8) +
   facet_grid(Category~.,scale="free", space="free") +
   coord_flip() +
-  theme(axis.text.y = element_text(size=7)) +
-  theme_bw() + theme(legend.position = 'bottom') +
+  theme(axis.text.y = element_text(size=5)) +
+  theme_bw() + theme(legend.position = 'right') +
   labs(subtitle = paste("GO/Pathways enrichment"),
        caption = paste(ct, "Old vs Young, pathway enrichment significance (FDR)",
       '\nabslfc >=', gologfoldcutoff, 
@@ -178,12 +182,39 @@ gg_genenon <- ggplot(mtmelt %>% filter(wasenriched==0),
                      '\nGeneSymbol (logFC|padj)'))
 
 # ==================================  plot go ==============
-pdf(paste0(resdir,ct,"_GO.pdf"), width=12)
-plot_grid(ggplot() + draw_label(paste("Old vs Young,",ct)),
-plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO") , nrow=2,
-rel_heights = c(1,11) )
-gg_genenon
+pdf(paste0(resdir,ct,"_GOooo.pdf"), width=12, height = 12)
+
+for (i in 1:9){
+gg_genenri2 <- ggplot(mtmelt %>% filter(wasenriched==1), 
+                     aes(x=day, y=Zscore, group=age , color=age))  +
+  geom_point(size=.4, aes(color=age)) + 
+  geom_smooth(se=T,
+              method="loess", 
+              size=0.5,
+              alpha=.1) + 
+  scale_color_colorblind() + 
+  facet_wrap_paginate(~symbol, ncol=5, nrow=5, page=i,
+                      labeller = labeller(symbol=mylabeller)) + 
+  theme_light() + theme(legend.position = "bottom") +
+  labs(subtitle=paste(ct,"Old vs Young, GO/pathways retrieved"),
+       caption=paste('total query (n genes):',dim(g_df)[1] ,
+                     '\nGeneSymbol (logFC|padj)'))
+  print(gg_genenri2)
+}
 dev.off()
+
+pdf(paste0(resdir,ct,"_GO.pdf"), width=12, height = 12)
+  plot_grid(ggplot() + draw_label(paste("Old vs Young,",ct)),
+    plot_grid(gg_go, ggplot()+
+                draw_label("retreived genes in\n detailed_pages")+theme_minimal(),
+              labels="AUTO", ncol=2, rel_widths = c(6,2) ) , nrow=2,
+    rel_heights = c(0.5,11.5) )
+  plot_grid(ggplot()+draw_label("genes NOT being found in pathways, still significant"),
+      gg_genenon, nrow=2, rel_heights = c(3,5))
+dev.off()
+
+
+
 # ============================================================================
 
 # =========================== GSEA    ========================================
@@ -210,10 +241,8 @@ if(gseaneeded){
   gseagenes <- lfcgenes$log2FoldChange
   names(gseagenes) <- lfcgenes$symbols
   barplot(sort(gseagenes,decreasing=T))
-  
   thegmt <- read.table(paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
                        header=T)
-
   msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
   set.seed(42)
   fgseaRes <- fgsea::fgsea(pathways = msigdbr_list, 

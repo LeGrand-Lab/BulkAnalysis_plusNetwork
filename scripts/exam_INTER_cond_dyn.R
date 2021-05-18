@@ -13,7 +13,6 @@ library(reshape2)
 library("BiocParallel")
 register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 
-
 setwd("~/BulkAnalysis_plusNetwork/")
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
@@ -39,29 +38,6 @@ type_batch
 ##  set which rows to keep :
 keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
-
-plotDispersionsTissues <- function( fmat, metadata, tisscol = "type",
-                                    outfilename, nbco, nbro){
-  tissues = sort(unique(metadata[[tisscol]]))
-  pdf(outfilename, paper="a4")
-  par(mfrow=c(nbro,nbco))
-  for (ct in tissues){
-    mat.ct <- fmat[,str_detect(colnames(fmat), ct)]
-    meta.ct <- metadata %>% filter(str_detect(rownames(metadata),ct))
-    x.keep <- apply(mat.ct, 1, function(row) ifelse(sum(row >=5)>= 3, TRUE, FALSE))
-    mat.ct <- mat.ct[x.keep,]
-    ds.o <- DESeqDataSetFromMatrix(mat.ct, meta.ct, design = ~ age)
-    ds.o$age <- relevel(ds.o$age, ref="Young")
-    d <- DESeq2::estimateSizeFactors(ds.o)
-    d <- DESeq2::estimateDispersions(d)
-    plotDispEsts(d, cex=0.6, genecol=rgb(0.1,0.1,0.1,0.3), fitcol="gold", 
-                 finalcol=rgb(0.1,0.8,0.7,0.6), main=ct)
-  } # end for
-  dev.off()
-  par(mfrow=c(1,1))
-}
-# plotDispersionsTissues(fmat, metadata, "type", 
-#                        outfilename=paste0(resdir,"dispersionsPlot.pdf"), 2, 3)
 
 # use runInteracCustom when equal or more than 3 time-points available
 # this function recalculates FDR (repadj) but filters  on padj
@@ -132,7 +108,6 @@ runInteracCustom_simple <- function(ct, fmat, metadata, resdir,
   print(paste("saved csv file for INTERaction, ",ct))
   return("done")
 }
-
 
 # use only Tissues having more than one timepoint:
 # let loose cutoff for padj (as default ) because will undergo GSEA:

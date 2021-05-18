@@ -19,13 +19,15 @@ setwd("~/BulkAnalysis_plusNetwork/")
 # TODO : collapsedPathways returned empty, reload RDS file to save complete tabular
 #  i.e give the choice to use entire thing if collapsed is empty
 
-ct = "M2"
+ct = "FAPs"
+pathFDR = 0.035
 gseaneeded <- F # set T if needed
-gologfoldcutoff = 1
-gopadjcutoff =  0.1
-topgopath = 20
+gologfoldcutoff = 1.5
+gopadjcutoff =  0.005
+topgopath = 8
 gsealogfoldcutoff = 0.8
 gseapadjcutoff = 1
+
 
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
@@ -98,15 +100,16 @@ gp_mod = as_tibble(gp_mod) %>%
 #                 '  p<=',gopadjcutoff, '  n=',length(querygenes)) )
 # dev.off()
 
-## make clearer optimal viz, exclude KEGG and TF for this M2 celltype
-refilter = gp_mod %>%  filter(!Category %in% c("KEGG", "TF"))
+## make clearer optimal viz, exclude all that is too redundant:
+refilter = gp_mod %>%  filter(!Category %in% c("KEGG", "TF", "GO:CC", "GO:MF")) %>%
+  filter(FDR <= pathFDR)
 gg_go <- ggplot(refilter, 
        aes( enriched_terms, Count, fill=FDR)) +
   geom_bar(stat="identity", width=0.8) +
   scale_fill_continuous(type = "viridis", direction=-1, alpha=.8) +
   facet_grid(Category~.,scale="free", space="free") +
   coord_flip() +
-  theme(axis.text.y = element_text(size=7)) +
+  theme(axis.text.y = element_text(size=6)) +
   theme_bw() + theme(legend.position = 'bottom') +
   labs(subtitle = paste("GO/Pathways enrichment"),
        caption = paste(ct, "Old vs Young, pathway enrichment significance (FDR)",
@@ -178,7 +181,7 @@ gg_genenon <- ggplot(mtmelt %>% filter(wasenriched==0),
                      '\nGeneSymbol (logFC|padj)'))
 
 # ==================================  plot go ==============
-pdf(paste0(resdir,ct,"_GO.pdf"), width=12)
+pdf(paste0(resdir,ct,"_GO.pdf"), width=12, height = 10)
 plot_grid(ggplot() + draw_label(paste("Old vs Young,",ct)),
 plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO") , nrow=2,
 rel_heights = c(1,11) )
@@ -210,10 +213,8 @@ if(gseaneeded){
   gseagenes <- lfcgenes$log2FoldChange
   names(gseagenes) <- lfcgenes$symbols
   barplot(sort(gseagenes,decreasing=T))
-  
   thegmt <- read.table(paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
                        header=T)
-
   msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
   set.seed(42)
   fgseaRes <- fgsea::fgsea(pathways = msigdbr_list, 

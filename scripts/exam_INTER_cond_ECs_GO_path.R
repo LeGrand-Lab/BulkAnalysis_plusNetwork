@@ -42,7 +42,7 @@ metadata <- metadata %>% mutate(typetimeage = paste0(type,".",time,".",age))
 keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 dso <- DESeqDataSetFromMatrix(fmat, metadata,
-                              design=~ ~ age + time + age:time)
+                              design= ~ age + time + age:time)
 
 all_g_df <- read.table(paste0(resdir, ct, "_INTERagetime.csv"),sep='\t', header = T)
 
@@ -84,27 +84,27 @@ gp_mod = as_tibble(gp_mod) %>%
     enriched_terms = str_trunc(Description, 50, "right"),
     celltype=ct)
 
-pdf(paste0(resdir,"categALL_",ct,".pdf")) 
-ggplot(gp_mod, 
-       aes(celltype,enriched_terms, size = GeneRatio, color=FDR)) +
-  geom_point() +
-  scale_color_gradient(low="#1AFF1A", high="#4B0092") +
-  facet_grid(Category~., scales = "free", space="free") +
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
-  theme(axis.text.y = element_text(size=5)) +
-  theme_bw() + 
-  labs(title = paste("Old vs Young, all retreived Categories \n",ct),
-      caption = paste(ct, "Old vs Young, pathway enrichment significance (FDR)",
-                '\nabslfc >=', gologfoldcutoff, 
-                '  p<=',gopadjcutoff, '  n=',length(querygenes)) )
-dev.off()
+# pdf(paste0(resdir,"categALL_",ct,".pdf")) 
+# ggplot(gp_mod, 
+#        aes(celltype,enriched_terms, size = GeneRatio, color=FDR)) +
+#   geom_point() +
+#   scale_color_gradient(low="#1AFF1A", high="#4B0092") +
+#   facet_grid(Category~., scales = "free", space="free") +
+#   scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+#   theme(axis.text.y = element_text(size=5)) +
+#   theme_bw() + 
+#   labs(title = paste("Old vs Young, all retreived Categories \n",ct),
+#       caption = paste(ct, "Old vs Young, pathway enrichment significance (FDR)",
+#                 '\nabslfc >=', gologfoldcutoff, 
+#                 '  p<=',gopadjcutoff, '  n=',length(querygenes)) )
+# dev.off()
 
-## make clearer optimal viz, exclude KEGG and TF for this M2 celltype
-refilter = gp_mod %>%  filter(!Category %in% c("KEGG", "TF"))
+## make clearer optimal viz, exclude KEGG, MF and TF (I saw redundant)
+refilter = gp_mod %>%  filter(!Category %in% c("KEGG", "TF", "GO:MF"))
 gg_go <- ggplot(refilter, 
        aes( enriched_terms, Count, fill=FDR)) +
   geom_bar(stat="identity", width=0.8) +
-  scale_fill_gradient(low="#1AFF1A", high="#4B0092") +
+  scale_fill_continuous(type = "viridis", direction=-1, alpha=.8) +
   facet_grid(Category~.,scale="free", space="free") +
   coord_flip() +
   theme(axis.text.y = element_text(size=6)) +
@@ -189,6 +189,17 @@ dev.off()
 
 # =========================== GSEA    ========================================
 # ============================================================================
+gmtneeded = F  # gmt file:
+if (gmtneeded){
+  pregmt1 <- msigdbr(species = "Mus musculus", category = 'C2',
+                     subcategory=c('CP:REACTOME')  )
+  # [1] "CGP"             "CP:BIOCARTA"     "CP:KEGG"         "CP"           
+  # "CP:PID"         "CP:REACTOME"     "CP:WIKIPATHWAYS"
+  pregmt2 <- msigdbr(species = "Mus musculus", category = "H") #HALLMARK
+  thegmt <- bind_rows(pregmt1,pregmt2)
+  write.table(thegmt, paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
+              col.names=T)
+}
 if(gseaneeded){
   lfcgenes <- all_g_df %>% filter(abs(log2FoldChange) >= gsealogfoldcutoff &
                                     padj <= gseapadjcutoff) %>% 
@@ -200,21 +211,8 @@ if(gseaneeded){
   gseagenes <- lfcgenes$log2FoldChange
   names(gseagenes) <- lfcgenes$symbols
   barplot(sort(gseagenes,decreasing=T))
-  
-  gmtneeded = F  # gmt file:
-  if (gmtneeded){
-    pregmt1 <- msigdbr(species = "Mus musculus", category = 'C2',
-                       subcategory=c('CP:REACTOME')  )
-    # [1] "CGP"             "CP:BIOCARTA"     "CP:KEGG"         "CP"           
-    # "CP:PID"         "CP:REACTOME"     "CP:WIKIPATHWAYS"
-    pregmt2 <- msigdbr(species = "Mus musculus", category = "H") #HALLMARK
-    thegmt <- bind_rows(pregmt1,pregmt2)
-    write.table(thegmt, paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
-                col.names=T)
-  }
   thegmt <- read.table(paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
                        header=T)
-
   msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
   set.seed(42)
   fgseaRes <- fgsea::fgsea(pathways = msigdbr_list, 
