@@ -20,11 +20,7 @@ setwd("~/BulkAnalysis_plusNetwork/")
 
 genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
 
-# minimal example by hand tau specificity from Yanai:
-vec <- c(0, 8, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0)
-num <- sum(1-(vec/max(vec)))
-den <- length(vec)-1
-num/den
+
 ###  CALCULATE
 # we want, for type&day,´ to obtain sample specific genes, 
 # and done separately by age (old separated from young)
