@@ -4,8 +4,9 @@ library(dplyr)
 library(igraph)
 library(visNetwork)
 
-locgr <- "~/BulkAnalysis_plusNetwork/graphmodeling/"
-g <- read_graph(paste0(locgr,"myminigraph.ml"), format="graphml")
+mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/"
+grdir <- "graphobjs/"
+g <- read_graph(paste0(mywdir,grdir,"myminigraph.ml"), format="graphml")
 vertex_attr(g)$numid <- vertex_attr(g)$id
 edge_attr(g)$color <- edge_attr(g)$ecolor
 

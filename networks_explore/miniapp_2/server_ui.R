@@ -3,7 +3,9 @@ library(ggplot2)
 library(dplyr)
 library(igraph)
 library(visNetwork)
-
+################
+## do not run, ancient paths, deprecated
+##############
 locgr <- "~/BulkAnalysis_plusNetwork/graphmodeling/"
 g <- read_graph(paste0(locgr,"myminigraph.ml"), format="graphml")
 vertex_attr(g)$numid <- vertex_attr(g)$id
