@@ -4,9 +4,12 @@ library(dplyr)
 library(igraph)
 library(visNetwork)
 library(tidyverse)
-
+mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/"
+grdir <- "graphobjs/"
+source(paste0(mywdir,"miniapp_3/ui.R"))
 
 myigobs <- reactiveValues(x=list())
+currentday <- reactiveValues(x='')
 subnet.o <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 subnet.y <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 
@@ -22,43 +25,73 @@ doinduced <- function(g, interestvec, orderinp){
   selegoG <- induced_subgraph(g,unlist(selegoV))
   return(selegoG)
 }
-
-
-g <- read_graph(paste0(mywdir,grdir,"Young_D2_igraph.ml"), format="graphml")
-#g <- read_graph(paste0(mywdir,grdir,"myminigraph.ml"), format="graphml")
-vertex_attr(g)$numid <- vertex_attr(g)$id
-edge_attr(g)$color <- edge_attr(g)$ecolor
-
-data <- toVisNetworkData(g)
-data$nodes$label = data$nodes$genesym
-data$nodes$value = log2(data$nodes$averagexp)*10
-data$nodes$groupname = data$nodes$celltype
-data$edges$width = data$edges$weight*10
-#nodes = as.data.frame(vertex_attr(g))
-#edges = as.data.frame(edge_attr(g))
-MAXWEIGHT.EDGE = max(data$edges$width)
+# 
+# g <- read_graph(paste0(mywdir,grdir,"Young_D2_igraph.ml"), format="graphml")
+# #g <- read_graph(paste0(mywdir,grdir,"myminigraph.ml"), format="graphml")
+# vertex_attr(g)$numid <- vertex_attr(g)$id
+# edge_attr(g)$color <- edge_attr(g)$ecolor
+# 
+# data <- toVisNetworkData(g)
+# data$nodes$label = data$nodes$genesym
+# data$nodes$value = log2(data$nodes$averagexp)*10
+# data$nodes$groupname = data$nodes$celltype
+# data$edges$width = data$edges$weight*10
+# #nodes = as.data.frame(vertex_attr(g))
+# #edges = as.data.frame(edge_attr(g))
+# MAXWEIGHT.EDGE = max(data$edges$width)
 
 server <- function(input, output){
+  #print(length(isolate(myigobs$x)))
+  if (length(isolate(myigobs$x)) == 0 ){
+    output$init_young <- renderText({
+      paste("Press a DAY, then button Load ")
+    })
+  }
+  observeEvent(
+    input$DAY,{
+      print(isolate(currentday$x))
+      if((!isolate(currentday$x) == "") & (!isolate(currentday$x)==input$DAY)){
+        output$testigraph <- renderPlot({NULL})
+        output$testigraph_b <- renderPlot({NULL})
+        output$init_young <- renderText({"....please load..."})
+        output$init_old <- renderText({".."})
+      }
+    }
+  )
   
-   output$init_young <- renderText({
-     paste("Press a DAY, then button Load ")
-   })
+   # =================== button Load 
    observeEvent(
      input$LOADONLY,{
+       currentday$x <- isolate(input$DAY)
        for (age in c("Young","Old")){
          tmpReacGraph = reactive({
-           inFile = input$DAY
+           inFile = currentday$x
            if (!is.null(inFile))
-             read.graph(file=paste0(mywdir,grdir, age,"_",input$DAY,"_igraph.ml"), format="graphml")
+             read.graph(file=paste0(mywdir,grdir, age,"_",currentday$x,
+                                    "_igraph.ml"), format="graphml")
          })
          myigobs$x[[age]] <- isolate(tmpReacGraph())
-         print("okloaded")
-       }
+         print(paste("okloaded", age, currentday))
+       } # end for age in c("Young","Old")
+       
+       output$init_young <- renderText({
+         paste("Young, ", currentday$x, "loaded internally, press Show")})
+       output$init_old <- renderText({
+         paste("Old, ", currentday$x, "loaded internally, press Show")})
+       #return(currentday)
+       output$testigraph <- renderPlot({NULL})
+       output$testigraph_b <- renderPlot({NULL})
      }
-   ) # end observeEvent Load only
+   ) # end observeEvent LOADONLY
+     
+  # ===================== button Show 
   observeEvent(
-    # ===================== button Show 
     input$SHOWMAIN,{
+      print(currentday)
+      print(paste(isolate(currentday$x),"hihihih"))
+      print(isolate(input$DAY))
+      print("haha")
+      
       output$testigraph <- renderPlot({
         coords = layout_with_kk(myigobs$x[["Young"]])
         plot.igraph(myigobs$x[["Young"]],vertex.size=5, mark.border=NA,
@@ -77,17 +110,17 @@ server <- function(input, output){
       })
       # ------------------- put titles
       output$init_young <- renderText({
-        paste("Young, ", input$DAY)
+        paste("Young, ", currentday$x)
       })
       output$init_old <- renderText({
-        paste("Old, ", input$DAY)
+        paste("Old, ", currentday$x)
       })
       # ------------------- send genes list ... pending
       print("ok show all (very slow)")
-    } # end input$SHOWMAIN
-  )
+    }) # end observeEvent SHOWMAIN
   
-   observeEvent(
+  # =================== button Animated
+  observeEvent(
      input$GO,{
        if (input$Young_nodes == "" & input$Old_nodes==""){
          output$labtextyoung <- renderText({
@@ -128,7 +161,7 @@ server <- function(input, output){
            subnet.y$edges <- massageDATA(here.subgr[["Young"]])$edges
            print("ok subnet young")
            
-           output$labtextyoung <- renderText({"YOUNG"})
+           output$labtextyoung <- renderText({"YOUNG day ...."})
            output$young <- renderVisNetwork({
              req(subnet.y$edges)
              print(unique(subnet.y$nodes$groupname))
@@ -148,7 +181,7 @@ server <- function(input, output){
            subnet.o$edges <- massageDATA(here.subgr[["Old"]])$edges
            print("ok subnet old")
            
-           output$labtextold <- renderText({"OLD"})
+           output$labtextold <- renderText({"OLD, day ...."})
            output$old <- renderVisNetwork({
              req(subnet.o$edges)
              print(unique(subnet.o$nodes$groupname))
@@ -160,17 +193,12 @@ server <- function(input, output){
              netout
            })# ebd renderVisNetwork old
          } # end ifelse old
-        
-         
-         
        } # end else if input$..._nodes is filled
-       
-      
-   }#end input$GO
-   ) # end observeEvent
-  }
+      }#end input$GO
+   ) # end observeEvent GO  (button Animated)
+  } # end server function
 
-shinyApp(ui,server)
+#shinyApp(ui,server)
 
 
 # #  select induced graph
