@@ -1,0 +1,11 @@
+ visClusteringByGroup(groups=unique(net$nodes$group),
+                             shape="ellipse", force=F) %>%
+                             
+see this:
+https://stackoverflow.com/questions/56654452/visnetwork-plot-is-not-saved-as-png-image
+
+https://stackoverflow.com/questions/42934454/exporting-visnetwork-to-png-with-downloadhandler-in-shiny-r-yields-blank-file
+
+https://github.com/datastorm-open/visNetwork/issues/138
+
+https://github.com/datastorm-open/visNetwork/issues/59
