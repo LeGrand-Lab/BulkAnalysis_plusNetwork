@@ -10,6 +10,8 @@ Three jupyter notebooks are available in folder `networks_explore`:
 * LR_nx_to_igraph.ipynb : transforms Networkx objects into igraph objects, then into separate graphml files
 * Young_D7_test_initial.ipynb : checks properties and how to get connected components (using Young D7 for demo purposes)
 
+Folder `networks_explore/miniapp_3` contains Shiny application code, in active development.
+
 We will add a Creative Commons licence after submission of our manuscript (very soon).
 
 for more information write to:
@@ -19,3 +21,4 @@ william.jarassier@univ-lyon1.fr
 ---
 JohaGL
 M2 intern Bio-informatics
+3
