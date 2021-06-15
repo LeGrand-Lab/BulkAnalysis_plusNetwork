@@ -4,14 +4,16 @@ library(dplyr)
 library(igraph)
 library(visNetwork)
 library(tidyverse)
+library(DT)
 mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/"
 grdir <- "graphobjs/"
 source(paste0(mywdir,"miniapp_3/ui.R"))
 
 myigobs <- reactiveValues(x=list())
 currentday <- reactiveValues(x='')
-subnet.o <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 subnet.y <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
+subnet.o <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
+
 
 mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/"
 grdir <- "graphobjs/"
@@ -25,6 +27,8 @@ doinduced <- function(g, interestvec, orderinp){
   selegoG <- induced_subgraph(g,unlist(selegoV))
   return(selegoG)
 }
+####  important NOTE: test with Crlf1_sCs  Edil3_sCs
+
 # 
 # g <- read_graph(paste0(mywdir,grdir,"Young_D2_igraph.ml"), format="graphml")
 # #g <- read_graph(paste0(mywdir,grdir,"myminigraph.ml"), format="graphml")
@@ -43,7 +47,7 @@ doinduced <- function(g, interestvec, orderinp){
 server <- function(input, output){
   #print(length(isolate(myigobs$x)))
   if (length(isolate(myigobs$x)) == 0 ){
-    output$init_young <- renderText({
+    output$labmain_Young <- renderText({
       paste("Press a DAY, then button Load ")
     })
   }
@@ -53,12 +57,11 @@ server <- function(input, output){
       if((!isolate(currentday$x) == "") & (!isolate(currentday$x)==input$DAY)){
         output$testigraph <- renderPlot({NULL})
         output$testigraph_b <- renderPlot({NULL})
-        output$init_young <- renderText({"....please load..."})
-        output$init_old <- renderText({".."})
+        output$labmain_Young <- renderText({"....please load..."})
+        output$labmain_Old <- renderText({".."})
       }
     }
   )
-  
    # =================== button Load 
    observeEvent(
      input$LOADONLY,{
@@ -74,24 +77,31 @@ server <- function(input, output){
          print(paste("okloaded", age, currentday))
        } # end for age in c("Young","Old")
        
-       output$init_young <- renderText({
-         paste("Young, ", currentday$x, "loaded internally, press Show")})
-       output$init_old <- renderText({
-         paste("Old, ", currentday$x, "loaded internally, press Show")})
+       output$labmain_Young <- renderText({
+         paste("Young, ", currentday$x, "loaded internally, press Show or Generate Animated")})
+       output$labmain_Old <- renderText({
+         paste("Old, ", currentday$x, "loaded internally, press Show or Generate Animated")})
        #return(currentday)
        output$testigraph <- renderPlot({NULL})
        output$testigraph_b <- renderPlot({NULL})
+       ###  yield tables
+       output$tableyoung <- renderDT(
+         igraph::as_data_frame(myigobs$x[["Young"]],"vertices"),
+         filter = "top",
+         options = list(pageLength=5))
+         # renderTable({ igraph::as_data_frame(myigobs$x[["Young"]],"vertices")})
      }
    ) # end observeEvent LOADONLY
      
   # ===================== button Show 
   observeEvent(
     input$SHOWMAIN,{
+      if (currentday == isolate(currentday$x)){
+        print("ok to show")
+      }else{ output$labmain_Young <- renderText({"YOU HAVEN'T LOADED ANYTHING !!!! "})}
       print(currentday)
       print(paste(isolate(currentday$x),"hihihih"))
       print(isolate(input$DAY))
-      print("haha")
-      
       output$testigraph <- renderPlot({
         coords = layout_with_kk(myigobs$x[["Young"]])
         plot.igraph(myigobs$x[["Young"]],vertex.size=5, mark.border=NA,
@@ -109,10 +119,10 @@ server <- function(input, output){
                     layout=coords)
       })
       # ------------------- put titles
-      output$init_young <- renderText({
+      output$labmain_Young <- renderText({
         paste("Young, ", currentday$x)
       })
-      output$init_old <- renderText({
+      output$labmain_Old <- renderText({
         paste("Old, ", currentday$x)
       })
       # ------------------- send genes list ... pending
@@ -191,7 +201,7 @@ server <- function(input, output){
                visEdges(shadow=T, arrows="to", physics=FALSE) %>%
                visInteraction(navigationButtons = TRUE) 
              netout
-           })# ebd renderVisNetwork old
+           })# end renderVisNetwork old
          } # end ifelse old
        } # end else if input$..._nodes is filled
       }#end input$GO
@@ -219,51 +229,3 @@ server <- function(input, output){
 # #output$labtextyoung <- renderText({input$Young_nodes})
 # #output$labtextold <- renderText({input$Old_nodes})
 
-
-# 
-#   # # for the moment only loading "old" data
-#   # net$nodes <- data$nodes
-#   # net$edges <- data$edges
-#   # 
-#   # # FAKKE !!! young data:
-#   # net_y$nodes <- data$nodes %>% filter(averagexp < 30)
-#   # net_y$edges <- data$edges %>% filter(from %in% net_y$nodes$id)
-#   # print(net_y$edges)
-#   # 
-#   # print("!!!!!")
-#   # print(input$range)
-#   # 
-#   # output$labtextyoung <- renderText({"YOUNG"})
-#   # output$young <- renderVisNetwork({ 
-#   #   req(net$edges)
-#   #   rangee <-  input$range
-#   #   print(rangee)
-#   #   print(unique(net$nodes$groupname))
-#   #   netout <- visNetwork(net$nodes,net$edges,
-#   #                        physics = FALSE) %>%
-#   #     visEdges(shadow=T, arrows="to", physics=FALSE) %>%
-#   #     visInteraction(navigationButtons = TRUE) %>%
-#   #     visGroups(groupname="M2")
-#   #   netout
-#   #   
-#   # })# ebd renderVisNetwork 
-#   # 
-#   # output$labtextold <- renderText({"OLD"})
-#   # output$old <- renderVisNetwork({ 
-#   #   req(net_y$edges)
-#   #   rangee <-  input$range
-#   #   print(rangee)
-#   #   netout <- visNetwork(net_y$nodes,net_y$edges,
-#   #                        physics = FALSE) %>%
-#   #     visEdges(shadow=T, arrows="to", physics=FALSE) %>%
-#   #     visInteraction(navigationButtons = TRUE) %>%
-#   #     visGroups(groupname="M1")
-#   #   netout
-#   #   
-#   # })# ebd renderVisNetwork old
-#   
-#   #output$networkstat <- renderText({
-#    # sprintf("\nNodes:%d  Edges:%d Groups:%d",
-#     #        nrow(net$nodes),nrow(net$edges),nrow(net$groups))
-#   #})
-#   
