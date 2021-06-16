@@ -39,6 +39,7 @@ metadata <- metadata %>% mutate(typetimeage = paste0(type,".",time,".",age))
 ##  set which rows to keep :
 keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
+# create DESEq2 object to get vst and then zscore 
 dso <- DESeqDataSetFromMatrix(fmat, metadata,
                               design= ~ age + time + age:time)
 
@@ -65,11 +66,17 @@ ctres = gprofiler2::gost(names(rankedgenes), organism='mmusculus',
                  sources = c('GO:BP', 'GO:MF', 'GO:CC' , 'KEGG', 
                             'REAC', 'TF', 'MIRNA', 'CORUM', 'HP', 'HPA', 'WP') )
 View(ctres$result)
-gp_mod = ctres$result %>% select(query, source, term_id,
+saveRDS(ctres, paste0(resdir,"M1_go_rawobject.rds")) #saved result
+## saved result ! last query M1 on gprofiler2  : 16-06-2021 
+
+# prepare for tables and plots:
+# -----------------------------------------------------------------
+gp_mod = ctres$result %>% filter(precision > 0.01 & recall > 0.01) %>%
+      select(query, source, term_id,
                                  term_name, p_value,query_size, 
                                  intersection_size,term_size,
                                  effective_domain_size,
-                                 evidence_codes, intersection)
+                                 evidence_codes, intersection) 
 names(gp_mod) = c("Cluster", "Category", "ID", "Description", "FDR",
                   "query_size", "Count", "term_size", "effective_domain_size",
                   "evidence_codes", "genesEnriched" )
@@ -80,7 +87,8 @@ gp_mod = as_tibble(gp_mod) %>%
   mutate(GeneRatio = Count/query_size,
          BgRatio = term_size/effective_domain_size,
     enriched_terms = str_trunc(Description, 50, "right"),
-    celltype=ct)
+    celltype=ct) %>% filter(FDR <= 0.05)
+
 # pdf(paste0(resdir,"categALL_",ct,".pdf")) 
 # ggplot(gp_mod, 
 #        aes(celltype,enriched_terms, size = GeneRatio, color=FDR)) +
@@ -97,9 +105,24 @@ gp_mod = as_tibble(gp_mod) %>%
 # dev.off()
 
 ## make clearer optimal viz, exclude KEGG (kegg is too much redundance)
-refilter = gp_mod %>%  filter(!Category == "KEGG")
-gg_go <- ggplot(refilter, 
-       aes( enriched_terms, Count, fill=FDR)) +
+gp_mod = gp_mod %>%  filter(!Category == "KEGG")
+# 20 relevant pathways by category , to save into table : 
+gp_mod= gp_mod %>% group_by(Category)  %>%
+  slice_min(order_by = FDR, n = 20) %>% 
+  select(Category, ID, Description, FDR, genesEnriched, enriched_terms, 
+         query_size, Count, BgRatio, GeneRatio,  celltype ) 
+vec_genesymbols <- sapply(gp_mod$genesEnriched, function(x) {
+  eids <- unname(unlist(str_split(x, ",")))
+  symbs <- genes_df[match(eids, genes_df$Geneid),]$symbol
+  return(unname(paste0(symbs, collapse=',')))
+})
+gp_mod$geneSymbols = vec_genesymbols
+write.table(gp_mod %>% select(-enriched_terms), 
+            paste0(resdir, "go_gsea_csv/",ct, "_go_filtered.csv"))
+# plotting
+GG <-  gp_mod %>% group_by(Category) %>%
+  slice_min(order_by = FDR, n = topgopath )
+gg_go <- ggplot(GG,   aes(enriched_terms, Count, fill=FDR)) +
   geom_bar(stat="identity", width=0.8) +
   scale_fill_continuous(type = "viridis", direction=-1, alpha=.8) +
   facet_grid(Category~.,scale="free", space="free") +
@@ -111,15 +134,8 @@ gg_go <- ggplot(refilter,
       '\nabslfc >=', gologfoldcutoff, 
       '  p<=',gopadjcutoff, '  n=',length(querygenes)) )
 
-# ################### do for all genes in TOP !! pathways:
-GG = gp_mod %>% 
-  filter(!Category=="KEGG" ) %>% 
-  slice_min(order_by = FDR, n = topgopath) %>% 
-  select(Description, FDR, genesEnriched, enriched_terms) 
-
-toppathgenes = unique(unlist(str_split(GG$genesEnriched, ","))) #for 
-
-###
+# do for all genes in TOP !! pathways:
+toppathgenes = unique(unlist(str_split(GG$genesEnriched, ","))) 
 #pick genes to plot: genes having padj eq or inf to those found enriched:
 vizpadj = max(g_df[g_df$id %in% toppathgenes, ]$padj) # max padj enrich genes
 viznbtop = dim(g_df %>% filter(padj<=vizpadj))[1] + 2 
@@ -183,7 +199,8 @@ plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO") , nrow=2,
 rel_heights = c(1,11) )
 gg_genenon
 dev.off()
-# ============================================================================
+
+
 
 # =========================== GSEA    ========================================
 # https://davetang.org/muse/2018/01/10/using-fast-preranked-gene-set-enrichment-analysis-fgsea-package/
@@ -229,49 +246,67 @@ if(gseaneeded){
   topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=10), pathway]
   topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=10), pathway]
   topPathways <- c(topPathwaysUp, rev(topPathwaysDown))
-  
   uno <- plotGseaTable(msigdbr_list[topPathways], gseagenes, fgseaRes, 
                        gseaParam = 0.5 , render=F)
-  
   dos <- plotEnrichment(msigdbr_list[[topPathwaysUp[1]]],    gseagenes) + 
     labs(title= ct, subtitle=topPathwaysUp[1],
          caption=paste(ct,"Old vs Young, abslfc >=",gsealogfoldcutoff,
                        "p<=",gseapadjcutoff, "n=", length(gseagenes) ))
-  
   tres <- plotEnrichment(msigdbr_list[[topPathwaysDown[1]]], gseagenes) + 
     labs(title= ct, subtitle=topPathwaysDown[1],
          caption=paste(ct,"Old vs Young, abslfc >=",gsealogfoldcutoff,
                        "p<=",gseapadjcutoff, "n=", length(gseagenes) ))
-  
   pdf(paste0(resdir,ct,"_GSEA.pdf"), width=10, height=9)
   grid.arrange(uno, plot_grid(dos,tres, ncol=2), padding= 20 )
   dev.off()
   
-  ## test collapsed version:
-  collapsedPathways <- collapsePathways(fgseaRes[order(pval)][padj < 0.01], 
-                                        msigdbr_list, gseagenes)
-  mainPathways <- fgseaRes[pathway %in% collapsedPathways$mainPathways][
-    order(-NES), pathway]
-  plotGseaTable(msigdbr_list[mainPathways], gseagenes, fgseaRes, 
-                gseaParam = 0.5)
+  # save table containing top listed pathways and matching genes :
+  # ----------------------------------------------------------------------
+  # fgseaRes <- readRDS(paste0(resdir,ct,'_GSEAdatafull.rds'))
+  fgsea_top <- fgseaRes[padj <= 0.3]
+  fgsea_top <- fgsea_top %>% mutate(listOfgenes = 
+                        str_replace_all(leadingEdge, c('c\\("' = '', 
+                                              '"' = '',
+                                              '\\)' = ''))) %>% 
+    relocate(listOfgenes, .after = size) %>%
+    mutate(regulation = case_when(ES > 0 ~ "Up", TRUE ~ "Down")) %>%
+    relocate(regulation, .after = ES) %>% select(-c(nMoreExtreme,leadingEdge,size))
   
-  # saving tables : 
-  mainPathTab <- fgseaRes[pathway %in% collapsedPathways$mainPathways][order(-NES),]
+  nbofgenes = sapply(fgsea_top$listOfgenes, 
+                     function (x){ 
+                       elems = unname(str_split(x, ', ')[[1]])
+                       length(unname(elems))  })
+  fgsea_top$ngenes = nbofgenes
   
-  tosave =  tibble("num"=names(unlist(mainPathTab[,1])))
-  for (i in names(mainPathTab)){
-    print(i)
-    tmp = unlist(mainPathTab[[i]])
-    if (i == 'leadingEdge'){
-      tmp = paste0(unlist(mainPathTab[[i]]), collapse = ",")
+  write.table(fgsea_top, paste0(resdir, "go_gsea_csv/", ct, '_GSEA_topPaths.csv'),
+              sep="\t", col.names = T, row.names = F)
+  
+  # ----------------------------------------------------------------------
+  # end saving table
+  collapseve = F # this 'collapse' was very useful, check ..collapsed.csv
+  if (collapseve = T){
+    collapsedPathways <- collapsePathways(fgseaRes[order(pval)][padj < 0.01], 
+                                          msigdbr_list, gseagenes)
+    mainPathways <- fgseaRes[pathway %in% collapsedPathways$mainPathways][
+      order(-NES), pathway]
+    plotGseaTable(msigdbr_list[mainPathways], gseagenes, fgseaRes, 
+                  gseaParam = 0.5)
+    # saving table : 
+    mainPathTab <- fgseaRes[pathway %in% collapsedPathways$mainPathways][order(-NES),]
+    tosave =  tibble("num"=names(unlist(mainPathTab[,1])))
+    for (i in names(mainPathTab)){
+      print(i)
+      tmp = unlist(mainPathTab[[i]])
+      if (i == 'leadingEdge'){
+        tmp = paste0(unlist(mainPathTab[[i]]), collapse = ",")
+      }
+      tosave <- cbind(tosave, unname(tmp))
     }
-    tosave <- cbind(tosave, unname(tmp))
-  }
-  tosave$num <- NULL
-  colnames(tosave) <- names(mainPathTab)
-  write.table(tosave,paste0(resdir,ct,"_GSEAtabular.csv"), sep='\t',
+    tosave$num <- NULL
+    colnames(tosave) <- names(mainPathTab)
+    write.table(tosave,paste0(resdir,"notrust/",ct,"_GSEAcollapsed.csv"), sep='\t',
               col.names = T, row.names = T )
-  
+  } #end if collapseve
 }
 
 # ============================================================================
