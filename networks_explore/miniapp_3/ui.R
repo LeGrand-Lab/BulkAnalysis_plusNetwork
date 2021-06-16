@@ -3,9 +3,10 @@ library(ggplot2)
 library(dplyr)
 library(igraph)
 library(visNetwork)
+library(DT)
 
 ui <- shinyUI(fluidPage(
-  titlePanel("very small test, by joha 2021"),
+  titlePanel("Skeletal Muscle: Ligand Receptor Networks"),
   sidebarLayout(position = "left",
                 sidebarPanel( h4("Parameters"), width = 3,
                               selectInput("DAY","DAY ( = timepoint):", list('D0','D2','D4','D7'),
@@ -17,10 +18,10 @@ ui <- shinyUI(fluidPage(
                               numericInput("NEIGH","neighbors desired", value=1,
                                            min = 1,
                                            max = 20),
-                              sliderInput("range", "Range edges specificities (weight):",
+                              sliderInput("rangeEdges", "Range edges specificities (weight):",
                                           min = 0.01, max = 1,
                                           value = c(0.1,1)),
-                              sliderInput("range", "Range vertices (nodes) specificities:",
+                              sliderInput("rangeNodes", "Range vertices (nodes) specificities:",
                                           min = 0.01, max = 1,
                                           value = c(0.1,1)),
                               #sliderInput("JOKER","a pourvoir:",0,10,2,step=0.1),
@@ -32,9 +33,9 @@ ui <- shinyUI(fluidPage(
                           tabsetPanel(
                             tabPanel("Main",
                                      #visNetworkOutput("Main", ="350px"),
-                                     verbatimTextOutput("init_young"),
+                                     verbatimTextOutput("labmain_Young"),
                                      plotOutput("testigraph"),
-                                     verbatimTextOutput("init_old"),
+                                     verbatimTextOutput("labmain_Old"),
                                      plotOutput("testigraph_b"),
                                      style = "background-color: #ffffff;"),
                             tabPanel("animated", 
@@ -47,9 +48,10 @@ ui <- shinyUI(fluidPage(
                                      style= "background-color: #ffffff;" ),
                             tabPanel("tabdata", 
                                      verbatimTextOutput("labtabyoung"),
-                                     verbatimTextOutput("tableyoung"),
+                                     #tableOutput("tableyoung"),
+                                     DTOutput("tableyoung"),
                                      verbatimTextOutput("labtabtold"),
-                                     verbatimTextOutput("tableold"),
+                                     #tableOutput("tableold"),
                                      style= "background-color: #ffffff;" )
                        
                           
