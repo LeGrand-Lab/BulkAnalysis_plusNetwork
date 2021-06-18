@@ -48,10 +48,7 @@ keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 
 all_g_df <- read.table(paste0(resdir, ct, "_INTERagetime.csv"),sep='\t', header = T)
-symbovect_g_df = genes_df[match(all_g_df$id, genes_df$Geneid),]$symbol
-write.table(all_g_df %>% mutate(genesymbol=symbovect_g_df),
-            paste0(resdir,ct, "_INTERagetime_sy.csv"), sep='\t', 
-            col.names = T, row.names = F) 
+
 # =============== prepare data   =================
 g_df <- all_g_df %>% filter(abs(log2FoldChange) >= gologfoldcutoff & 
                               padj <= gopadjcutoff ) 

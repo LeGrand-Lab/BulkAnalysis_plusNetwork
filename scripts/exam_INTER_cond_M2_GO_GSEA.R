@@ -21,17 +21,18 @@ setwd("~/BulkAnalysis_plusNetwork/")
 # NOTE: color blindness for scales picked from:
 #https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40
 
-ct = "M2"
+ct = "M2"  # ATTENTION: has "repadj" column
 gostneeded = F
-go_path_doplots = T
+go_path_doplots = F
 gologfoldcutoff = 1
-gopadjcutoff =  0.1
+gopadjcutoff =  0.2
 topgopath = 20
 
 gseaneeded = F   # set TRUE if needed to run again
 gseaplotneeded = F
-gsealogfoldcutoff = 0.8
+gsealogfoldcutoff = 0.7
 gseapadjcutoff = 1
+
 
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
@@ -46,15 +47,18 @@ keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 
 all_g_df <- read.table(paste0(resdir, ct, "_INTERagetime.csv"),sep='\t', header = T)
-
+symbovect_g_df = genes_df[match(all_g_df$id, genes_df$Geneid),]$symbol
+write.table(all_g_df %>% mutate(genesymbol=symbovect_g_df),
+            paste0(resdir,ct, "_INTERagetime_sy.csv"), sep='\t', 
+            col.names = T, row.names = F) 
 # =============== prepare data   =================
 g_df <- all_g_df %>% filter(abs(log2FoldChange) >= gologfoldcutoff & 
-                              padj <= gopadjcutoff ) 
+                              repadj <= gopadjcutoff ) 
 initmeta = metadata %>% filter(type==ct) %>% select(-c(group,sample))
 
 # ==================================================================
 
-querygenes <- g_df$padj
+querygenes <- g_df$repadj
 names(querygenes) <- g_df$id
 rankedgenes <- sort(querygenes)
 
@@ -71,7 +75,7 @@ if (gostneeded){
   
   # prepare for table
   # -----------------------------------------------------------------
-  gp_mod = ctres$result %>% filter(precision > 0.1 & recall > 0.1) %>%
+  gp_mod = ctres$result %>% filter(precision > 0.02 & recall > 0.02) %>%
     select(query, source, term_id,
            term_name, p_value,query_size, 
            intersection_size,term_size,
@@ -106,7 +110,7 @@ if (gostneeded){
   # -------------------------------------------------------------------
   # end saved table
 } # end if gostneeded
-# NOTE:  last query on gprofiler2  : 17-06-2021 
+# NOTE:  last query on gprofiler2  : 18-06-2021 
 
 # ======================== do plots go_paths ==================================
 if (go_path_doplots){
@@ -132,17 +136,17 @@ if (go_path_doplots){
                          '  p<=',gopadjcutoff, '  n=',length(querygenes)) ) 
   # get genes gathered from all pathways
   toppathgenes = unique(unlist(str_split(GG$genesEnriched, ","))) 
-  #pick genes to plot: genes having padj eq or inf to those found enriched:
-  vizpadj = max(g_df[g_df$id %in% toppathgenes, ]$padj) # max padj enrich genes
-  viznbtop = dim(g_df %>% filter(padj<=vizpadj))[1] + 2 
-  VIZ <- g_df %>% slice_min(order_by = padj, n = viznbtop)
+  #pick genes to plot: genes having repadj eq or inf to those found enriched:
+  vizpadj = max(g_df[g_df$id %in% toppathgenes, ]$repadj) 
+  viznbtop = dim(g_df %>% filter(repadj<=vizpadj))[1] + 2 
+  VIZ <- g_df %>% slice_min(order_by = repadj, n = viznbtop)
   VIZ$symbol <- genes_df[match(VIZ$id,genes_df$Geneid),]$symbol
   VIZ$wasenriched <- ifelse(VIZ$id %in% toppathgenes, 1, 0)
   
   # build labeller
   mylabeller <- paste0(VIZ$symbol," ", " (",
                        round(VIZ$log2FoldChange,2),"|",
-                       round(VIZ$padj,2),")" )
+                       round(VIZ$repadj,2),")" )
   names(mylabeller) <- VIZ$symbol
   
   dso <- DESeqDataSetFromMatrix(fmat, metadata,
@@ -195,10 +199,9 @@ if (go_path_doplots){
          caption=paste('total query (n genes):',dim(g_df)[1] ,
                        '\nGeneSymbol (logFC|padj)'))
   
-  # ==================================  plot go ==============
-  pdf(paste0(resdir,ct,"_GO.pdf"), width=10, height=6)
+  pdf(paste0(resdir,ct,"_GO.pdf"), width=13, height=8)
   plot_grid(ggplot() + draw_label(paste("Old vs Young,",ct)),
-            plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO", rel_widths =c(6,5) ) , 
+            plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO", rel_widths =c(4,5) ) , 
             nrow=2,
             rel_heights = c(1,11) )
   plot_grid(gg_genenon, NULL, ncol=2, rel_widths=c(6,5))
@@ -223,8 +226,8 @@ if (gmtneeded){
 } # end if gmtneeded
 if (gseaneeded){
   lfcgenes <- all_g_df %>% filter(abs(log2FoldChange) >= gsealogfoldcutoff &
-                                    padj <= gseapadjcutoff) %>% 
-    arrange(padj) %>% distinct(id, .keep_all=T) %>%
+                                    repadj <= gseapadjcutoff) %>% 
+    arrange(repadj) %>% distinct(id, .keep_all=T) %>%
     select(log2FoldChange, id) 
   lfcgenes$symbols <- genes_df[match(lfcgenes$id,genes_df$Geneid),]$symbol
   lfcgenes <- lfcgenes %>% arrange(log2FoldChange)
@@ -244,7 +247,9 @@ if (gseaneeded){
   # ----------------------------  table gsea ---------------------------------
   # containing top listed pathways and matching genes :
   # fgseaRes <- readRDS(paste0(resdir,ct,'_GSEAdatafull.rds'))
-  fgsea_top <- fgseaRes[padj <= 0.3]
+  topNup <- fgseaRes[ES>0][head(order(padj),n=30), ]
+  topNdown <- fgseaRes[ES<0][head(order(padj), n=30), ]
+  fgsea_top <- rbind(topNup,topNdown)
   fgsea_top <- fgsea_top %>% mutate(listOfgenes = 
                                       str_replace_all(leadingEdge, c('c\\("' = '', 
                                                                      '"' = '',
@@ -269,14 +274,14 @@ if (gseaplotneeded ){
   msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
   fgseaRes <- readRDS(paste0(resdir,ct,'_GSEAdatafull.rds'))
   lfcgenes <- all_g_df %>% filter(abs(log2FoldChange) >= gsealogfoldcutoff &
-                                    padj <= gseapadjcutoff) %>% 
-    arrange(padj) %>% distinct(id, .keep_all=T) %>%
+                                    repadj <= gseapadjcutoff) %>% 
+    arrange(repadj) %>% distinct(id, .keep_all=T) %>%
     select(log2FoldChange, id) 
   lfcgenes$symbols <- genes_df[match(lfcgenes$id,genes_df$Geneid),]$symbol
   lfcgenes <- lfcgenes %>% arrange(log2FoldChange)
   gseagenes <- lfcgenes$log2FoldChange
   names(gseagenes) <- lfcgenes$symbols
-  
+  # attention: padj here comes from pathways FDR
   topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=10), pathway]
   topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=10), pathway]
   topPathways <- c(topPathwaysUp, rev(topPathwaysDown))

@@ -21,9 +21,9 @@ setwd("~/BulkAnalysis_plusNetwork/")
 # NOTE: color blindness for scales picked from:
 #https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40
 
-ct = "FAPs"
+ct = "FAPs"  # ATTENTION: has "repadj" column
 gostneeded = F
-go_path_doplots = T
+go_path_doplots = F
 gologfoldcutoff = 1.5
 gopadjcutoff =  0.005
 topgopath = 12
@@ -41,14 +41,17 @@ keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 
 all_g_df <- read.table(paste0(resdir, ct, "_INTERagetime.csv"),sep='\t', header = T)
-
+symbovect_g_df = genes_df[match(all_g_df$id, genes_df$Geneid),]$symbol
+write.table(all_g_df %>% mutate(genesymbol=symbovect_g_df),
+            paste0(resdir,ct, "_INTERagetime_sy.csv"), sep='\t', 
+            col.names = T, row.names = F) 
 # =============== prepare data   =================
 g_df <- all_g_df %>% filter(abs(log2FoldChange) >= gologfoldcutoff & 
-                              padj <= gopadjcutoff ) 
+                              repadj <= gopadjcutoff ) 
 initmeta = metadata %>% filter(type==ct) %>% select(-c(group,sample))
 # ==================================================================
 
-querygenes <- g_df$padj
+querygenes <- g_df$repadj
 names(querygenes) <- g_df$id
 rankedgenes <- sort(querygenes)
 
@@ -128,17 +131,17 @@ if (go_path_doplots){
                          '  p<=',gopadjcutoff, '  n=',length(querygenes)) ) 
   # get genes gathered from all pathways
   toppathgenes = unique(unlist(str_split(GG$genesEnriched, ","))) 
-  #pick genes to plot: genes having padj eq or inf to those found enriched:
-  vizpadj = max(g_df[g_df$id %in% toppathgenes, ]$padj) # max padj enrich genes
-  viznbtop = dim(g_df %>% filter(padj<=vizpadj))[1] + 2 
-  VIZ <- g_df %>% slice_min(order_by = padj, n = viznbtop)
+  #pick genes to plot: genes having repadj eq or inf to those found enriched:
+  vizpadj = max(g_df[g_df$id %in% toppathgenes, ]$repadj) 
+  viznbtop = dim(g_df %>% filter(repadj<=vizpadj))[1] + 2 
+  VIZ <- g_df %>% slice_min(order_by = repadj, n = viznbtop)
   VIZ$symbol <- genes_df[match(VIZ$id,genes_df$Geneid),]$symbol
   VIZ$wasenriched <- ifelse(VIZ$id %in% toppathgenes, 1, 0)
   
   # build labeller
   mylabeller <- paste0(VIZ$symbol," ", "(",
                        round(VIZ$log2FoldChange,1),"|",
-                       round(VIZ$padj,2),")" )
+                       round(VIZ$repadj,2),")" )
   names(mylabeller) <- VIZ$symbol
   
   dso <- DESeqDataSetFromMatrix(fmat, metadata,

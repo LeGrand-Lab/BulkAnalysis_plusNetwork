@@ -21,19 +21,12 @@ setwd("~/BulkAnalysis_plusNetwork/")
 # NOTE: color blindness for scales picked from:
 #https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40
 
-ct = "M1"
-
+ct = "FAPs"
 gostneeded = F
-go_path_doplots = F
-gologfoldcutoff = 1.2
-gopadjcutoff = 1 
-topgopath = 10
-
-gseaneeded = F   # set TRUE if needed to run again
-gseaplotneeded = F
-gsealogfoldcutoff = 0.3
-gseapadjcutoff = 1
-
+go_path_doplots = T
+gologfoldcutoff = 1.5
+gopadjcutoff =  0.005
+topgopath = 12
 
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
@@ -48,17 +41,12 @@ keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 
 all_g_df <- read.table(paste0(resdir, ct, "_INTERagetime.csv"),sep='\t', header = T)
-symbovect_g_df = genes_df[match(all_g_df$id, genes_df$Geneid),]$symbol
-write.table(all_g_df %>% mutate(genesymbol=symbovect_g_df),
-            paste0(resdir,ct, "_INTERagetime_sy.csv"), sep='\t', 
-            col.names = T, row.names = F) 
+
 # =============== prepare data   =================
 g_df <- all_g_df %>% filter(abs(log2FoldChange) >= gologfoldcutoff & 
                               padj <= gopadjcutoff ) 
 initmeta = metadata %>% filter(type==ct) %>% select(-c(group,sample))
-
 # ==================================================================
-# for M1 there were no significant differences between old young by DESEq2!
 
 querygenes <- g_df$padj
 names(querygenes) <- g_df$id
@@ -77,7 +65,7 @@ if (gostneeded){
   
   # prepare for table
   # -----------------------------------------------------------------
-  gp_mod = ctres$result %>% filter(precision > 0.1 & recall > 0.1) %>%
+  gp_mod = ctres$result %>% filter(precision > 0.04 & recall > 0.04) %>%
     select(query, source, term_id,
            term_name, p_value,query_size, 
            intersection_size,term_size,
@@ -93,12 +81,12 @@ if (gostneeded){
     mutate(GeneRatio = Count/query_size,
            BgRatio = term_size/effective_domain_size,
            celltype=ct) %>% filter(FDR <= 0.05)
-  #  exclude KEGG (kegg is too much redundant)
-  gp_mod = gp_mod %>%  filter(!Category == "KEGG")
+  #  exclude KEGG (kegg is too much redundant) , and Helicobacter Pylori  
+  gp_mod = gp_mod %>%  filter(!Category %in% c("KEGG", "HP"))
   # 20 relevant pathways by category , to save into table : 
   gp_mod= gp_mod %>% group_by(Category)  %>%
     slice_min(order_by = FDR, n = 20) %>% 
-    select(Category, ID, Description, FDR, genesEnriched, 
+    select(Category, ID, Description, FDR, genesEnriched,  
            query_size, Count, BgRatio, GeneRatio,  celltype ) 
   vec_genesymbols <- sapply(gp_mod$genesEnriched, function(x) {
     eids <- unname(unlist(str_split(x, ",")))
@@ -112,7 +100,7 @@ if (gostneeded){
   # -------------------------------------------------------------------
   # end saved table
 } # end if gostneeded
-# NOTE:  last query on gprofiler2  : 16-06-2021 
+# NOTE:  last query on gprofiler2  : 17-06-2021 
 
 # ======================== do plots go_paths ==================================
 if (go_path_doplots){
@@ -130,7 +118,9 @@ if (go_path_doplots){
     facet_grid(Category~.,scale="free", space="free") +
     coord_flip() +
     theme(axis.text.y = element_text(size=7)) +
-    theme_bw() +
+    theme_bw() + theme( legend.title = element_text(size=7), 
+                        legend.text  = element_text(size=7),
+                        legend.key.size = unit(1, "lines")) +
     scale_y_continuous(breaks=breaks_pretty()) +
     labs(subtitle = paste("GO/Pathways enrichment"),
          caption = paste(ct, "Old vs Young, pathway enrichment significance (FDR)",
@@ -146,8 +136,8 @@ if (go_path_doplots){
   VIZ$wasenriched <- ifelse(VIZ$id %in% toppathgenes, 1, 0)
   
   # build labeller
-  mylabeller <- paste0(VIZ$symbol," ", " (",
-                       round(VIZ$log2FoldChange,2),"|",
+  mylabeller <- paste0(VIZ$symbol," ", "(",
+                       round(VIZ$log2FoldChange,1),"|",
                        round(VIZ$padj,2),")" )
   names(mylabeller) <- VIZ$symbol
   
@@ -180,8 +170,10 @@ if (go_path_doplots){
                 alpha=.1) + 
     scale_color_colorblind() + 
     scale_x_continuous(breaks=seq(min(mtmelt$day), max(mtmelt$day), 2)) +
-    facet_wrap(~symbol, labeller = labeller(symbol=mylabeller)) + 
-    theme_light() + theme(legend.position = "bottom") +
+    facet_wrap(~symbol, labeller = labeller(symbol=mylabeller),
+               ncol = 5) + 
+    theme_light() + theme(legend.position = c(1, 0),
+                          legend.justification = c(1,0)) +
     labs(subtitle=paste(ct,"Old vs Young, GO/pathways retrieved"),
          caption=paste('total query (n genes):',dim(g_df)[1] ,
                        '\nGeneSymbol (logFC|padj)'))
@@ -195,125 +187,20 @@ if (go_path_doplots){
                 alpha=.1) + 
     scale_color_colorblind() +
     scale_x_continuous(breaks=seq(min(mtmelt$day), max(mtmelt$day), 2)) +
-    facet_wrap(~symbol, labeller = labeller(symbol=mylabeller)) + 
+    facet_wrap(~symbol, labeller = labeller(symbol=mylabeller),
+               nrow=4) + 
     theme_light() + theme(legend.position = "bottom") +
     labs(subtitle=paste(ct,"Old vs Young other top genes"),
          caption=paste('total query (n genes):',dim(g_df)[1] ,
                        '\nGeneSymbol (logFC|padj)'))
   
   # ==================================  plot go ==============
-  pdf(paste0(resdir,ct,"_GO.pdf"), width=10, height=6)
-  plot_grid(ggplot() + draw_label(paste("Old vs Young,",ct)),
-            plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO", rel_widths =c(6,5) ) , 
-            nrow=2,
-            rel_heights = c(1,11) )
-  plot_grid(gg_genenon, NULL, ncol=2, rel_widths=c(6,5))
-  dev.off()
 } # end if go_path_doplots
-
-# =========================== GSEA    ========================================
-# https://davetang.org/muse/2018/01/10/using-fast-preranked-gene-set-enrichment-analysis-fgsea-package/
-# https://bioconductor.org/packages/release/bioc/vignettes/fgsea/inst/doc/fgsea-tutorial.html
-# https://rdrr.io/bioc/fgsea/f/vignettes/fgsea-tutorial.Rmd
-# ============================================================================
-gmtneeded = F  # gmt file:
-if (gmtneeded){
-  pregmt1 <- msigdbr(species = "Mus musculus", category = 'C2',
-                     subcategory=c('CP:REACTOME')  )
-  # [1] "CGP"             "CP:BIOCARTA"     "CP:KEGG"         "CP"           
-  # "CP:PID"         "CP:REACTOME"     "CP:WIKIPATHWAYS"
-  pregmt2 <- msigdbr(species = "Mus musculus", category = "H") #HALLMARK
-  thegmt <- bind_rows(pregmt1,pregmt2)
-  write.table(thegmt, paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
-              col.names=T)
-} # end if gmtneeded
-if (gseaneeded){
-  lfcgenes <- all_g_df %>% filter(abs(log2FoldChange) >= gsealogfoldcutoff &
-                                    padj <= gseapadjcutoff) %>% 
-    arrange(padj) %>% distinct(id, .keep_all=T) %>%
-    select(log2FoldChange, id) 
-  lfcgenes$symbols <- genes_df[match(lfcgenes$id,genes_df$Geneid),]$symbol
-  lfcgenes <- lfcgenes %>% arrange(log2FoldChange)
-  gseagenes <- lfcgenes$log2FoldChange
-  names(gseagenes) <- lfcgenes$symbols
-  barplot(sort(gseagenes,decreasing=T))
-  thegmt <- read.table(paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
-                       header=T)
-  msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
-  set.seed(42)
-  fgseaRes <- fgsea::fgsea(pathways = msigdbr_list, 
-                           stats = gseagenes,
-                           minSize=3,
-                           maxSize=Inf, nperm = 100000) 
-  head(fgseaRes[order(pval), ])
-  saveRDS(fgseaRes, file=paste0(resdir,ct,'_GSEAdatafull.rds'))
-  # ----------------------------  table gsea ---------------------------------
-  # containing top listed pathways and matching genes :
-  # fgseaRes <- readRDS(paste0(resdir,ct,'_GSEAdatafull.rds'))
-  fgsea_top <- fgseaRes[padj <= 0.3]
-  fgsea_top <- fgsea_top %>% mutate(listOfgenes = 
-                        str_replace_all(leadingEdge, c('c\\("' = '', 
-                                              '"' = '',
-                                              '\\)' = ''))) %>% 
-    relocate(listOfgenes, .after = size) %>%
-    mutate(regulation = case_when(ES > 0 ~ "Up", TRUE ~ "Down")) %>%
-    relocate(regulation, .after = ES) %>% select(-c(nMoreExtreme,leadingEdge,size))
-  nbofgenes = sapply(fgsea_top$listOfgenes, 
-                     function (x){ 
-                       elems = unname(str_split(x, ', ')[[1]])
-                       length(unname(elems))  })
-  fgsea_top$ngenes = nbofgenes
-  write.table(fgsea_top, paste0(resdir, "go_gsea_csv/", ct, '_GSEA_topPaths.csv'),
-              sep="\t", col.names = T, row.names = F)
-  # ----------------------------------------------------------------------
-  # end saving table
-}  # end if gseaneeded
-# ============================== do only plot ==================================
-if (gseaplotneeded ){
-  thegmt <- read.table(paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
-                       header=T)
-  msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
-  fgseaRes <- readRDS(paste0(resdir,ct,'_GSEAdatafull.rds'))
-  lfcgenes <- all_g_df %>% filter(abs(log2FoldChange) >= gsealogfoldcutoff &
-                                    padj <= gseapadjcutoff) %>% 
-    arrange(padj) %>% distinct(id, .keep_all=T) %>%
-    select(log2FoldChange, id) 
-  lfcgenes$symbols <- genes_df[match(lfcgenes$id,genes_df$Geneid),]$symbol
-  lfcgenes <- lfcgenes %>% arrange(log2FoldChange)
-  gseagenes <- lfcgenes$log2FoldChange
-  names(gseagenes) <- lfcgenes$symbols
-  
-  topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=10), pathway]
-  topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=10), pathway]
-  topPathways <- c(topPathwaysUp, rev(topPathwaysDown))
-  uno <- plotGseaTable(msigdbr_list[topPathways], gseagenes, fgseaRes, 
-                       gseaParam = 0.5 , render=F)
-  dos <- plotEnrichment(msigdbr_list[[topPathwaysUp[1]]],    gseagenes) + 
-    labs(title= ct, subtitle=topPathwaysUp[1],
-         caption=paste(ct,"Old vs Young, abslfc >=",gsealogfoldcutoff,
-                       "p<=",gseapadjcutoff, "n=", length(gseagenes) ))
-  tres <- plotEnrichment(msigdbr_list[[topPathwaysDown[1]]], gseagenes) + 
-    labs(title= ct, subtitle=topPathwaysDown[1],
-         caption=paste(ct,"Old vs Young, abslfc >=",gsealogfoldcutoff,
-                       "p<=",gseapadjcutoff, "n=", length(gseagenes) ))
-  pdf(paste0(resdir,ct,"_GSEA.pdf"), width=13, height=9)
-  grid.arrange(uno, plot_grid(dos,tres, ncol=2), padding= 20 )
-  dev.off()
-}
-# ============================================================================
-##  END ##
-##
-# pdf(paste0(resdir,"categALL_",ct,".pdf")) 
-# ggplot(gp_mod, 
-#        aes(celltype,enriched_terms, size = GeneRatio, color=FDR)) +
-#   geom_point() +
-#   scale_color_gradient(low="#1AFF1A", high="#4B0092") +
-#   facet_grid(Category~., scales = "free", space="free") +
-#   scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
-#   theme(axis.text.y = element_text(size=5)) +
-#   theme_bw() + 
-#   labs(title = paste("Old vs Young, all retreived Categories \n",ct),
-#       caption = paste(ct, "Old vs Young, pathway enrichment significance (FDR)",
-#                 '\nabslfc >=', gologfoldcutoff, 
-#                 '  p<=',gopadjcutoff, '  n=',length(querygenes)) )
-# dev.off()
+pdf(paste0(resdir,ct,"_GO.pdf"), width=12, height=7)
+plot_grid(ggplot() + draw_label(paste("Old vs Young,",ct)),
+          plot_grid(gg_go,gg_genenri, ncol=2,labels="AUTO", rel_widths =c(4,5) ) , 
+          nrow=2,
+          rel_heights = c(1,11) )
+gg_genenon
+dev.off()
+## end

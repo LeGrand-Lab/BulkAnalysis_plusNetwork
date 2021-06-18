@@ -21,19 +21,17 @@ setwd("~/BulkAnalysis_plusNetwork/")
 # NOTE: color blindness for scales picked from:
 #https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40
 
-ct = "M1"
-
+ct = "M2"
 gostneeded = F
-go_path_doplots = F
-gologfoldcutoff = 1.2
-gopadjcutoff = 1 
-topgopath = 10
+go_path_doplots = T
+gologfoldcutoff = 1
+gopadjcutoff =  0.1
+topgopath = 20
 
 gseaneeded = F   # set TRUE if needed to run again
 gseaplotneeded = F
-gsealogfoldcutoff = 0.3
+gsealogfoldcutoff = 0.8
 gseapadjcutoff = 1
-
 
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
@@ -48,17 +46,13 @@ keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
 
 all_g_df <- read.table(paste0(resdir, ct, "_INTERagetime.csv"),sep='\t', header = T)
-symbovect_g_df = genes_df[match(all_g_df$id, genes_df$Geneid),]$symbol
-write.table(all_g_df %>% mutate(genesymbol=symbovect_g_df),
-            paste0(resdir,ct, "_INTERagetime_sy.csv"), sep='\t', 
-            col.names = T, row.names = F) 
+
 # =============== prepare data   =================
 g_df <- all_g_df %>% filter(abs(log2FoldChange) >= gologfoldcutoff & 
                               padj <= gopadjcutoff ) 
 initmeta = metadata %>% filter(type==ct) %>% select(-c(group,sample))
 
 # ==================================================================
-# for M1 there were no significant differences between old young by DESEq2!
 
 querygenes <- g_df$padj
 names(querygenes) <- g_df$id
@@ -93,12 +87,12 @@ if (gostneeded){
     mutate(GeneRatio = Count/query_size,
            BgRatio = term_size/effective_domain_size,
            celltype=ct) %>% filter(FDR <= 0.05)
-  #  exclude KEGG (kegg is too much redundant)
-  gp_mod = gp_mod %>%  filter(!Category == "KEGG")
+  #  exclude KEGG (kegg is too much redundant) , and Helicobacter Pylori  
+  gp_mod = gp_mod %>%  filter(!Category %in% c("KEGG", "HP"))
   # 20 relevant pathways by category , to save into table : 
   gp_mod= gp_mod %>% group_by(Category)  %>%
     slice_min(order_by = FDR, n = 20) %>% 
-    select(Category, ID, Description, FDR, genesEnriched, 
+    select(Category, ID, Description, FDR, genesEnriched,  
            query_size, Count, BgRatio, GeneRatio,  celltype ) 
   vec_genesymbols <- sapply(gp_mod$genesEnriched, function(x) {
     eids <- unname(unlist(str_split(x, ",")))
@@ -112,7 +106,7 @@ if (gostneeded){
   # -------------------------------------------------------------------
   # end saved table
 } # end if gostneeded
-# NOTE:  last query on gprofiler2  : 16-06-2021 
+# NOTE:  last query on gprofiler2  : 17-06-2021 
 
 # ======================== do plots go_paths ==================================
 if (go_path_doplots){
@@ -252,9 +246,9 @@ if (gseaneeded){
   # fgseaRes <- readRDS(paste0(resdir,ct,'_GSEAdatafull.rds'))
   fgsea_top <- fgseaRes[padj <= 0.3]
   fgsea_top <- fgsea_top %>% mutate(listOfgenes = 
-                        str_replace_all(leadingEdge, c('c\\("' = '', 
-                                              '"' = '',
-                                              '\\)' = ''))) %>% 
+                                      str_replace_all(leadingEdge, c('c\\("' = '', 
+                                                                     '"' = '',
+                                                                     '\\)' = ''))) %>% 
     relocate(listOfgenes, .after = size) %>%
     mutate(regulation = case_when(ES > 0 ~ "Up", TRUE ~ "Down")) %>%
     relocate(regulation, .after = ES) %>% select(-c(nMoreExtreme,leadingEdge,size))
@@ -297,7 +291,8 @@ if (gseaplotneeded ){
          caption=paste(ct,"Old vs Young, abslfc >=",gsealogfoldcutoff,
                        "p<=",gseapadjcutoff, "n=", length(gseagenes) ))
   pdf(paste0(resdir,ct,"_GSEA.pdf"), width=13, height=9)
-  grid.arrange(uno, plot_grid(dos,tres, ncol=2), padding= 20 )
+  grid.arrange(
+    plot_grid(NULL,uno, ncol=2,rel_widths =c(4,5) ), plot_grid(dos,tres, ncol=2), padding= 20 )
   dev.off()
 }
 # ============================================================================
