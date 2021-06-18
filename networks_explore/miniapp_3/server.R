@@ -171,7 +171,7 @@ server <- function(input, output){
            subnet.y$edges <- massageDATA(here.subgr[["Young"]])$edges
            print("ok subnet young")
            
-           output$labtextyoung <- renderText({"YOUNG day ...."})
+           output$labtextyoung <- renderText({paste("YOUNG day ", currentday$x)})
            output$young <- renderVisNetwork({
              req(subnet.y$edges)
              print(unique(subnet.y$nodes$groupname))
@@ -191,7 +191,7 @@ server <- function(input, output){
            subnet.o$edges <- massageDATA(here.subgr[["Old"]])$edges
            print("ok subnet old")
            
-           output$labtextold <- renderText({"OLD, day ...."})
+           output$labtextold <- renderText({paste("OLD, day ", currentday$x)})
            output$old <- renderVisNetwork({
              req(subnet.o$edges)
              print(unique(subnet.o$nodes$groupname))
