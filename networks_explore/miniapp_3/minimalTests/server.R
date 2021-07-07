@@ -33,7 +33,7 @@ server <- function(input, output, session ){
   #print(length(isolate(igElems_list$x)))
   if (length(isolate(igElems_list$x)) == 0 ){
     output$labmain_Young <- renderText({
-      paste("Press a DAY, then button 'Load only'")
+      paste("Press a DAY, then button Load ")
     })
   }
   # ============================ Event select day  ===========================
@@ -119,28 +119,6 @@ server <- function(input, output, session ){
       # ------------------- send genes list ... pending
       print("ok show all (very slow)")
     }) # end observeEvent SHOWMAIN
-  # ====================== Crossing old young tables  =======================
-  observeEvent(
-    input$docross,{
-      print(length(igElems_list$x))
-      if (length(igElems_list$x) == 0){
-        output$crossinf <- renderText({"error: no networks were loaded !!"})
-      }else{
-        V_vec = list()
-        for (age in c("Young","Old")){
-          V_vec[[age]] = igraph::as_data_frame(igElems_list$x[[age]], "vertices")[["_nx_name"]]
-          print(head(igraph::as_data_frame(igElems_list$x[[age]], "vertices"), 2))
-          crossedtab <- list()
-          crossedtab[["ExclusiveYoung"]] = setdiff(V_vec[["Young"]],V_vec [["Old"]])
-          crossedtab[["ExclusiveOld"]] = setdiff(V_vec[["Old"]],V_vec [["Young"]])
-          crossedtab[["Intersection"]] = intersect(V_vec[["Old"]], V_vec[["Young"]]) 
-          # output$crossinf <- renderText({"chevere"})
-          output$crossinf <- renderPrint(crossedtab)
-        }
-        
-      } #end else
-    } #end input$docross
-  )
   
   # ====================== Event showing subgraphs  ========================
   observeEvent(
@@ -183,7 +161,7 @@ server <- function(input, output, session ){
            subnet.y$nodes <- massageDATA(here.subgr[["Young"]])$nodes
            subnet.y$edges <- massageDATA(here.subgr[["Young"]])$edges
            print("ok subnet young")
-
+           
            output$labtextyoung <- renderText({paste("YOUNG day ", currentday$x)})
            output$young <- renderVisNetwork({
              req(subnet.y$edges)
@@ -192,18 +170,18 @@ server <- function(input, output, session ){
                                   subnet.y$edges,
                                   physics = FALSE) %>%
                visEdges(shadow=T, arrows="to", physics=FALSE) %>%
-               visInteraction(navigationButtons = TRUE)
+               visInteraction(navigationButtons = TRUE) 
              netout
            })# end renderVisNetwork young
          } # end ifelse young
-         # -------------------- old visnet
+         # -------------------- old visnet  
          if (dim(igraph::as_data_frame(here.subgr[["Old"]], "vertices"))[1] == 0){
            print(paste("no graph to return in OLD : ",pickneigh[["Old"]]))
          }else{
            subnet.o$nodes <- massageDATA(here.subgr[["Old"]])$nodes
            subnet.o$edges <- massageDATA(here.subgr[["Old"]])$edges
            print("ok subnet old")
-
+           
            output$labtextold <- renderText({paste("OLD, day ", currentday$x)})
            output$old <- renderVisNetwork({
              req(subnet.o$edges)
@@ -212,7 +190,7 @@ server <- function(input, output, session ){
                                   subnet.o$edges,
                                   physics = FALSE) %>%
                visEdges(shadow=T, arrows="to", physics=FALSE) %>%
-               visInteraction(navigationButtons = TRUE)
+               visInteraction(navigationButtons = TRUE) 
              netout
            })# end renderVisNetwork old
          } # end ifelse old

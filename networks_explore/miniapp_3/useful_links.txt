@@ -9,3 +9,53 @@ https://stackoverflow.com/questions/42934454/exporting-visnetwork-to-png-with-do
 https://github.com/datastorm-open/visNetwork/issues/138
 
 https://github.com/datastorm-open/visNetwork/issues/59
+
+https://rstudio.github.io/shinythemes/
+
+####  important NOTE: test app with with Crlf1_sCs  Edil3_sCs
+
+
+
+=======================================================================
+
+
+=================        ancient lines in server.R    =================
+
+# g <- read_graph(paste0(mywdir,grdir,"Young_D2_igraph.ml"), format="graphml")
+# #g <- read_graph(paste0(mywdir,grdir,"myminigraph.ml"), format="graphml")
+# vertex_attr(g)$numid <- vertex_attr(g)$id
+# edge_attr(g)$color <- edge_attr(g)$ecolor
+# 
+# data <- toVisNetworkData(g)
+# data$nodes$label = data$nodes$genesym
+# data$nodes$value = log2(data$nodes$averagexp)*10
+# data$nodes$groupname = data$nodes$celltype
+# data$edges$width = data$edges$weight*10
+# #nodes = as.data.frame(vertex_attr(g))
+# #edges = as.data.frame(edge_attr(g))
+# MAXWEIGHT.EDGE = max(data$edges$width)
+ ...
+# #  select induced graph
+# #View(igraph::as_data_frame(g, "edges"))
+# #View(igraph::as_data_frame(g,"vertices"))
+# interest = c("Dhh_sCs")
+# selegoG = doinduced(g, interest, 7)
+# # plot the subgraph
+# plot(selegoG, vertex.size=5, mark.border=NA,
+#      edge.border=NA,  vertex.border="white",
+#      vertex.label =NA, edge.arrow.size=0.005,
+#      edge.arrow.width=0.00001)
+# # https://ourednik.info/maps/2018/09/21/create-a-subgraph-from-the-neighborhood-of-specific-vertices-in-igraph/
+# 
+# 
+# # ----------------------- 
+# #print(typeof(myigobs$x[["Young"]]))  #  !!! animated !!!
+# #output$labtextyoung <- renderText({input$Young_nodes})
+# #output$labtextold <- renderText({input$Old_nodes})
+
+
+#shinyApp(ui,server)
+
+# =*=*=*=*=*=*==*=*=*
+
+                          
