@@ -14,11 +14,7 @@ https://rstudio.github.io/shinythemes/
 
 ####  important NOTE: test app with with Crlf1_sCs  Edil3_sCs
 
-
-
 =======================================================================
-
-
 =================        ancient lines in server.R    =================
 
 # g <- read_graph(paste0(mywdir,grdir,"Young_D2_igraph.ml"), format="graphml")

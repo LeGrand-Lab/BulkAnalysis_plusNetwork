@@ -6,6 +6,7 @@ library(visNetwork)
 library(DT)
 library(shinythemes)
 library(shinyjs)
+library(shinyalert)
 
 stylebtn1 <- "color: #ffffff; background-color: #288ba8; border-color: #288ba8;"
 # stylebtn1 is Mango Tango  .... orange like
@@ -29,6 +30,7 @@ ui <- navbarPage("Muscle and Age",
                  numericInput("NEIGH","neighbors desired", value=1,
                               min = 1,
                               max = 50),
+                 useShinyalert(),
                  actionButton("GO","Generate animated", class="btn-success"),
                  br(),
                  sliderInput("rangeEdges", "Range edges specificities (weight):",
@@ -46,9 +48,9 @@ ui <- navbarPage("Muscle and Age",
                          tabPanel("Load",
                                   #visNetworkOutput("Main", ="350px"),
                                   strong(textOutput("labmain_Young")),
-                                  plotOutput("testigraph"),
+                                  plotOutput("visnet_y"),
                                   strong(textOutput("labmain_Old")),
-                                  plotOutput("testigraph_b"),
+                                  plotOutput("visnet_o"),
                                   style = "background-color: #ffffff;"),
                           
                           tabPanel("table Young", 
