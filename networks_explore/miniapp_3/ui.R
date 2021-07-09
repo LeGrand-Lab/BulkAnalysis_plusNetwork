@@ -31,7 +31,22 @@ ui <- navbarPage("Muscle and Age",
                               min = 1,
                               max = 50),
                  useShinyalert(),
-                 actionButton("GO","Generate animated", class="btn-success"),
+                 actionButton("GO","Generate animated", class="btn-secondary"),
+                 br(),
+                 br(),
+                 p("Cell types:"),
+                 # tags$div(
+                 #   HTML(paste("This text is ", tags$span(style="color:red", "red"), sep = "")),
+                 #   HTML(paste("This text is ", tags$span(style="color:cyan", "cyan"), sep = ""))
+                 #   
+                 # ),
+                 strong(tags$li("Antiinflamatory Macrophages (M2)", style="color:#CC79A7")),
+                 strong(tags$li("Endothelial cells (ECs)", style="color:#0072B2")),
+                 strong(tags$li("Fibroadipogenic Progenitors (FAPs)", style="color:#F0E442")),
+                 strong(tags$li("Neutrophils (Neutro)", style="color:#009E73")),
+                 strong(tags$li("Proinflamatory Macrophages (M1)", style="color:#D55E00")),
+                 strong(tags$li("Satellite cells/MuSC (sCs)", style="color:#56B4E9")), 
+                 br(),
                  br(),
                  sliderInput("rangeEdges", "Range edges specificities (weight):",
                              min = 0.01, max = 1, value = c(0.1,1)),
@@ -39,6 +54,7 @@ ui <- navbarPage("Muscle and Age",
                              min = 0.01, max = 1, value = c(0.1,1)),
                  #sliderInput("JOKER","a pourvoir:",0,10,2,step=0.1),
                  actionButton("SAVE", "SAVE"),
+                 
                  textOutput("networkstat")
                ) , # end sidebarPanel
 
@@ -63,7 +79,6 @@ ui <- navbarPage("Muscle and Age",
                                    textOutput("labtabold"),
                                    DTOutput("tableold"),
                                    style= "background-color: #ffffff;" ),
-                         
                          tabPanel("cross",
                                   actionButton("docross", "docrossing"),
                                   verbatimTextOutput("crossinf")),

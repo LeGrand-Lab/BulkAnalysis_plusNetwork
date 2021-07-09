@@ -12,6 +12,8 @@ https://github.com/datastorm-open/visNetwork/issues/59
 
 https://rstudio.github.io/shinythemes/
 
+https://datastorm-open.github.io/visNetwork/igraph.html # CIRCULAR LAYOUT !!!!
+
 ####  important NOTE: test app with with Crlf1_sCs  Edil3_sCs
 
 =======================================================================
