@@ -11,7 +11,7 @@ and a rds object containing raw counts matrix.
 yields "data/biotype_bulk.csv".
 
 - `get_protcod_TPMandCounts.R` : connects matrices to biotype csv file  
-to obtain matrices containing only protein coding genes, and also figures into 
+to obtain matrices containing only protein coding genes, and also figures as 
 pdf files : 
 	* `data/protcod_counts.rds`
 	* `data/protcod_TPM.rds`
@@ -60,15 +60,15 @@ Results saved into `exam_INTER_conditions/dynamic/` as csv files named `{CELLTYP
 	+ `exam_INTER_cond_M2_GO_GSEA.R`
 	+ `exam_INTER_cond_sCs_GO_path.R`
 	
- Are dedicated to pathways terms enrichment (and GSEA when needed: the case of M1 and M2 cell types). Working directory is `exam_INTER_conditions/dynamic/`. First they produce `{CELLTYPE}_INTERagetime_sy.csv` this means, **gene symbols** (note `_sy` suffix) are added to DE csv results. Rds objects generated via gprofiler2 and fgsea, as well as customized pdf figures are saved into `exam_INTER_conditions/dynamic/`.
+	 Are dedicated to pathways terms enrichment (and GSEA when needed: the case of M1 and M2 cell types). Working directory is `exam_INTER_conditions/dynamic/`. First they produce `{CELLTYPE}_INTERagetime_sy.csv` this means, **gene symbols** (note `_sy` suffix) are added to DE csv results. Rds objects generated via gprofiler2 and fgsea, as well as customized pdf figures are saved into working directory. Note that `exam_INTER_conditions/dynamic/go_gsea_csv/` is the path to csv files keeping **top** functional terms (and top gsea pathways) which are directly used for pdf customized figures. 
 
  - `exam_Inter_cond_sta.R` : performs classic DE test (Old vs Young) time point by time point (like a "snapshot" of  expression differences at each time point). Results saved into `exam_INTER_conditions/static/`. 
 
 
 - `natmi_cmd.sh` and `natmi_edges.sh`: ran in this order, yield  L-R networks into
-natmiOut/ folder.
+`natmiOut/` folder.
 
-- pathView\_test.R : a simple test with pathView, results into 'path_classic_tools/'.
+- pathView\_test.R : a simple test with pathView, results into 'path\_classic\_tools/'.
 
 - yieldsArbitraryKmeansPlot.R : a demo to show that, for "specific" genes,
 increasing 'k' yields repetitive patterns (a justification to use 
