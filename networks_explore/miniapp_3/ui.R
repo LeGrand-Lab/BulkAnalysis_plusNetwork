@@ -97,7 +97,42 @@ ui <- navbarPage("Muscle and Age",
            ),
   # ============================== DE tabPanel ============================               
 
-  tabPanel("DE ... in construction"),  
+  tabPanel("DE ... in construction",
+    fluidPage(
+      #column(1),
+      column(4, h4("DE classical approach"), 
+                   
+                    #,
+                    #selectInput("celltype","pickcelltype", 
+                    #            list('ECs','FAPs','M1','M2','Neutro','sCs'),
+                    #            selected = NULL),
+             
+        ),  # end sidebarPanel
+      fluidRow(
+        column(1),
+        column(10,
+        tabsetPanel(
+            tabPanel("DE",
+                     actionButton("DEclassical","show"),
+                      textOutput("currentDE_classical"),
+                      DTOutput("DE_classical")
+                    ), # end TabPanel
+            tabPanel("Intersect DE with loaded network",
+                     p("For loaded network in 'LR-pairs' section, 
+                       checks which genes are present in DE list"),
+                     actionButton("execu_LR_DE","execute"),
+                     strong(textOutput("daywaspick"))
+                     
+                )
+               
+        ) # e"nd tabsetPAnel
+        ) #end column
+      
+  
+      )
+      
+    )#end fluidRow
+  ),#end tabPanel DE
   
   # ============================== About ============================           
   tabPanel("About",
@@ -120,7 +155,6 @@ ui <- navbarPage("Muscle and Age",
             column(2, h4("Links to labs"),
                          style="background-color: #b2abd2")
            ) #end fluidRow
-        
   )
            
-)
+) # end NavbarPage, this means end of everything

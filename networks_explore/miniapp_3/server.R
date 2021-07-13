@@ -6,16 +6,19 @@ library(visNetwork)
 library(tidyverse)
 library(DT)
 library(shinyalert)
-mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/"
-grdir <- "graphobjs/"
-source(paste0(mywdir,"miniapp_3/ui.R")) #TODO:  set good ui
 
+#mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/miniapp_3/"
+grdir <- "graphobjs_copy/"
+source("ui.R") #TODO:  set good ui
+
+DEclassic_file <- "DE_copy/shot_dataframe.csv"
 
 # ===================== declare empty reactiveValues ==========================
 igElems_list <- reactiveValues(x=list())
 currentday <- reactiveValues(x='')
 subnet.y <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 subnet.o <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
+DEclassic.show <- reactiveValues(x=NULL)
 
 # ===================== function that returns subgraph ========================
 doinduced <- function(g, interestvec, orderinp){
@@ -58,7 +61,7 @@ server <- function(input, output, session ){
         tmpReacGraph = reactive({
           inFile = currentday$x
           if (!is.null(inFile))
-            read.graph(file=paste0(mywdir,grdir, age,"_",currentday$x,
+            read.graph(file=paste0(grdir, age,"_",currentday$x,
                                   "_igraph.ml"), format="graphml")
         })
         igElems_list$x[[age]] <- isolate(tmpReacGraph())
@@ -243,6 +246,49 @@ server <- function(input, output, session ){
         } # end if else for shinyalert when currentday$x == ''
       }#end input$GO
     ) # end observeEvent GO  (button Animated)
+  # =========================================================================
+  # end showing subgraphs
+  # ========================== Event showing DE =============================
+  observeEvent(
+    input$DEclassical,{
+      DEGs <- read.table(DEclassic_file, sep=',',header=T) 
+      DEclassic.show$x <- DEGs %>% select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
+      rm(DEGs)
+      output$DE_classical <- renderDT(
+        DEclassic.show$x,
+        filter = "top",
+        options = list(pageLength=50, widthChange= TRUE,
+                       columnDefs = list(list(visible=FALSE, targets=c('baseMean'))))
+      )#end renderDT
+    } # end input$DEclassical
+  )
+  
+  # ====================== Event showing intersection DE LR ===================
+  observeEvent(
+    input$execu_LR_DE,{
+        if (currentday$x == ''){
+          output$daywaspick <- renderText({paste("you did not loaded DAY in L-R section")})
+          print(isolate(input$DAY))
+        }else if(currentday$x != isolate(input$DAY)){
+          output$daywaspick <- renderText({paste("error, the day in selector is not same as loaded")})
+        }else{
+          output$daywaspick <- renderText({paste("the DAY you picked is : ", currentday$x)})
+          # subset DE by current day and set 'Symbol_celltype' in "name" column
+          tmp_c <- DEclassic.show$x %>% filter(day == currentday$x)
+          tmp_c <- tmp_c %>% mutate(name = paste0(symbol, '_',type))
+          print(head(tmp_c),2)
+          # get both networks old and young and do intersections
+          g.o = igraph::as_data_frame(igElems_list$x[["Old"]], "vertices")
+          g.y = igraph::as_data_frame(igElems_list$x[["Young"]], "vertices")
+          union_net = union(g.o[["_nx_name"]], g.y[["_nx_name"]])
+          inDEG_notinNET = setdiff(tmp_c$name, union_net)
+          print(inDEG_notinNET)
+          intersectDEG_n_NET = intersect( union_net, tmp_c$name)
+          print(length(inDEG_notinNET))
+          print(length(intersectDEG_n_NET))
+        }
+      }
+    )# end event LR_DE
   } # end server function
 
 
