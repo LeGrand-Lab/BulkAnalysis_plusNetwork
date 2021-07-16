@@ -19,6 +19,7 @@ currentday <- reactiveValues(x='')
 subnet.y <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 subnet.o <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 DEclassic.show <- reactiveValues(x=NULL)
+crossedtab <- reactiveValues(x=NULL)
 
 # ===================== function that returns subgraph ========================
 doinduced <- function(g, interestvec, orderinp){
@@ -62,7 +63,7 @@ server <- function(input, output, session ){
           inFile = currentday$x
           if (!is.null(inFile))
             read.graph(file=paste0(grdir, age,"_",currentday$x,
-                                  "_igraph.ml"), format="graphml")
+                                  "_igraph_unfi.ml"), format="graphml")
         })
         igElems_list$x[[age]] <- isolate(tmpReacGraph())
         print(paste("okloaded", age, currentday$x))
@@ -129,18 +130,18 @@ server <- function(input, output, session ){
       print(length(igElems_list$x))
       if (length(igElems_list$x) == 0){
         output$crossinf <- renderText({"error: no networks were loaded !!"})
+        crossedtab$x = NULL
       }else{
         V_vec = list()
         for (age in c("Young","Old")){
           V_vec[[age]] = igraph::as_data_frame(igElems_list$x[[age]], "vertices")[["_nx_name"]]
           print(head(igraph::as_data_frame(igElems_list$x[[age]], "vertices"), 2))
-          crossedtab <- list()
-          crossedtab[["ExclusiveYoung"]] = sort(setdiff(V_vec[["Young"]],V_vec [["Old"]]))
-          crossedtab[["ExclusiveOld"]] = sort(setdiff(V_vec[["Old"]],V_vec [["Young"]]))
-          crossedtab[["Intersection"]] = sort(intersect(V_vec[["Old"]], V_vec[["Young"]])) 
-          # output$crossinf <- renderText({"chevere"})
-          output$crossinf <- renderPrint(crossedtab)
         }
+        crossedtab$x[["ExclusiveYoung"]] = sort(setdiff(V_vec[["Young"]],V_vec [["Old"]]))
+        crossedtab$x[["ExclusiveOld"]] = sort(setdiff(V_vec[["Old"]],V_vec [["Young"]]))
+        crossedtab$x[["Intersection"]] = sort(intersect(V_vec[["Old"]], V_vec[["Young"]])) 
+        # output$crossinf <- renderText({"chevere"})
+        output$crossinf <- renderPrint(crossedtab$x)
         
       } #end else
     } #end input$docross
@@ -152,7 +153,7 @@ server <- function(input, output, session ){
       massageDATA <- function(myg){
         data <- toVisNetworkData(myg)
         data$nodes$label = data$nodes$genesym
-        data$nodes$value = data$nodes$averagexp * 10
+        data$nodes$value = data$nodes$specificity * 10  # !! $averagexp changed!
         data$nodes$groupname = data$nodes$celltype
         data$edges$width = data$edges$weight * 10
         return(data)
@@ -184,6 +185,7 @@ server <- function(input, output, session ){
             output$young <- renderVisNetwork({
               req(subnet.y$edges)
               print(unique(subnet.y$nodes$groupname))
+              
               netout <- visNetwork(subnet.y$nodes,
                                    subnet.y$edges,
                                    physics = FALSE) %>%
@@ -195,10 +197,12 @@ server <- function(input, output, session ){
             output$young <- renderVisNetwork({NULL})
             output$labtextyoung <- renderText({
               paste("this node is not not in Young at this day")})
+            print(war)
           }, error = function(err){
             output$young <- renderVisNetwork({NULL})
             output$labtextyoung <- renderText({
               paste("this node is not not in Young at this day")})
+            print(err)
           }, finally = { print("bad entry by user at input$Young_nodes")}
           ) # end ytrycatch
         } # end else young
@@ -277,15 +281,33 @@ server <- function(input, output, session ){
           tmp_c <- DEclassic.show$x %>% filter(day == currentday$x)
           tmp_c <- tmp_c %>% mutate(name = paste0(symbol, '_',type))
           print(head(tmp_c),2)
+          v_c_youngUp <- tmp_c %>% filter(log2FoldChange > 0) %>% pull(name) 
+          v_c_oldUp <- tmp_c %>% filter(log2FoldChange < 0) %>% pull(name) 
+          print(v_c_youngUp)
+          print(v_c_oldUp)
           # get both networks old and young and do intersections
           g.o = igraph::as_data_frame(igElems_list$x[["Old"]], "vertices")
           g.y = igraph::as_data_frame(igElems_list$x[["Young"]], "vertices")
-          union_net = union(g.o[["_nx_name"]], g.y[["_nx_name"]])
-          inDEG_notinNET = setdiff(tmp_c$name, union_net)
-          print(inDEG_notinNET)
-          intersectDEG_n_NET = intersect( union_net, tmp_c$name)
-          print(length(inDEG_notinNET))
-          print(length(intersectDEG_n_NET))
+          v_o = g.o[["_nx_name"]]
+          v_y = g.y[["_nx_name"]]
+          union_net = union(v_o, v_y)
+          #print(inDEG_notinNET)
+          intersectDEG_n_NET = intersect(union_net, tmp_c$name)
+          print(paste("** =======================", currentday$x,"=============================== **"))
+          print("** checking for picked day DEG genes and comparing with Network **")
+          #print(head(v_c_youngUp))
+          #print(head(v_y))
+          YinDEG_notinNET = setdiff(v_c_youngUp, v_y)
+          OinDEG_notinNET = setdiff(v_c_oldUp, v_o)
+          inNET_notinDEG_hyperYoung = setdiff(crossedtab$x[["ExclusiveYoung"]], v_c_youngUp )
+          inNET_notinDEG_hyperOld = setdiff(crossedtab$x[["ExclusiveOld"]], v_c_oldUp)
+          print(paste(length(intersectDEG_n_NET), "<== intersection DEG and NET"))
+          print(paste(length(YinDEG_notinNET), "<== hyperYoungDEG not in NET"))
+          print(paste(length(OinDEG_notinNET), "<== hyperOldDEG not in NET"))
+          print(paste(length(inNET_notinDEG_hyperYoung), "<== exclusiveYoung but not seen in DEG list"))
+          print(paste(length(inNET_notinDEG_hyperOld), "<== exclusiveOld but not seen in DEG list"))
+          print("======================================================================")
+          #print(paste(length(, " ????"))
         }
       }
     )# end event LR_DE

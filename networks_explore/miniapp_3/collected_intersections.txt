@@ -1,0 +1,79 @@
+## collected results 
+# #####################
+# FOR FILTERED NETWORKS
+# #####################
+"** ======================= D0 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "26 <== intersection DEG and NET"
+[1] "95 <== hyperYoungDEG not in NET"
+[1] "108 <== hyperOldDEG not in NET"
+[1] "219 <== exclusiveYoung but not seen in DEG list"
+[1] "259 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+[1] "** ======================= D2 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "35 <== intersection DEG and NET"
+[1] "247 <== hyperYoungDEG not in NET"
+[1] "75 <== hyperOldDEG not in NET"
+[1] "535 <== exclusiveYoung but not seen in DEG list"
+[1] "511 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+"** ======================= D4 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "21 <== intersection DEG and NET"
+[1] "105 <== hyperYoungDEG not in NET"
+[1] "80 <== hyperOldDEG not in NET"
+[1] "317 <== exclusiveYoung but not seen in DEG list"
+[1] "354 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+[1] "** ======================= D7 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "32 <== intersection DEG and NET"
+[1] "192 <== hyperYoungDEG not in NET"
+[1] "57 <== hyperOldDEG not in NET"
+[1] "308 <== exclusiveYoung but not seen in DEG list"
+[1] "307 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+# ########################
+# FOR UN-FILTERED NETWORKS
+# ########################
+
+[1] "** ======================= D0 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "36 <== intersection DEG and NET"
+[1] "89 <== hyperYoungDEG not in NET"
+[1] "98 <== hyperOldDEG not in NET"
+[1] "171 <== exclusiveYoung but not seen in DEG list"
+[1] "209 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+[1] "** ======================= D2 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "62 <== intersection DEG and NET"
+[1] "223 <== hyperYoungDEG not in NET"
+[1] "70 <== hyperOldDEG not in NET"
+[1] "444 <== exclusiveYoung but not seen in DEG list"
+[1] "424 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+[1] "** ======================= D4 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "42 <== intersection DEG and NET"
+[1] "96 <== hyperYoungDEG not in NET"
+[1] "67 <== hyperOldDEG not in NET"
+[1] "308 <== exclusiveYoung but not seen in DEG list"
+[1] "312 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
+
+[1] "** ======================= D7 =============================== **"
+[1] "** checking for picked day DEG genes and comparing with Network **"
+[1] "50 <== intersection DEG and NET"
+[1] "175 <== hyperYoungDEG not in NET"
+[1] "52 <== hyperOldDEG not in NET"
+[1] "235 <== exclusiveYoung but not seen in DEG list"
+[1] "273 <== exclusiveOld but not seen in DEG list"
+[1] "======================================================================"
