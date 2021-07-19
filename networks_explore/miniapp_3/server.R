@@ -10,7 +10,7 @@ library(shinyalert)
 #mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/miniapp_3/"
 grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
-
+source("serverFun.R")
 DEclassic_file <- "DE_copy/shot_dataframe.csv"
 
 # ===================== declare empty reactiveValues ==========================
@@ -293,7 +293,7 @@ server <- function(input, output, session ){
           union_net = union(v_o, v_y)
           #print(inDEG_notinNET)
           intersectDEG_n_NET = intersect(union_net, tmp_c$name)
-          print(paste("** =======================", currentday$x,"=============================== **"))
+          print(paste("** ==========", currentday$x,"=================== **"))
           print("** checking for picked day DEG genes and comparing with Network **")
           #print(head(v_c_youngUp))
           #print(head(v_y))
