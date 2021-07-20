@@ -1,0 +1,72 @@
+##
+# printing graphs with kk layout
+##
+age = 'Old'
+G = read.graph(file=paste0(grdir, age,"_", "D2",
+                           "_igraph.ml"), format="graphml")
+G_Grouped = G
+E(G_Grouped)$weight = 0.5
+
+V(G)$group = igraph::vertex_attr(G, "celltype", index = V(G))
+groups = unique(igraph::vertex_attr(G, "celltype", index = V(G)))
+
+E(G)$color = igraph::edge_attr(G,"ecolor", index=E(G))
+
+for (i in groups){
+  GroupV = which(V(G)$group == i)
+  G_Grouped = add_edges(G_Grouped,combn(GroupV,2), 
+                        attr=list(weight=1))
+}
+# layout_with_dh exploses time !!!
+# gem exploses time !!
+# graphopt mixes and superposes
+# drl superposes a lot
+# lgl is for large connected graphs
+
+
+LO = layout_with_mds(G_Grouped)
+plot(G,vertex.size=3, mark.border=NA,
+     edge.border=NA,  vertex.border="white",
+     vertex.label =NA, edge.arrow.size=0.005,
+     edge.arrow.width=0.00001, layout=LO) + title(main = "mds")
+
+#  kk (larger the weight, closer the nodes)
+G_Grouped = G
+E(G_Grouped)$weight = 30
+V(G)$group = igraph::vertex_attr(G, "celltype", index = V(G))
+groups = unique(igraph::vertex_attr(G, "celltype", index = V(G)))
+E(G)$color = igraph::edge_attr(G,"ecolor", index=E(G))
+for (i in groups){
+  GroupV = which(V(G)$group == i)
+  G_Grouped = add_edges(G_Grouped,combn(GroupV,2), 
+                        attr=list(weight=50))
+}
+LO = layout_with_kk(G_Grouped, maxiter=300)
+plot(G,vertex.size=2, mark.border=NA,
+     edge.border=NA,  vertex.border="white",
+     vertex.label =NA, edge.arrow.size=0.005,
+     edge.arrow.width=0.00001, layout=LO) + title(main="kk")
+
+# fr :  larger values longer edges fr (is contrary to kk)
+G_Grouped = G
+E(G_Grouped)$weight = 25
+V(G)$group = igraph::vertex_attr(G, "celltype", index = V(G))
+groups = unique(igraph::vertex_attr(G, "celltype", index = V(G)))
+E(G)$color = igraph::edge_attr(G,"ecolor", index=E(G))
+for (i in groups){
+  GroupV = which(V(G)$group == i)
+  G_Grouped = add_edges(G_Grouped,combn(GroupV,2), 
+                        attr=list(weight=22))
+}
+LO = layout_with_fr(G_Grouped, niter=300)
+plot(G,vertex.size=2, mark.border=NA,
+     edge.border=NA,  vertex.border="white",
+     vertex.label =NA, edge.arrow.size=0.005,
+     edge.arrow.width=0.00001, edge_alpha = 0.5, layout=LO) + title(main = "fr")
+
+
+
+###  clustering for other scenarios: 
+ebc <- cluster_edge_betweenness(G)
+communities$`Edge betweenness` <- ebc
+####
