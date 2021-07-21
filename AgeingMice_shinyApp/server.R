@@ -1,3 +1,4 @@
+# johaGL 2021
 library(shiny)
 library(ggplot2)
 library(dplyr)
@@ -6,20 +7,44 @@ library(visNetwork)
 library(tidyverse)
 library(DT)
 library(shinyalert)
+library(circlize)
+library(kableExtra)
+
 
 #mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/miniapp_3/"
 grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
-source("serverFun.R")
 DEclassic_file <- "DE_copy/shot_dataframe.csv"
-
+aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
 # ===================== declare empty reactiveValues ==========================
-igElems_list <- reactiveValues(x=list())
 currentday <- reactiveValues(x='')
+igElems_list <- reactiveValues(x=list())  # the networks objects, both ages
+aggreg_day <- reactiveValues(x=list())
 subnet.y <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 subnet.o <- reactiveValues(nodes=NULL,edges=NULL,groups=NULL)
 DEclassic.show <- reactiveValues(x=NULL)
 crossedtab <- reactiveValues(x=NULL)
+
+# global variable colors
+cellcolors = list(
+  "ECs"="#0072B2",
+  "FAPs"="#F0E442",
+  "M1" = "#D55E00",
+  "M2" =  "#CC79A7",
+  "Neutro" =  "#009E73",
+  "sCs" = "#56B4E9" )
+
+
+
+
+# ================== function that returns chorddiagram =======================
+dochord <- function(matrx, unicolors){
+  chordDiagram(matrx, directional = 1,grid.col = unlist(cellcolors),
+               col = unicolors,
+               direction.type = c("diffHeight", "arrows"),
+               link.arr.type = "big.arrow",
+             self.link = 1,
+             annotationTrack = c("name", "grid"," axis"))} 
 
 # ===================== function that returns subgraph ========================
 doinduced <- function(g, interestvec, orderinp){
@@ -34,26 +59,89 @@ doinduced <- function(g, interestvec, orderinp){
 
 # ############################ SERVER function ################################
 server <- function(input, output, session ){
+  reacAggregPlots <- reactiveValues(doPlot = FALSE)
+
   # ====================== Condition to start  ========================
   #print(length(isolate(igElems_list$x)))
   if (length(isolate(igElems_list$x)) == 0 ){
-    output$labmain_Young <- renderText({
-      paste("Press a DAY, then button 'Load only'")
+    output$labmain_young <- renderText({
+      paste("Select a DAY, then button 'Load only'")
     })
   }
   # ============================ Event select day  ===========================
   observeEvent(
     input$DAY,{
       print(paste(isolate(currentday$x), "<===chosenday"))
-      if((!isolate(currentday$x) == "") & (!isolate(currentday$x)==input$DAY)){
-        output$visnet_y <- renderPlot({NULL})
-        output$visnet_o <- renderPlot({NULL})
-        output$labmain_Young <- renderText({"....please load..."})
-        output$labmain_Old <- renderText({".."})
+      if((isolate(currentday$x) == "") || (isolate(currentday$x)!= input$DAY)){
+        reacAggregPlots$doPlot <- FALSE
+        output$radiores_young_title <- renderText({""})
+        output$radiores_young_A <- renderPlot({NULL})
+        output$radiores_young_B <- renderTable({NULL})
+        output$radiores_old_title <- renderText({""})
+        output$radiores_old_A <- renderPlot({NULL})
+        output$radiores_old_B <- renderTable({NULL})
+        output$labmain_young <- renderText({"....please load..."})
+        output$labmain_old <- renderText({".."})
+      }else{
+        next
       }
     } # end input$DAY
   ) # end observeEvent
-  # ===================== Event load tables (renderDT)   =======================
+  
+  # ===================== Event load tables (intro plots (chord) and renderDT  =======================
+  # REQUIRES  function 'displayintro'  : initial test
+    displayintro <- function(){
+    output$radiores_young_title <- renderText({
+      if (reacAggregPlots$doPlot == FALSE) { return () } else {
+        return(isolate(input$radioAggreg))
+      } })
+    output$radiores_young_A <-  renderPlot({
+      mini = matrix(c(100,200,10,50), 2,2 )
+      rownames(mini) = c('A','B')
+      colnames(mini) = c('A','B')
+      if (reacAggregPlots$doPlot == FALSE) { return(NULL) } else {
+        dochord(mini)
+      } })
+    output$radiores_young_B <-  function(){  # the table is special
+      if (reacAggregPlots$doPlot == FALSE) { return () } else {
+        df <- head(iris)
+        df %>%
+          knitr::kable("html") %>%
+          kable_styling("striped", full_width = F) %>%
+          add_header_above(c(" ", "To" = dim(df)[2]-1)) %>% 
+          add_footnote("rownames are 'From' nodes, colnames are 'To' nodes")
+      } } #end table
+    
+    # for old : TODO
+    # ...
+  }
+    # REQUIRES  function 'displayintro'   :: strong test
+  displayintroBEST <- function(ag){
+    print(names(ag))  # Young part:
+    output$radiores_young_title <- renderText({
+      if (reacAggregPlots$doPlot == FALSE) { return () } else {
+        if (input$radioAggreg == "Ratio"){
+          return("Cumulated weight / number of connections ")
+        }else{
+          return(isolate(input$radioAggreg))
+        }
+      } })
+    output$radiores_young_A <-  renderPlot({
+      if (reacAggregPlots$doPlot == FALSE) { return(NULL) } else {
+        dochord(ag[["Young"]][[input$radioAggreg]], unicolors= ag[["Colorsmat"]])
+      } } , height = 450, width = 450 )
+    output$radiores_young_B <-  function(){  # the table is special
+      if (reacAggregPlots$doPlot == FALSE) { return () } else {
+        df <- ag[["Young"]][[input$radioAggreg]]
+        df %>%
+          knitr::kable("html") %>%
+          kable_styling("striped", full_width = F) %>%
+          add_header_above(c(" ", "To" = dim(df)[2])) %>% 
+          add_footnote("rownames are 'From' nodes, colnames are 'To' nodes")
+      } } #end table # end young part
+    # for old : TODO
+    # ...
+  }
   observeEvent(
     input$LOADONLY,{  # button load
       print("you pressed button to load the igs")
@@ -67,63 +155,54 @@ server <- function(input, output, session ){
         })
         igElems_list$x[[age]] <- isolate(tmpReacGraph())
         print(paste("okloaded", age, currentday$x))
+        aggreg_day$x[[age]] <- aggreg_matrices[[age]][[currentday$x]]
+        print("ok aggreg day from aggreg_matrices")
       } # end for age in c("Young","Old")
-      # ---------------------- inside Event load tables,....  ------------------------
-      output$labmain_Young <- renderText({
-       paste("Young, ", currentday$x, "loaded internally, \n go to tables to see available nodes")})
-      output$labmain_Old <- renderText({
-       paste("Old, ", currentday$x, "loaded internally, \n go to tables to see available nodes")})
-      #return(currentday)
-      output$visnet_y <- renderPlot({NULL})
-      output$visnet_o <- renderPlot({NULL})
+      reacAggregPlots$doPlot <- TRUE
+      print(reacAggregPlots$doPlot)
+      output$thisiscondition <- renderText({reacAggregPlots$doPlot})
+     
+      if (reacAggregPlots$doPlot == TRUE){
+        #displayintro()
+        displayintroBEST(aggreg_day$x)
+      }
+      # ---------------------- finally,  load DT tables,....  ------------------------
+      output$labmain_young <- renderText({
+       paste("Young, ", currentday$x, "loaded, go to tables to see available nodes")})
+      output$labmain_old <- renderText({
+       paste("Old, ", currentday$x, "loaded, go to tables to see available nodes")})
+    
       ###  yield tables
+      output$labtabyoung <- renderText({paste(currentday$x, " ! ")})
       output$tableyoung <- renderDT(
         igraph::as_data_frame(igElems_list$x[["Young"]],"vertices"),
         filter = "top",
         options = list(pageLength=15))
         # renderTable({ igraph::as_data_frame(igElems_list$x[["Young"]],"vertices")})
+      output$labtabold <- renderText({paste(currentday$x, " ! ")})
       output$tableold <- renderDT(
         igraph::as_data_frame(igElems_list$x[["Old"]], "vertices"),
         filter = "top",
         options = list(pageLength=15)) 
+      
      } # end input LOADONLY
    ) # end observeEvent LOADONLY
-     
-  # ================== Event show entire graphs (heavy)   ====================
+  
+  
+  # ============================ reactive radioButton displays ===========================
+  ## show aggregated visuals (chorddiagrams and 'From-To' matrices)
   observeEvent(
-    input$SHOWMAIN,{
-      if (currentday == isolate(currentday$x)){
-        print("ok to show")
-      }else{ output$labmain_Young <- renderText({"YOU HAVEN'T LOADED ANYTHING !!!! "})}
-      print(currentday)
-      print(paste(isolate(currentday$x),"====> is the current day selected"))
-      print(isolate(input$DAY))
-      output$visnet_y <- renderPlot({
-        coords = layout_with_kk(igElems_list$x[["Young"]])
-        plot.igraph(igElems_list$x[["Young"]],vertex.size=5, mark.border=NA,
-                    edge.border=NA,  vertex.border="white",
-                    vertex.label =NA, edge.arrow.size=0.005,
-                    edge.arrow.width=0.00001,
-                    layout=coords)
-      })
-      output$visnet_o <- renderPlot({
-        coords = layout_with_kk(igElems_list$x[["Old"]])
-        plot.igraph(igElems_list$x[["Old"]],vertex.size=5, mark.border=NA,
-                    edge.border=NA,  vertex.border="white",
-                    vertex.label =NA, edge.arrow.size=0.005,
-                    edge.arrow.width=0.00001,
-                    layout=coords)
-      })
-      # ------------------- put titles
-      output$labmain_Young <- renderText({
-        paste("Young, ", currentday$x)
-      })
-      output$labmain_Old <- renderText({
-        paste("Old, ", currentday$x)
-      })
-      # ------------------- send genes list ... pending
-      print("ok show all (very slow)")
-    }) # end observeEvent SHOWMAIN
+    input$radioAggreg,{
+      if (reacAggregPlots$doPlot == FALSE){
+        print("YOU HAVNT LOADED Anything")
+              }else{
+        displayintroBEST(aggreg_day$x)
+      }
+    }
+  )
+  #            
+ # end radioButtons
+ 
   # ====================== Crossing old young tables  =======================
   observeEvent(
     input$docross,{
@@ -165,7 +244,7 @@ server <- function(input, output, session ){
         pickneigh = list("Young"=c(''), "Old"=c(''))
         here.subgr = list()
         # ---------------------- young visnet ---------------------------------
-        if (input$Young_nodes == "" ){
+        if (input$young_nodes == "" ){
           output$young <- renderVisNetwork({NULL})
           output$labtextyoung <- renderText({
             paste("NO nodes declared to search for. Introduce a single one:\n",
@@ -173,7 +252,7 @@ server <- function(input, output, session ){
                   "Crlf1_sCs, Edil3_sCs")})
         }else{
           pickneigh[["Young"]] = unlist( str_split(
-            gsub(" ","",input$Young_nodes), ",") )
+            gsub(" ","",input$young_nodes), ",") )
           ytrycatch <- tryCatch({
             here.subgr[["Young"]] <- doinduced(
               igElems_list$x[["Young"]], pickneigh[["Young"]], orderinp = input$NEIGH )
@@ -203,11 +282,11 @@ server <- function(input, output, session ){
             output$labtextyoung <- renderText({
               paste("this node is not not in Young at this day")})
             print(err)
-          }, finally = { print("bad entry by user at input$Young_nodes")}
+          }, finally = { print("bad entry by user at input$young_nodes")}
           ) # end ytrycatch
         } # end else young
         # ---------------------- old visnet ---------------------------------
-        if (input$Old_nodes == "" ){
+        if (input$old_nodes == "" ){
           output$old = renderVisNetwork({NULL})
           output$labtextold <- renderText({
             paste("NO nodes declared to search for. Introduce a single one:\n",
@@ -215,7 +294,7 @@ server <- function(input, output, session ){
                   "Wnt3_FAPs, Kremen1_ECs")})
         }else{
           pickneigh[["Old"]] = unlist( str_split(
-            gsub(" ", "",input$Old_nodes), ",") )
+            gsub(" ", "",input$old_nodes), ",") )
           
           otrycatch <- tryCatch({
             here.subgr[["Old"]] <- doinduced(
@@ -244,7 +323,7 @@ server <- function(input, output, session ){
               output$old = renderVisNetwork({NULL})
               output$labtextold <- renderText({
                 paste("no this node is not in Old at this day")})
-            }, finally = { print("bad param by user in input$Old_nodes ")}
+            }, finally = { print("bad param by user in input$old_nodes ")}
             )#end otrycatch
           } # end else old
         } # end if else for shinyalert when currentday$x == ''
@@ -314,4 +393,6 @@ server <- function(input, output, session ){
   } # end server function
 
 
-
+#### END
+# NOTE :  # universal colors used for cell types
+# ok for color blindness!  hex codes: https://rdrr.io/cran/ggthemes/man/colorblind.html

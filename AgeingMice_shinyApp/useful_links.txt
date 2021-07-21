@@ -16,6 +16,15 @@ https://datastorm-open.github.io/visNetwork/igraph.html # CIRCULAR LAYOUT !!!!
 
 https://datascience-enthusiast.com/R/Interactive_chord_diagrams_R.html
 
+
+https://cran.r-project.org/web/packages/expss/vignettes/tables-with-labels.html
+
+https://jokergoo.github.io/circlize_book/book/the-chorddiagram-function.html
+
+https://www.r-bloggers.com/2018/09/create-stylish-tables-in-r-using-formattable/
+
+External labels for internal labels chorddiag: https://stackoverflow.com/questions/27500041/r-make-circle-chord-diagram-with-circlize-from-dataframe
+
 ####  important NOTE: test app with with Crlf1_sCs  Edil3_sCs
 
 =======================================================================

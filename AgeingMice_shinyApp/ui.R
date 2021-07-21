@@ -1,3 +1,4 @@
+# johaGL 2021
 library(shiny)
 library(ggplot2)
 library(dplyr)
@@ -7,12 +8,13 @@ library(DT)
 library(shinythemes)
 library(shinyjs)
 library(shinyalert)
+library(kableExtra)
 
 stylebtn1 <- "color: #ffffff; background-color: #288ba8; border-color: #288ba8;"
 # stylebtn1 is Mango Tango  .... orange like
 
 # note: nested tabPanels REQUIRE  'sidebarLayout' as outer nest ! 
-
+#navbarPage
 ui <- navbarPage("Muscle and Age",
 # ============================== L-R pairs tabPanel ============================               
   tabPanel( "L-R pairs" ,
@@ -22,18 +24,16 @@ ui <- navbarPage("Muscle and Age",
                              selected = NULL),
                  actionButton("LOADONLY", "Load only",
                               class="btn-primary"),
-                 actionButton("SHOWMAIN", "Full nets (slow)"),
-                 br(),
-                 br(), 
-                 textInput("Young_nodes","Young network, nodes to select", value=""),
-                 textInput("Old_nodes","Old network, nodes to select", value=""),
-                 numericInput("NEIGH","neighbors desired", value=1,
-                              min = 1,
-                              max = 50),
-                 useShinyalert(),
-                 actionButton("GO","Generate animated", class="btn-secondary"),
-                 br(),
-                 br(),
+                 br(), br(),
+                 textOutput("thisiscondition"),
+                 conditionalPanel(condition = 'output.thisiscondition == "TRUE"' , 
+                                  radioButtons("radioAggreg", "choose info to display in chorddiag:",
+                                               choices = list("Ratio" = "Ratio", 
+                                                              "Weight"= "CumulateWeight", 
+                                                              "Count"="Count"),
+                                               selected = "Ratio", inline=TRUE)
+                 ),
+                 
                  p("Cell types:"),
                  # tags$div(
                  #   HTML(paste("This text is ", tags$span(style="color:red", "red"), sep = "")),
@@ -46,6 +46,25 @@ ui <- navbarPage("Muscle and Age",
                  strong(tags$li("Neutrophils (Neutro)", style="color:#009E73")),
                  strong(tags$li("Proinflamatory Macrophages (M1)", style="color:#D55E00")),
                  strong(tags$li("Satellite cells/MuSC (sCs)", style="color:#56B4E9")), 
+                 
+                 br(),
+                
+                 actionButton("SHOWMAIN", "Full nets (slow)"),
+                 br(),
+                 br(), 
+                 h4("ANIMATED SECTION "),
+                 textInput("young_nodes","Young network, nodes to select", value=""),
+                 textInput("old_nodes","Old network, nodes to select", value=""),
+                 numericInput("NEIGH","neighbors desired", value=1,
+                              min = 1,
+                              max = 50),
+                 useShinyalert(),
+                 em("Select desired nodes from respective Tables by age."),
+                 em("After you click on 'Generate animated'  "),
+                 em("results will appear in 'animated' tab "),
+                 actionButton("GO","Generate animated", class="btn-secondary"),
+                 br(),
+                 br(),
                  br(),
                  br(),
                  sliderInput("rangeEdges", "Range edges specificities (weight):",
@@ -53,7 +72,7 @@ ui <- navbarPage("Muscle and Age",
                  sliderInput("rangeNodes", "Range vertices (nodes) specificities:",
                              min = 0.01, max = 1, value = c(0.1,1)),
                  #sliderInput("JOKER","a pourvoir:",0,10,2,step=0.1),
-                 actionButton("SAVE", "SAVE"),
+                 #actionButton("SAVE", "SAVE"),
                  
                  textOutput("networkstat")
                ) , # end sidebarPanel
@@ -62,20 +81,33 @@ ui <- navbarPage("Muscle and Age",
                  h2("Ligand-Receptor networks"), width = 9,
                     tabsetPanel(
                          tabPanel("Load",
-                                  #visNetworkOutput("Main", ="350px"),
-                                  strong(textOutput("labmain_Young")),
-                                  plotOutput("visnet_y"),
-                                  strong(textOutput("labmain_Old")),
-                                  plotOutput("visnet_o"),
+                                  strong(textOutput("labmain_young")),
+                                  strong(textOutput("radiores_young_title")),
+                                  fluidRow(
+                                    column(width= 7,
+                                           plotOutput("radiores_young_A", width="100%")),
+                                    column(width=2,
+                                           tableOutput("radiores_young_B"))
+                                  ),
+                                  #plotOutput("visnet_y"),
+                                  strong(textOutput("labmain_old")),
+                                  strong(textOutput("radiores_old_title")),
+                                  fluidRow(
+                                    column(width=7,
+                                           plotOutput("radiores_old_A", width="100%")),
+                                    column(width= 2,
+                                           tableOutput("radiores_old_B"))
+                                  ),
+                                  #plotOutput("visnet_o"),
                                   style = "background-color: #ffffff;"),
                           
-                          tabPanel("table Young", 
+                          tabPanel("Table Young", 
                                    textOutput("labtabyoung"),
                                    #tableOutput("tableyoung"),
                                    DTOutput("tableyoung"),
                                    style= "background-color: #ffffff;" ),
                          
-                          tabPanel("table Old", 
+                          tabPanel("Table Old", 
                                    textOutput("labtabold"),
                                    DTOutput("tableold"),
                                    style= "background-color: #ffffff;" ),
