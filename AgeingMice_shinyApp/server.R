@@ -10,8 +10,12 @@ library(shinyalert)
 library(circlize)
 library(kableExtra)
 
+# TODO: !!somewhere take note: 'dynamic' DE, for M1 yielded no significant 
+#  because from one day to the next the change was not important
+# that is why I take only old vs youn in staticsnapshot comparisons
 
-#mywdir <- "~/BulkAnalysis_plusNetwork/networks_explore/miniapp_3/"
+mywdir <- "~/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/"
+setwd(mywdir)
 grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
 DEclassic_file <- "DE_copy/shot_dataframe.csv"

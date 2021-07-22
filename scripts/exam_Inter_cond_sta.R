@@ -24,26 +24,10 @@ register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 # devtools::install_github("vqv/ggbipplot")
 # install.packages("glmpca")
 
-# using 'apeglm' for LFC shrinkage. If used in published research, please cite:
-#   Zhu, A., Ibrahim, J.G., Love, M.I. (2018) Heavy-tailed prior distributions for
-# sequence count data: removing the noise and preserving large differences.
-# Bioinformatics. https://doi.org/10.1093/bioinformatics/bty895
-
-# using 'ashr' for LFC shrinkage. If used in published research, please cite:
-#   Stephens, M. (2016) False discovery rates: a new deal. Biostatistics, 18:2.
-# https://doi.org/10.1093/biostatistics/kxw041
-
-# latest : http://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#if-i-have-multiple-groups-should-i-run-all-together-or-split-into-pairs-of-groups
-# ** cool paper: Temporal Dynamic Methods for Bulk RNA-Seq Time Series Data
-# !yeah ==> https://www.biorxiv.org/content/10.1101/2020.02.01.930602v1.full
-# ! yeah : https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-1403-0
-# GSE : iDEA can be equally applied to bulk RNA-seq 
-### >>> there exist important technical variability between replicates !
-
-## https://bioinformatics-core-shared-training.github.io/cruk-summer-school-2018/RNASeq2018/html/06_Gene_set_testing.nb.html#fgsea
 setwd("~/BulkAnalysis_plusNetwork/")
 odir = "exam_INTER_conditions/static/"
-shot_t = "shot_dataframe_unfiltered.csv"
+shot_t = "shot_dataframe_unfiltered.csv"  
+# 'unfiltered' has in reality soft filters : padj 0.5 and lfc 0.1 , see line 75
 shot_t_f = "shot_dataframe.csv"
 
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
@@ -169,5 +153,23 @@ ggplot(sortie, aes(x=log2FoldChange, y = -log10(padj+1e-20))) +
        (DOWN | UP) regulated genes \n
        labels only for genes padj < 0.0005")
 dev.off()
+
+# ============================================================================
+# END
+#
+# final notes:
+# using 'apeglm' for LFC shrinkage. If used in published research, please cite:
+#   Zhu, A., Ibrahim, J.G., Love, M.I. (2018) Heavy-tailed prior distributions for
+# sequence count data: removing the noise and preserving large differences.
+# Bioinformatics. https://doi.org/10.1093/bioinformatics/bty895
+
+# using 'ashr' for LFC shrinkage. If used in published research, please cite:
+#   Stephens, M. (2016) False discovery rates: a new deal. Biostatistics, 18:2.
+# https://doi.org/10.1093/biostatistics/kxw041
+
+# latest : http://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#if-i-have-multiple-groups-should-i-run-all-together-or-split-into-pairs-of-groups
+# ** cool paper: Temporal Dynamic Methods for Bulk RNA-Seq Time Series Data
+# !yeah ==> https://www.biorxiv.org/content/10.1101/2020.02.01.930602v1.full
+# ! yeah : https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-1403-0
 
 
