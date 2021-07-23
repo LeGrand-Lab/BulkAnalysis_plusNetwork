@@ -1,4 +1,5 @@
-#  TODO: retrieve pvalue
+#  Runs GSEA by day and celltype
+# Saves rds objects : 
 # --
 # johaGL
 library(fgsea)
@@ -71,10 +72,10 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
   pathsFiltered[[k]] <- dd_f
 }
 
-saveRDS(pathsFull_l, file="AgeingMice_shinyApp/drafts/fgseaByDay_full.rds" )
-saveRDS(pathsFiltered, file="AgeingMice_shinyApp/drafts/fgseaByDay_filtered.rds" )
+saveRDS(pathsFull_l, file="AgeingMice_shinyApp/Data/fgseaByDay_full.rds" )
+saveRDS(pathsFiltered, file="AgeingMice_shinyApp/Data/fgseaByDay_filtered.rds" )
 
-pathsFiltered = readRDS("AgeingMice_shinyApp/drafts/fgseaByDay_filtered.rds" )
+pathsFiltered = readRDS("AgeingMice_shinyApp/Data/fgseaByDay_filtered.rds" )
 
 ## prepare matrices for heatmaps
 mhp = list()
@@ -121,85 +122,38 @@ for (k in c('D0','D2', 'D4', 'D7')){
     
   }}
 
+saveRDS(mhp, file="AgeingMice_shinyApp/Data/matrices4heatmaps.rds" )
 
-View(mhp[["D7"]][["M2"]][["UP"]])
-View(mhp[["D7"]][["M2"]][["DOWN"]])
-saveRDS(mhp, file="AgeingMice_shinyApp/drafts/matrices4heatmaps.rds" )
-
-mhp = readRDS("AgeingMice_shinyApp/drafts/matrices4heatmaps.rds")
+mhp = readRDS("AgeingMice_shinyApp/Data/matrices4heatmaps.rds")
 library(pheatmap)
 library(cowplot)
 library(heatmap3)
 library(heatmaply)
 library(RColorBrewer)
 library(gridExtra)
-for(k in c('D4')){
-  cts = names(mhp[[k]])
-  liplots = list()
-  for (CT in cts){
-       heatmaply_na(mhp[[k]][[CT]][["UP"]], na.value="lightgray", 
-                    colors="Reds")
-          
-    
-    a <- heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
-             scale = "none",
-             col=colorRampPalette(c("gray","firebrick3"))(256), 
-             na.color="white",
-             Colv = NA, Rowv = NA,
-             cexRow = 0.7,
-             cexCol = 0.7,
-             ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
-             RowSideWidth = nrow(mhp[[k]][[CT]][["UP"]]),
-             margins = c(10,10),
-             main = paste(k, CT, "UP"))
-    
-    
-    b <- heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
-                  scale = "none",
-                  col=colorRampPalette(c("navy", "gray"))(256), 
-                  Colv = NA, Rowv = NA,
-                  cexRow = 0.7,
-                  cexCol = 0.7,
-                  ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
-                  margins = c(10,10),
-                  main = paste(k, CT, "DOWN"))
-    
 
-  }
-}
-library(gridGraphics)
-library(grid)
-grab_grob <- function(){
-  grid.echo()
-  grid.grab()
-}
-library(gplots)
-gup <- lapply(cts, function(CT){
-  heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
-           scale = "none",
-           col=colorRampPalette(c("gray","firebrick3"))(256), 
-           na.color="white",
-           Colv = NA, Rowv = NA,
-           cexRow = 0.7,
-           cexCol = 0.7,
-           ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
-           RowSideWidth = nrow(mhp[[k]][[CT]][["UP"]]),
-           margins = c(10,10),
-           main = paste(k, CT, "UP"))
-  grab_grob()
-})
-gdw <- lapply(cts,function(CT){
-  heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
-           scale = "none",
-           col=colorRampPalette(c("navy", "gray"))(256), 
-           Colv = NA, Rowv = NA,
-           cexRow = 0.7,
-           cexCol = 0.7,
-           ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
-           margins = c(10,10),
-           main = paste(k, CT, "DOWN"))
-  grab_grob
-})
+# test on single mapcolor with up and down pathways
+k = "D4"
+CT = "M2"
+heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+   scale = "none",
+   col=colorRampPalette(c("gray","firebrick3"))(256), 
+   Colv = NA, Rowv = NA,
+   cexRow = 0.7,
+   cexCol = 0.7,
+   ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+   margins = c(10,10),
+   main = paste(k, CT, "UP"))
+
+heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+   scale = "none",
+   col=colorRampPalette(c("navy", "gray"))(256), 
+   Colv = NA, Rowv = NA,
+   cexRow = 0.7,
+   cexCol = 0.7,
+   ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+   margins = c(10,10),
+   main = paste(k, CT, "DOWN"))
 
 # ## initial test fgsea:
 # set.seed(42)
@@ -227,4 +181,3 @@ gdw <- lapply(cts,function(CT){
 #   mutate(sens = ifelse(ES > 0, "UP", "DOWN" ))
 # pathsFull_l[[k]][[CT]] <- fgseaRes
 # pathsFiltered[[k]][[CT]] <- combipath
-

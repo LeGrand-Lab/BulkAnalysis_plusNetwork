@@ -9,6 +9,7 @@ library(shinythemes)
 library(shinyjs)
 library(shinyalert)
 library(kableExtra)
+library(heatmap3)
 
 stylebtn1 <- "color: #ffffff; background-color: #288ba8; border-color: #288ba8;"
 # stylebtn1 is Mango Tango  .... orange like
@@ -22,7 +23,7 @@ ui <- navbarPage("Muscle and Age",
         sidebarPanel( h4("Parameters"), width = 3,
                  selectInput("DAY","DAY (or timepoint):", list('D0','D2','D4','D7'),
                              selected = NULL),
-                 actionButton("LOADONLY", "Load only",
+                 actionButton("LOADSTART", "Load",
                               class="btn-primary"),
                  br(), br(),
                  textOutput("thisiscondition"),
@@ -33,7 +34,6 @@ ui <- navbarPage("Muscle and Age",
                                                               "Count"="Count"),
                                                selected = "Ratio", inline=TRUE)
                  ),
-                 
                  p("Cell types:"),
                  # tags$div(
                  #   HTML(paste("This text is ", tags$span(style="color:red", "red"), sep = "")),
@@ -147,8 +147,8 @@ ui <- navbarPage("Muscle and Age",
         column(1),
         column(10,
         tabsetPanel(
-            tabPanel("DE",
-                     actionButton("DEclassical","show"),
+            tabPanel("DEGs",
+                     strong("Differentially expressed genes"),
                       textOutput("currentDE_classical"),
                       DTOutput("DE_classical")
                     ), # end TabPanel
@@ -156,11 +156,13 @@ ui <- navbarPage("Muscle and Age",
                      p("For loaded network in 'LR-pairs' section, 
                        checks which genes are present in DE list"),
                      actionButton("execu_LR_DE","execute"),
-                     strong(textOutput("daywaspick"))
+                     strong(textOutput("daywaspick")),
+                     column(8,
+                            tableOutput("details_crossing"),
+                            )
                      
                 )
-               
-        ) # e"nd tabsetPAnel
+          ) # end tabsetPAnel
         ) #end column
       )
     )#end fluidRow
@@ -171,9 +173,31 @@ tabPanel("Pathways",
          fluidPage(
            #column(1),
            fluidRow(
-             
              column(12,
                     tabsetPanel(
+                      tabPanel("Explanation",
+                               column(2),
+                               column(8,
+                                      h1("How these plots were generated"),
+                                      strong("For each day and cell-type separately:"),
+                                      p("Whole results from DESeq2 have been top
+                                        ranked (top list containing smallest padj and bigger
+                                        absolute log2FoldChange. Then 50 top downregulated plus 
+                                        50 top upregulated genes were gathered into single
+                                        dataframe and subjected to GSEA (fgsea package) .
+                                        GSEA results were in turn splitted 
+                                        into 'UP' or 'DOWN' pathways lists
+                                        by using ES (ES < 0 means 'DOWN', whereas ES > 0 
+                                        means 'UP') and ranked by padj 
+                                        and . Top 20 pathways for both senses
+                                        were extracted to build matrices to construct
+                                        the colormaps presented in this section.
+                                        Only pathways associated to 2 genes or more
+                                        were selected for figures.
+                                        Colorbar represents NES (Normalized
+                                        Enrichement Score) value.
+                                         "),
+                                      )),
                       tabPanel("D0",
                                column(6,
                                   plotOutput("D0_ECs_UP"),
@@ -226,8 +250,6 @@ tabPanel("Pathways",
                                     plotOutput("D7_M2_DOWN"),
                                     plotOutput("D7_sCs_DOWN"))
                              ) # "ECs"  "FAPs" "M2"   "sCs" 
-
-                      
                     ) # end tabsetPAnel
              ) #end column
            )

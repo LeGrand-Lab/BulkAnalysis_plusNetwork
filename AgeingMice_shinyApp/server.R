@@ -21,7 +21,7 @@ grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
 DEclassic_file <- "DE_copy/shot_dataframe.csv"
 aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
-mhp = readRDS("drafts/matrices4heatmaps.rds")
+mhp = readRDS("Data/matrices4heatmaps.rds")
 
 # ===================== declare empty reactiveValues ==========================
 currentday <- reactiveValues(x='')
@@ -40,9 +40,6 @@ cellcolors = list(
   "M2" =  "#CC79A7",
   "Neutro" =  "#009E73",
   "sCs" = "#56B4E9" )
-
-
-
 
 # ================== function that returns chorddiagram =======================
 dochord <- function(matrx, unicolors){
@@ -75,6 +72,19 @@ server <- function(input, output, session ){
       paste("Select a DAY, then button 'Load only'")
     })
   }
+  # ========================== display DEGs by default =========================
+  displayDEGS <- function(){
+    DEGs <- read.table(DEclassic_file, sep=',',header=T) 
+    DEclassic.show$x <- DEGs %>% select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
+    rm(DEGs)
+    output$DE_classical <- renderDT(
+      DEclassic.show$x,
+      filter = "top",
+      options = list(pageLength=50, widthChange= TRUE,
+                     columnDefs = list(list(visible=FALSE, targets=c('baseMean'))))
+    )
+  }
+  displayDEGS()
   # ============================ Event select day  ===========================
   observeEvent(
     input$DAY,{
@@ -90,6 +100,7 @@ server <- function(input, output, session ){
         output$labmain_young <- renderText({"....please load..."})
         output$labmain_old <- renderText({".."})
       }else{
+       
         next
       }
     } # end input$DAY
@@ -97,7 +108,7 @@ server <- function(input, output, session ){
   
   # ===================== Event load tables (intro plots (chord) and renderDT  =======================
 
-    # REQUIRES  function 'displayintroBEST'   :: strong test
+  # REQUIRES  function 'displayintroBEST'   :: strong test
   displayintroBEST <- function(ag){
     print(names(ag))  # Young part:
     output$radiores_young_title <- renderText({
@@ -145,7 +156,8 @@ server <- function(input, output, session ){
   } #end function displayintroBEST
   
   observeEvent(
-    input$LOADONLY,{  # button load
+    input$LOADSTART,{  # button load
+      # by default 
       print("you pressed button to load the igs")
       currentday$x <- isolate(input$DAY)
       for (age in c("Young","Old")){
@@ -165,15 +177,13 @@ server <- function(input, output, session ){
       output$thisiscondition <- renderText({reacAggregPlots$doPlot})
      
       if (reacAggregPlots$doPlot == TRUE){
-        #displayintro()
         displayintroBEST(aggreg_day$x)
         output$labmain_young <- renderText({
           paste("Young, ", currentday$x, "loaded, go to tables to see available nodes")})
         
         output$labmain_old <- renderText({
           paste("Old, ", currentday$x, "loaded, go to tables to see available nodes")})
-        # ---------------------- finally,  load DT tables,....  ------------------------
-        
+        # ----------------------   load DT tables,....  ------------------------
         ###  yield tables
         output$labtabyoung <- renderText({paste(currentday$x, " ! ")})
         output$tableyoung <- renderDT(
@@ -186,12 +196,9 @@ server <- function(input, output, session ){
           igraph::as_data_frame(igElems_list$x[["Old"]], "vertices"),
           filter = "top",
           options = list(pageLength=15)) 
-        
       }
-      
-      
-     } # end input LOADONLY
-   ) # end observeEvent LOADONLY
+     } # end input LOADSTART
+   ) # end observeEvent LOADSTART
   
   
   # ============================ reactive radioButton displays ===========================
@@ -336,20 +343,6 @@ server <- function(input, output, session ){
     ) # end observeEvent GO  (button Animated)
   # =========================================================================
   # end showing subgraphs
-  # ========================== Event showing DE =============================
-  observeEvent(
-    input$DEclassical,{
-      DEGs <- read.table(DEclassic_file, sep=',',header=T) 
-      DEclassic.show$x <- DEGs %>% select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
-      rm(DEGs)
-      output$DE_classical <- renderDT(
-        DEclassic.show$x,
-        filter = "top",
-        options = list(pageLength=50, widthChange= TRUE,
-                       columnDefs = list(list(visible=FALSE, targets=c('baseMean'))))
-      )#end renderDT
-    } # end input$DEclassical
-  )
   
   # ====================== Event showing intersection DE LR ===================
   observeEvent(
@@ -365,6 +358,7 @@ server <- function(input, output, session ){
         }else{
           output$daywaspick <- renderText({paste("the DAY you picked is : ", currentday$x)})
           # subset DE by current day and set 'Symbol_celltype' in "name" column
+          head(DEclassic.show$x)
           tmp_c <- DEclassic.show$x %>% filter(day == currentday$x)
           tmp_c <- tmp_c %>% mutate(name = paste0(symbol, '_',type))
           print(head(tmp_c),2)
@@ -378,23 +372,38 @@ server <- function(input, output, session ){
           v_o = g.o[["_nx_name"]]
           v_y = g.y[["_nx_name"]]
           union_net = union(v_o, v_y)
-          #print(inDEG_notinNET)
           intersectDEG_n_NET = intersect(union_net, tmp_c$name)
-          print(paste("** ==========", currentday$x,"=================== **"))
-          print("** checking for picked day DEG genes and comparing with Network **")
-          #print(head(v_c_youngUp))
-          #print(head(v_y))
           YinDEG_notinNET = setdiff(v_c_youngUp, v_y)
           OinDEG_notinNET = setdiff(v_c_oldUp, v_o)
           inNET_notinDEG_hyperYoung = setdiff(crossedtab$x[["ExclusiveYoung"]], v_c_youngUp )
           inNET_notinDEG_hyperOld = setdiff(crossedtab$x[["ExclusiveOld"]], v_c_oldUp)
+         
+          print(paste("** %%%%%%%%%%%%%", currentday$x,"%%%%%%%%%%%%% **"))
+          print("** checking for picked day DEG genes and comparing with Network **")
           print(paste(length(intersectDEG_n_NET), "<== intersection DEG and NET"))
           print(paste(length(YinDEG_notinNET), "<== hyperYoungDEG not in NET"))
           print(paste(length(OinDEG_notinNET), "<== hyperOldDEG not in NET"))
           print(paste(length(inNET_notinDEG_hyperYoung), "<== exclusiveYoung but not seen in DEG list"))
           print(paste(length(inNET_notinDEG_hyperOld), "<== exclusiveOld but not seen in DEG list"))
-          print("======================================================================")
-          #print(paste(length(, " ????"))
+          print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+          
+          output$details_crossing <- renderTable({
+            data.frame("description" = c("intersection DEG and NET",
+                                         "UpregulatedYoungDEG not in NET",
+                                         "UpreglatedOldDEG not in NET"
+                                         ),
+                       "genesymbols_celltype" = c(
+                         paste(intersectDEG_n_NET, collapse=", "),
+                         paste(YinDEG_notinNET, collapse=", " ),
+                         paste(OinDEG_notinNET, collapse=", ")
+                         
+                       ),
+                       "number" = c(length(intersectDEG_n_NET),
+                                    length(OinDEG_notinNET ),
+                                    length(OinDEG_notinNET)
+                       )
+            ) # end data.frame
+            })
         }
       }
     )# end event LR_DE
@@ -501,10 +510,7 @@ server <- function(input, output, session ){
                main = paste(k, CT, "DOWN"))
     })
   }) # end sapply D7
-
-  # =============================end added pathways =================================
-  
-  
+  # ========================== end added pathways ==============================
   } # end server function
 
 
