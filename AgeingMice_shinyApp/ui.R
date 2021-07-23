@@ -195,6 +195,8 @@ tabPanel("Pathways",
                                         Colorbar represents NES (Normalized
                                         Enrichement Score) value.
                                          "),
+                                      br(),
+                                      p("Collections used are REACTOME and HALLMARK")
                                       )),
                       tabPanel("D0",
                                column(6,
