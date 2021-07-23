@@ -79,16 +79,16 @@ pathsFiltered = readRDS("AgeingMice_shinyApp/drafts/fgseaByDay_filtered.rds" )
 ## prepare matrices for heatmaps
 mhp = list()
 for (k in c('D0','D2', 'D4', 'D7')){
-  cts <- unique(DE_l[[k]]$type) 
+  cts <- unique(names(pathsFiltered[[k]])) 
   mhp[[k]] <- list()
   for (CT in cts){
-    mhp[[k]][[CT]] <- list()
+    mhp[[k]][[CT]] <- list("UP"=NULL,"DOWN"=NULL)
     for(S in c("UP","DOWN")){
       here.data = as.data.frame(pathsFiltered[[k]][[CT]])
-      here.data <- here.data %>% filter(sens == 'UP')
+      here.data <- here.data %>% filter(sens == S)
       here.dico = list()
       if(length(here.data$path4graph) == length(unique(here.data$path4graph) )){
-        print("yjjsjjsjj")
+        print(paste("ok, processing", k, CT, S))
         rownames(here.data) =  here.data$path4graph
         aggreg_genes = c()
         for (path in here.data$path4graph){
@@ -109,10 +109,8 @@ for (k in c('D0','D2', 'D4', 'D7')){
         }
         # clear rows and columns containing 2 or less values
         matrx <- matrx[rownames(matrx) != "DISEASE",]          # take away "DISEASE" is stupid
-        rtokeep <- apply(matrx, 1, function(x) sum(!is.na(x)) >= 4)
-        ctokeep <- apply(matrx, 2, function(x) sum(!is.na(x)) >= 4)
-        newm <- matrx[rtokeep,ctokeep]
-        
+        rtokeep <- apply(matrx, 1, function(x) sum(!is.na(x)) >= 3)
+        newm <- matrx[rtokeep,]
         mhp[[k]][[CT]][[S]] <- newm
       } else {
         print(paste("error, this", k, CT ,"  contains repeated pathwaynames") )
@@ -125,10 +123,83 @@ for (k in c('D0','D2', 'D4', 'D7')){
 
 
 View(mhp[["D7"]][["M2"]][["UP"]])
+View(mhp[["D7"]][["M2"]][["DOWN"]])
+saveRDS(mhp, file="AgeingMice_shinyApp/drafts/matrices4heatmaps.rds" )
 
-saveRDS(pathsFiltered, file="AgeingMice_shinyApp/drafts/matrices4heatmaps.rds" )
+mhp = readRDS("AgeingMice_shinyApp/drafts/matrices4heatmaps.rds")
+library(pheatmap)
+library(cowplot)
+library(heatmap3)
+library(heatmaply)
+library(RColorBrewer)
+library(gridExtra)
+for(k in c('D4')){
+  cts = names(mhp[[k]])
+  liplots = list()
+  for (CT in cts){
+       heatmaply_na(mhp[[k]][[CT]][["UP"]], na.value="lightgray", 
+                    colors="Reds")
+          
+    
+    a <- heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+             scale = "none",
+             col=colorRampPalette(c("gray","firebrick3"))(256), 
+             na.color="white",
+             Colv = NA, Rowv = NA,
+             cexRow = 0.7,
+             cexCol = 0.7,
+             ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+             RowSideWidth = nrow(mhp[[k]][[CT]][["UP"]]),
+             margins = c(10,10),
+             main = paste(k, CT, "UP"))
+    
+    
+    b <- heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+                  scale = "none",
+                  col=colorRampPalette(c("navy", "gray"))(256), 
+                  Colv = NA, Rowv = NA,
+                  cexRow = 0.7,
+                  cexCol = 0.7,
+                  ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+                  margins = c(10,10),
+                  main = paste(k, CT, "DOWN"))
+    
 
-
+  }
+}
+library(gridGraphics)
+library(grid)
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
+library(gplots)
+gup <- lapply(cts, function(CT){
+  heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+           scale = "none",
+           col=colorRampPalette(c("gray","firebrick3"))(256), 
+           na.color="white",
+           Colv = NA, Rowv = NA,
+           cexRow = 0.7,
+           cexCol = 0.7,
+           ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+           RowSideWidth = nrow(mhp[[k]][[CT]][["UP"]]),
+           margins = c(10,10),
+           main = paste(k, CT, "UP"))
+  grab_grob()
+})
+gdw <- lapply(cts,function(CT){
+  heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+           scale = "none",
+           col=colorRampPalette(c("navy", "gray"))(256), 
+           Colv = NA, Rowv = NA,
+           cexRow = 0.7,
+           cexCol = 0.7,
+           ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+           margins = c(10,10),
+           main = paste(k, CT, "DOWN"))
+  grab_grob
+})
 
 # ## initial test fgsea:
 # set.seed(42)

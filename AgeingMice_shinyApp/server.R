@@ -9,6 +9,7 @@ library(DT)
 library(shinyalert)
 library(circlize)
 library(kableExtra)
+library(heatmap3)
 
 # TODO: !!somewhere take note: 'dynamic' DE, for M1 yielded no significant 
 #  because from one day to the next the change was not important
@@ -20,6 +21,8 @@ grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
 DEclassic_file <- "DE_copy/shot_dataframe.csv"
 aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
+mhp = readRDS("drafts/matrices4heatmaps.rds")
+
 # ===================== declare empty reactiveValues ==========================
 currentday <- reactiveValues(x='')
 igElems_list <- reactiveValues(x=list())  # the networks objects, both ages
@@ -93,33 +96,8 @@ server <- function(input, output, session ){
   ) # end observeEvent
   
   # ===================== Event load tables (intro plots (chord) and renderDT  =======================
-  # REQUIRES  function 'displayintro'  : initial test
-    displayintro <- function(){
-    output$radiores_young_title <- renderText({
-      if (reacAggregPlots$doPlot == FALSE) { return () } else {
-        return(isolate(input$radioAggreg))
-      } })
-    output$radiores_young_A <-  renderPlot({
-      mini = matrix(c(100,200,10,50), 2,2 )
-      rownames(mini) = c('A','B')
-      colnames(mini) = c('A','B')
-      if (reacAggregPlots$doPlot == FALSE) { return(NULL) } else {
-        dochord(mini)
-      } })
-    output$radiores_young_B <-  function(){  # the table is special
-      if (reacAggregPlots$doPlot == FALSE) { return () } else {
-        df <- head(iris)
-        df %>%
-          knitr::kable("html") %>%
-          kable_styling("striped", full_width = F) %>%
-          add_header_above(c(" ", "To" = dim(df)[2]-1)) %>% 
-          add_footnote("rownames are 'From' nodes, colnames are 'To' nodes")
-      } } #end table
-    
-    # for old : TODO
-    # ...
-  }
-    # REQUIRES  function 'displayintro'   :: strong test
+
+    # REQUIRES  function 'displayintroBEST'   :: strong test
   displayintroBEST <- function(ag){
     print(names(ag))  # Young part:
     output$radiores_young_title <- renderText({
@@ -127,9 +105,8 @@ server <- function(input, output, session ){
         if (input$radioAggreg == "Ratio"){
           return("Cumulated weight / number of connections ")
         }else{
-          return(isolate(input$radioAggreg))
-        }
-      } })
+          return(isolate(input$radioAggreg))} # endif
+      } }) # endif # end renderText
     output$radiores_young_A <-  renderPlot({
       if (reacAggregPlots$doPlot == FALSE) { return(NULL) } else {
         dochord(ag[["Young"]][[input$radioAggreg]], unicolors= ag[["Colorsmat"]])
@@ -143,9 +120,30 @@ server <- function(input, output, session ){
           add_header_above(c(" ", "To" = dim(df)[2])) %>% 
           add_footnote("rownames are 'From' nodes, colnames are 'To' nodes")
       } } #end table # end young part
-    # for old : TODO
-    # ...
-  }
+    # for old : 
+    output$radiores_old_title <- renderText({
+      if (reacAggregPlots$doPlot == FALSE) { return () } else {
+        if (input$radioAggreg == "Ratio"){
+          return("Cumulated weight / number of connections ")
+        }else{
+          return(isolate(input$radioAggreg))
+        }
+      } })
+    output$radiores_old_A <-  renderPlot({
+      if (reacAggregPlots$doPlot == FALSE) { return(NULL) } else {
+        dochord(ag[["Old"]][[input$radioAggreg]], unicolors= ag[["Colorsmat"]])
+      } } , height = 450, width = 450 )
+    output$radiores_old_B <-  function(){  # the table is special
+      if (reacAggregPlots$doPlot == FALSE) { return () } else {
+        df <- ag[["Old"]][[input$radioAggreg]]
+        df %>%
+          knitr::kable("html") %>%
+          kable_styling("striped", full_width = F) %>%
+          add_header_above(c(" ", "To" = dim(df)[2])) %>% 
+          add_footnote("rownames are 'From' nodes, colnames are 'To' nodes")
+      } } #end table # end old part
+  } #end function displayintroBEST
+  
   observeEvent(
     input$LOADONLY,{  # button load
       print("you pressed button to load the igs")
@@ -169,25 +167,28 @@ server <- function(input, output, session ){
       if (reacAggregPlots$doPlot == TRUE){
         #displayintro()
         displayintroBEST(aggreg_day$x)
-      }
-      # ---------------------- finally,  load DT tables,....  ------------------------
-      output$labmain_young <- renderText({
-       paste("Young, ", currentday$x, "loaded, go to tables to see available nodes")})
-      output$labmain_old <- renderText({
-       paste("Old, ", currentday$x, "loaded, go to tables to see available nodes")})
-    
-      ###  yield tables
-      output$labtabyoung <- renderText({paste(currentday$x, " ! ")})
-      output$tableyoung <- renderDT(
-        igraph::as_data_frame(igElems_list$x[["Young"]],"vertices"),
-        filter = "top",
-        options = list(pageLength=15))
+        output$labmain_young <- renderText({
+          paste("Young, ", currentday$x, "loaded, go to tables to see available nodes")})
+        
+        output$labmain_old <- renderText({
+          paste("Old, ", currentday$x, "loaded, go to tables to see available nodes")})
+        # ---------------------- finally,  load DT tables,....  ------------------------
+        
+        ###  yield tables
+        output$labtabyoung <- renderText({paste(currentday$x, " ! ")})
+        output$tableyoung <- renderDT(
+          igraph::as_data_frame(igElems_list$x[["Young"]],"vertices"),
+          filter = "top",
+          options = list(pageLength=15))
         # renderTable({ igraph::as_data_frame(igElems_list$x[["Young"]],"vertices")})
-      output$labtabold <- renderText({paste(currentday$x, " ! ")})
-      output$tableold <- renderDT(
-        igraph::as_data_frame(igElems_list$x[["Old"]], "vertices"),
-        filter = "top",
-        options = list(pageLength=15)) 
+        output$labtabold <- renderText({paste(currentday$x, " ! ")})
+        output$tableold <- renderDT(
+          igraph::as_data_frame(igElems_list$x[["Old"]], "vertices"),
+          filter = "top",
+          options = list(pageLength=15)) 
+        
+      }
+      
       
      } # end input LOADONLY
    ) # end observeEvent LOADONLY
@@ -358,6 +359,9 @@ server <- function(input, output, session ){
           print(isolate(input$DAY))
         }else if(currentday$x != isolate(input$DAY)){
           output$daywaspick <- renderText({paste("error, the day in selector is not same as loaded")})
+        }else if(is.null(crossedtab$x)){
+          output$daywaspick <- renderText({paste("day:",currentday$x, 
+                                                 " you must also click 'docross' in 'cross' tab in L-R section")})
         }else{
           output$daywaspick <- renderText({paste("the DAY you picked is : ", currentday$x)})
           # subset DE by current day and set 'Symbol_celltype' in "name" column
@@ -394,7 +398,116 @@ server <- function(input, output, session ){
         }
       }
     )# end event LR_DE
+  
+  
+  # ========================== addd pathways (display by default) ============================
+  sapply(names(mhp[['D0']]), function(CT, k = 'D0'){
+    print(CT)
+    output[[paste0(k,"_",CT,"_","UP")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+               scale = "none",
+               col=colorRampPalette(c("gray","firebrick3"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "UP"))
+    })
+    output[[paste0(k,"_",CT,"_","DOWN")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+               scale = "none",
+               col=colorRampPalette(c("navy","gray"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "DOWN"))
+    })
+  }) # end sapply D0
+  sapply(names(mhp[['D2']]), function(CT, k = "D2"){
+    print(CT)
+    output[[paste0(k,"_",CT,"_","UP")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+               scale = "none",
+               col=colorRampPalette(c("gray","firebrick3"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "UP"))
+    })
+    output[[paste0(k,"_",CT,"_","DOWN")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+               scale = "none",
+               col=colorRampPalette(c("navy","gray"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "DOWN"))
+    })
+  }) # end sapply D2
+  sapply(names(mhp[['D4']]), function(CT, k='D4'){
+    print(CT)
+    output[[paste0(k,"_",CT,"_","UP")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+               scale = "none",
+               col=colorRampPalette(c("gray","firebrick3"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "UP"))
+    })
+    output[[paste0(k,"_",CT,"_","DOWN")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+               scale = "none",
+               col=colorRampPalette(c("navy","gray"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "DOWN"))
+    })
+  }) # end sapply D4
+  sapply(names(mhp[['D7']]), function(CT, k='D7'){
+    print(CT)
+    output[[paste0(k,"_",CT,"_","UP")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["UP"]]),  
+               scale = "none",
+               col=colorRampPalette(c("gray","firebrick3"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "UP"))
+    })
+    output[[paste0(k,"_",CT,"_","DOWN")]] <- renderPlot({
+      heatmap3(as.matrix(mhp[[k]][[CT]][["DOWN"]]),  
+               scale = "none",
+               col=colorRampPalette(c("navy","gray"))(256), 
+               Colv = NA, Rowv = NA,
+               cexRow = 1,
+               cexCol = 1,
+               ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
+               margins = c(7,10),
+               main = paste(k, CT, "DOWN"))
+    })
+  }) # end sapply D7
+
+  # =============================end added pathways =================================
+  
+  
   } # end server function
+
+
 
 
 #### END

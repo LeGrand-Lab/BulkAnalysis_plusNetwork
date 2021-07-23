@@ -82,18 +82,21 @@ ui <- navbarPage("Muscle and Age",
                     tabsetPanel(
                          tabPanel("Load",
                                   strong(textOutput("labmain_young")),
-                                  strong(textOutput("radiores_young_title")),
                                   fluidRow(
                                     column(width= 7,
+                                           strong(textOutput("radiores_young_title")),
                                            plotOutput("radiores_young_A", width="100%")),
                                     column(width=2,
                                            tableOutput("radiores_young_B"))
                                   ),
-                                  #plotOutput("visnet_y"),
+                                  br(),
+                                  br(),
+                                  br(),
                                   strong(textOutput("labmain_old")),
-                                  strong(textOutput("radiores_old_title")),
+                                 
                                   fluidRow(
                                     column(width=7,
+                                           strong(textOutput("radiores_old_title")),
                                            plotOutput("radiores_old_A", width="100%")),
                                     column(width= 2,
                                            tableOutput("radiores_old_B"))
@@ -129,11 +132,11 @@ ui <- navbarPage("Muscle and Age",
            ),
   # ============================== DE tabPanel ============================               
 
-  tabPanel("DE ... in construction",
+  tabPanel("DEG",
     fluidPage(
       #column(1),
-      column(4, h4("DE classical approach"), 
-                   
+      column(8, h4("DE comparing Old vs Young by day and by celltype"),
+             p("data has been filtered by padj<0.05 & abs(log2FoldChange) >= 1.2")
                     #,
                     #selectInput("celltype","pickcelltype", 
                     #            list('ECs','FAPs','M1','M2','Neutro','sCs'),
@@ -159,12 +162,77 @@ ui <- navbarPage("Muscle and Age",
                
         ) # e"nd tabsetPAnel
         ) #end column
-      
-  
       )
-      
     )#end fluidRow
   ),#end tabPanel DE
+
+# ============================    tabpanel pathways  ==================================
+tabPanel("Pathways",
+         fluidPage(
+           #column(1),
+           fluidRow(
+             
+             column(12,
+                    tabsetPanel(
+                      tabPanel("D0",
+                               column(6,
+                                  plotOutput("D0_ECs_UP"),
+                                  plotOutput("D0_FAPs_UP"),
+                                  plotOutput("D0_sCs_UP")),
+                               column(6,
+                                      plotOutput("D0_ECs_DOWN"),
+                                      plotOutput("D0_FAPs_DOWN"),
+                                      plotOutput("D0_sCs_DOWN")),
+                                     ),
+                    tabPanel("D2",
+                             column(6,
+                                    plotOutput("D2_ECs_UP"),
+                                    plotOutput("D2_FAPs_UP"),
+                                    plotOutput("D2_M1_UP"),
+                                    plotOutput("D2_M2_UP"),
+                                    plotOutput("D2_Neutro_UP"),
+                                    plotOutput("D2_sCs_UP")),
+                             column(6,
+                                    plotOutput("D2_ECs_DOWN"),
+                                    plotOutput("D2_FAPs_DOWN"),
+                                    plotOutput("D2_M1_DOWN"),
+                                    plotOutput("D2_M2_DOWN"),
+                                    plotOutput("D2_Neutro_DOWN"),
+                                    plotOutput("D2_sCs_DOWN")),
+                    ),
+                    tabPanel("D4",
+                             column(6,
+                                    plotOutput("D4_ECs_UP"),
+                                    plotOutput("D4_FAPs_UP"),
+                                    plotOutput("D4_M1_UP"),
+                                    plotOutput("D4_M2_UP"),
+                                    plotOutput("D4_sCs_UP")),
+                             column(6,
+                                    plotOutput("D4_ECs_DOWN"),
+                                    plotOutput("D4_FAPs_DOWN"),
+                                    plotOutput(("D4_M1_DOWN")),
+                                    plotOutput("D4_M2_DOWN"),
+                                    plotOutput("D4_sCs_DOWN"))
+                             ),
+                    tabPanel("D7",
+                             column(6,
+                                    plotOutput("D7_ECs_UP"),
+                                    plotOutput("D7_FAPs_UP"),
+                                    plotOutput("D7_M2_UP"),
+                                    plotOutput("D7_sCs_UP")),
+                             column(6,
+                                    plotOutput("D7_ECs_DOWN"),
+                                    plotOutput("D7_FAPs_DOWN"),
+                                    plotOutput("D7_M2_DOWN"),
+                                    plotOutput("D7_sCs_DOWN"))
+                             ) # "ECs"  "FAPs" "M2"   "sCs" 
+
+                      
+                    ) # end tabsetPAnel
+             ) #end column
+           )
+         )#end fluidRow
+),#end tabPanel DE
   
   # ============================== About ============================           
   tabPanel("About",
@@ -176,7 +244,7 @@ ui <- navbarPage("Muscle and Age",
                     p(paste("\nThis application contains bioinformatic analysis",
                             "related to Bulk RNA-seq experiment conducted on skeletal muscle of",
                             "young and ageing backgrounds in mice. Main authors are",
-                            "DH. Hoang,  ,  ....., W. Jarassier,  F. Le Grand, B. Chazaud, and  J Feigé ")),
+                            "DH. Hoang, (...) , W. Jarassier,  F. Le Grand, B. Chazaud, and  J Feigé ")),
                     br(),
                     p(paste("Bioinformatic analysis presented here (including this shiny", 
                             "application you are exploring right now)",
