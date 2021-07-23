@@ -157,9 +157,7 @@ ui <- navbarPage("Muscle and Age",
                        checks which genes are present in DE list"),
                      actionButton("execu_LR_DE","execute"),
                      strong(textOutput("daywaspick")),
-                     column(8,
-                            tableOutput("details_crossing"),
-                            )
+                     tableOutput("details_crossing"),
                      
                 )
           ) # end tabsetPAnel

@@ -99,6 +99,7 @@ server <- function(input, output, session ){
         output$radiores_old_B <- renderTable({NULL})
         output$labmain_young <- renderText({"....please load..."})
         output$labmain_old <- renderText({".."})
+        output$crossinf <- renderText({NULL})
       }else{
        
         next
