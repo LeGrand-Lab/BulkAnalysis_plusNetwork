@@ -1,5 +1,6 @@
 ## 
 # Detect Differential Expression at each time-point, by cellType
+# output: all results into 'exam_INTER_conditions/static/'
 # --
 # Joha GL
 ##
@@ -26,12 +27,12 @@ register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 
 setwd("~/BulkAnalysis_plusNetwork/")
 odir = "exam_INTER_conditions/static/"
-shot_t = "shot_dataframe_unfiltered.csv"  
-# 'unfiltered' has in reality soft filters : padj 0.5 and lfc 0.1 , see line 75
-shot_t_f = "shot_dataframe.csv"
+
+shot_sf = "shot_dataframe_softfilter.csv"  # soft filters are : padj 0.5 and lfc 0.1 
+shot_fi = "shot_dataframe_finalfilter.csv" # final filter applied padj0.05 lfc>= 1.2
 
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
-
+volcanoneeded <- FALSE
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
 fmat <- readRDS(prefil_cou)
@@ -57,10 +58,10 @@ colData(ds.o)$age <- factor(colData(ds.o)$age,
 
 time.type <- sort(unique(colData(ds.o)$timetype))
 
-sortie <- data.frame("baseMean"= double(), "log2FoldChange"= double(), 
-                     "lfcSE"= double(),  "stat" = double(), 
-                     "pvalue" = double(), "padj" = double(),
-                     "id" = character(), "day" = character(), "type"=character())
+sortie_full <- data.frame("baseMean"= double(), "log2FoldChange"= double(), 
+                          "lfcSE"= double(),  "stat" = double(), 
+                          "pvalue" = double(), "padj" = double(),
+                          "id" = character(), "day" = character(), "type"=character())
 
 for (k in time.type){
   time <- str_split(k, "\\.")[[1]][1]
@@ -71,88 +72,85 @@ for (k in time.type){
   ds.sub <- DESeq(ds.sub.o, test="Wald", full=~age)
   deres <- lfcShrink(ds.sub, coef="age_Old_vs_Young", type="apeglm",
                      parallel=T)
-  # run thing:
   deres$id <- rownames(deres)
-  deres <- as_tibble(deres) %>% filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
   deres$day = time
   deres$type = type
-  sortie <- rbind(sortie,deres)
+  # pile full output
+  sortie_full <- rbind(sortie_full, as_tibble(deres))
+  deres_f <- as_tibble(deres) %>% filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
+  out_softfilt <- rbind(out_softfilt,deres_f)
 }
+# complete tables with gene_symbols:
+sortie_full$symbol <- genes_df[match(sortie_full$id, genes_df$Geneid),]$symbol
 # save these results
-write.table(sortie, paste0(odir, shot_t), sep="\t", col.names=T, row.names = F)
+saveRDS(sortie_full, paste0(odir, "shot_rds_full.rds")) 
+#write.table(sortie_full, paste0(odir, "shot_dataframe_full.csv"), sep="\t", col.names=T, row.names = F) 
+out_softfilt <- sortie_full %>% filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
 
+write.table(out_softfilt, paste0(odir, shot_sf), 
+            sep="\t", col.names=T, row.names = F) 
 # save significant extract (~1000 genes):
-write.table(sortie %>% filter(padj<0.05 & abs(log2FoldChange) >= 1.2),
-            paste0(odir,shot_t_f), sep="\t", col.names=T, row.names = F)
-# complete table with gene_symbols:
-sortie <- read.table(paste0(odir,shot_t_f), sep="\t", header=T)
-
-rownames(genes_df) <- genes_df$Geneid
-symvec <- c()
-for (i in sortie$id){
-  symvec <- c(symvec, genes_df[i,]$symbol)
-}
-sortie$symbol <- symvec
-write.table(sortie %>% filter(padj<0.05 & abs(log2FoldChange) >= 1.2),
-            paste0(odir,shot_t_f), sep="\t", col.names=T, row.names = F)
+significant_df = out_softfilt %>% filter(padj <= 0.05 & abs(log2FoldChange) >= 1.2)
+write.table(significant_df, paste0(odir,shot_fi), sep="\t", col.names=T, row.names = F)
 ####  downstream
-# how many UP?
-upsortie <- sortie %>% filter(log2FoldChange > 0.05)
+# how many UP
+upsortie <- out_softfilt %>% filter(log2FoldChange > 0.05)
 (dim(upsortie))
 View(upsortie)
-
-# DOWN?
-dosortie <- sortie %>% filter(log2FoldChange < 0)
+# how many DOWN
+dosortie <- out_softfilt %>% filter(log2FoldChange < 0)
 
 # ** VOLCANOES ** :
-sortie <- read.table(paste0(odir, shot_t),sep="\t", header=T)
-# set aesthetics data:
-sortie <- sortie %>% mutate(DEsignificant=case_when(
-  padj < 1e-10 & abs(log2FoldChange) >= 1.2 ~ "FDR < 1e-10" ,
-  padj <= 0.05 & padj > 1e-10 & abs(log2FoldChange) >= 1.2 ~ "FDR <= 0.05 ",
-  padj > 0.05 | abs(log2FoldChange) < 1.2 ~ "Not Sig"
-))
-sortie$symbol <- genes_df[match(sortie$id, genes_df$Geneid),]$symbol
-# n number of UP or DOWN regulated genes
-DEgenUP.type <- sortie %>% 
-  filter(padj <= 0.05 & log2FoldChange > 1.2) %>%
-  group_by(type) %>% tally(n="UP")
-DEgenDOWN.type <- sortie %>% 
-  filter(padj <= 0.05 & log2FoldChange < -1.2) %>%
-  group_by(type) %>% tally(n="DOWN")
-DEgene.count.type <- merge(DEgenDOWN.type, DEgenUP.type, by="type")
-nbDE.vec <- paste0(DEgene.count.type$type," (",DEgene.count.type$DOWN,"|",
-                            DEgene.count.type$UP,")")
-names(nbDE.vec) <- factor(DEgene.count.type$type)
-
-
-col_vir <- viridis_pal(begin=0,end=1)(10)  # nice scale, to pick from
-
-# print stuff:
-pdf(paste0(odir,"volcano_snapshot.pdf"), width=14, height=10)
-ggplot(sortie, aes(x=log2FoldChange, y = -log10(padj+1e-20))) +
-  geom_point(aes(color=DEsignificant),size=.3) +
-  scale_color_manual(values=c(col_vir[7], col_vir[3],"gray")) +
-  facet_grid(vars(day),vars(type),
-             labeller=labeller(type=nbDE.vec)) + 
-  theme_calc() +
-  theme(panel.grid.major=element_blank()) +
-  geom_vline(xintercept = c(1.2,-1.2),color=col_vir[5],
-             linetype="dashed", size=.2) +
-  geom_text_repel(
-    data= subset(sortie, padj < 0.0005 & 
-                   abs(log2FoldChange) > 1.2),
-    aes(label=symbol, color=DEsignificant),
-    size=2,
-    segment.size = .1,
-    force=2, force_pull = 2,
-    max.overlaps=15
-  ) +
-  labs(title="Old vs Young across time&type",
-       caption="vertical lines: ABS(log2FoldChange)=1.2 \n 
+if (volcanoneeded){
+  out_softfilt <- read.table(paste0(odir, shot_sf),sep="\t", header=T)
+  # set aesthetics data:
+  out_softfilt <- out_softfilt %>% mutate(DEsignificant=case_when(
+    padj < 1e-10 & abs(log2FoldChange) >= 1.2 ~ "FDR < 1e-10" ,
+    padj <= 0.05 & padj > 1e-10 & abs(log2FoldChange) >= 1.2 ~ "FDR <= 0.05 ",
+    padj > 0.05 | abs(log2FoldChange) < 1.2 ~ "Not Sig"
+  ))
+  out_softfilt$symbol <- genes_df[match(out_softfilt$id, genes_df$Geneid),]$symbol
+  # n number of UP or DOWN regulated genes
+  DEgenUP.type <- out_softfilt %>% 
+    filter(padj <= 0.05 & log2FoldChange > 1.2) %>%
+    group_by(type) %>% tally(n="UP")
+  DEgenDOWN.type <- out_softfilt %>% 
+    filter(padj <= 0.05 & log2FoldChange < -1.2) %>%
+    group_by(type) %>% tally(n="DOWN")
+  DEgene.count.type <- merge(DEgenDOWN.type, DEgenUP.type, by="type")
+  nbDE.vec <- paste0(DEgene.count.type$type," (",DEgene.count.type$DOWN,"|",
+                     DEgene.count.type$UP,")")
+  names(nbDE.vec) <- factor(DEgene.count.type$type)
+  
+    col_vir <- viridis_pal(begin=0,end=1)(10)  # nice scale, to pick from
+  
+  # print stuff:
+  pdf(paste0(odir,"volcano_snapshot.pdf"), width=14, height=10)
+  ggplot(out_softfilt, aes(x=log2FoldChange, y = -log10(padj+1e-20))) +
+    geom_point(aes(color=DEsignificant),size=.3) +
+    scale_color_manual(values=c(col_vir[7], col_vir[3],"gray")) +
+    facet_grid(vars(day),vars(type),
+               labeller=labeller(type=nbDE.vec)) + 
+    theme_calc() +
+    theme(panel.grid.major=element_blank()) +
+    geom_vline(xintercept = c(1.2,-1.2),color=col_vir[5],
+               linetype="dashed", size=.2) +
+    geom_text_repel(
+      data= subset(out_softfilt, padj < 0.0005 & 
+                     abs(log2FoldChange) > 1.2),
+      aes(label=symbol, color=DEsignificant),
+      size=2,
+      segment.size = .1,
+      force=2, force_pull = 2,
+      max.overlaps=15
+    ) +
+    labs(title="Old vs Young across time&type",
+         caption="vertical lines: ABS(log2FoldChange)=1.2 \n 
        (DOWN | UP) regulated genes \n
        labels only for genes padj < 0.0005")
-dev.off()
+  dev.off()
+}
+
 
 # ============================================================================
 # END
@@ -172,4 +170,9 @@ dev.off()
 # !yeah ==> https://www.biorxiv.org/content/10.1101/2020.02.01.930602v1.full
 # ! yeah : https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-1403-0
 
-
+#rownames(genes_df) <- genes_df$Geneid
+#symvec <- c()
+#for (i in sortie_full$id){
+#  symvec <- c(symvec, genes_df[i,]$symbol)
+#}
+#sortie_full$symbol <- symvec

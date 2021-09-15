@@ -21,7 +21,7 @@ grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
 DEclassic_file <- "DE_copy/shot_dataframe.csv"
 aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
-mhp = readRDS("Data/matrices4heatmaps.rds")
+mhp = readRDS("Data/fgsea_matrices4heatmaps.rds")
 
 # ===================== declare empty reactiveValues ==========================
 currentday <- reactiveValues(x='')
