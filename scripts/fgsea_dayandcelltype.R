@@ -1,6 +1,6 @@
 #  Runs GSEA by day and celltype
 # from 'static' DEGs
-# Saves rds objects into exam_INTER_conditions/static/gsea/
+# Saves rds objects into exam_INTER_conditions/static/GSEA/
 # --
 # johaGL
 library(fgsea)
@@ -9,31 +9,32 @@ setwd("~/BulkAnalysis_plusNetwork/")
 # and perform gsea like analysis with gprofiler2
 
 odir = "exam_INTER_conditions/static/"
-shot_t = "shot_dataframe_softfilter.csv"   # this is soft filtered version
+degfile = "shot_dataframe_softfilter.csv"   # this is soft filtered version
 
-DEuf <- read.table(paste0(odir, shot_t), header=T, sep='\t')
-# DEfi <- read.table(paste0(odir, shot_t_f), header=T, sep=',')
-summary(DEuf)
+DEdf <- read.table(paste0(odir, degfile), header=T, sep='\t')
+# DEfi <- read.table(paste0(odir, degfile), header=T, sep=',')
+summary(DEdf)
 # gene symbol missing, add it
 genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
 
-DEuf$symbol <- genes_df[match(DEuf$id, genes_df$Geneid),]$symbol
-head(DEuf)
+DEdf$symbol <- genes_df[match(DEdf$id, genes_df$Geneid),]$symbol
+head(DEdf)
 
-# split by day and keep in a list that will be our query:
+# ======= split by day and keep in a list of dataframes (each df ~100 genes): =====
 DE_l = list()  #  
 for (k in c('D0','D2', 'D4', 'D7')){
-  tmp <- DEuf %>% filter(day == k)  %>% 
+  tmp <- DEdf %>% filter(day == k)  %>% 
     mutate(absLFC = abs(log2FoldChange)) %>% mutate(sens= ifelse(log2FoldChange < 0,"down", "up"))
   # keep top genes by abslfc and pval
-  tmp_up <- tmp %>% filter(sens == "up") %>% group_by(type)   %>%
+  tmp_up <- tmp %>% filter(sens == "up") %>% group_by(type) %>%
     arrange(padj, desc(absLFC), .by_group = TRUE) %>% slice_min(padj, n=50)
   tmp_down <- tmp %>% filter(sens == "down") %>% group_by(type)   %>%
     arrange(padj, desc(absLFC), .by_group = TRUE) %>% slice_min(padj, n=50)
   DE_l[[k]] <-  rbind(tmp_up,tmp_down)
 }
 
-# ======================== perform Gsea on top ranked genes
+# ======================== perform Gsea on top ranked genes ====================
+# the genes from previous step
 thegmt <- read.table(paste0("stock_gmtfiles/","Hallmark_React.gmt"), sep='\t',
                      header=T)
 msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
@@ -63,7 +64,6 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
     topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=15), ]
     combipath <- rbind(topPathwaysUp, topPathwaysDown)
     combipath <- combipath %>% 
-      mutate(path4graph = str_replace(pathway, "REACTOME_", "")) %>% 
       mutate(sens = ifelse(ES > 0, "UP", "DOWN" ))
     dd[[CT]] <- fgseaRes
     dd_f[[CT]] <- combipath
@@ -98,7 +98,6 @@ saveRDS(pathsFiltered, file=paste0(odir, "GSEA/fgseaByDay_filtered.rds" ))
 # topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=15), ]
 # combipath <- rbind(topPathwaysUp, topPathwaysDown)
 # combipath <- combipath %>% 
-#   mutate(path4graph = str_replace(pathway, "REACTOME_", "")) %>% 
 #   mutate(sens = ifelse(ES > 0, "UP", "DOWN" ))
 # pathsFull_l[[k]][[CT]] <- fgseaRes
 # pathsFiltered[[k]][[CT]] <- combipath
