@@ -48,9 +48,10 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
   dd <- list()
   dd_f <- list()
   for (CT in cts){
-    here.df <- DE_l[[k]] %>% filter(type == CT)
+    here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
+      select(log2FoldChange, symbol)
     print(c(k, CT))
-    gseagenes = here.df %>% arrange(desc(absLFC)) %>% pull(log2FoldChange)
+    gseagenes = here.df %>% pull(log2FoldChange)
     names(gseagenes) <- here.df$symbol
     print(gseagenes)
     barplot(sort(gseagenes))
@@ -72,32 +73,7 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
   pathsFiltered[[k]] <- dd_f
 }
 
-saveRDS(pathsFull_l, file=paste0(odir,"GSEA/fgseaByDay_full.rds" ))
-saveRDS(pathsFiltered, file=paste0(odir, "GSEA/fgseaByDay_filtered.rds" ))
+#saveRDS(pathsFull_l, file=paste0(odir,"GSEA/fgseaByDay_full.rds" ))
+#saveRDS(pathsFiltered, file=paste0(odir, "GSEA/fgseaByDay_filtered.rds" ))
 
 
-# ## initial test fgsea:
-# set.seed(42)
-# pathsFull_l = list()
-# pathsFiltered = list()
-# k = 'D0'
-# cts <- unique(DE_l[[k]]$type) 
-# CT <- 'ECs'
-# here.df <- DE_l[[k]] %>% filter(type == CT)
-# gseagenes = here.df %>% arrange(desc(absLFC)) %>% pull(log2FoldChange)
-# names(gseagenes) <- here.df$symbol
-# barplot(sort(gseagenes))
-# pathsFull_l[[k]] = list()
-# pathsFiltered[[k]] = list()
-# fgseaRes <- fgsea::fgsea(pathways = msigdbr_list, 
-#                          stats = gseagenes,
-#                          minSize=3,
-#                          maxSize=Inf, nperm = 100000) 
-# 
-# topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=15), ]
-# topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=15), ]
-# combipath <- rbind(topPathwaysUp, topPathwaysDown)
-# combipath <- combipath %>% 
-#   mutate(sens = ifelse(ES > 0, "UP", "DOWN" ))
-# pathsFull_l[[k]][[CT]] <- fgseaRes
-# pathsFiltered[[k]][[CT]] <- combipath
