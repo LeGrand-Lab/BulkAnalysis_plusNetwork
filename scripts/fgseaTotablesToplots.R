@@ -1,7 +1,7 @@
 # Organize GSEA results into tables
-# (remind: fgsea was performed on top ~100 "softfiltered" gene list
-#   check fgsea_dayandcelltype.R)
+#   check fgsea_dayandcelltype.R
 # output dir: exam_INTER_conditions/static/GSEA/ 
+# and pdf plots
 # --
 # johaGL
 library(tidyverse)
@@ -12,8 +12,10 @@ odir <- "exam_INTER_conditions/static/"
 tablesneeded <- F
 mat4heatmapneeded <- F
 
-fullrds <- readRDS(paste0(odir,"GSEA/fgseaByDay_full.rds"))
-pathsFiltered = readRDS( paste0(odir, "GSEA/fgseaByDay_filtered.rds" ) )
+fullrds <- readRDS(paste0(odir,"GSEA/rds/fgseaByDay_full.rds"))
+pathsFiltered = readRDS( paste0(odir, "GSEA/rds/fgseaByDay_filtered.rds" ) )
+
+fullDEsta = readRDS(paste0(odir, "rds/shot_rds_full.rds"))
 
 if (tablesneeded){
   system(paste0("cd ",odir,"GSEA/; ", 
@@ -35,13 +37,15 @@ if (tablesneeded){
                .before = leadingEdge) %>%
         select(-leadingEdge)
       
-      write.table(tmpdf, paste0(odir,"csv/", t,"_",d,"_pathways.csv"), sep="\t", 
+      write.table(tmpdf, paste0(odir,"GSEA/csv/", t,"_",d,"_pathways.csv"), sep="\t", 
                   col.names = T, row.names=F              )
     }
   }
+  rm(fullrds)
 }
+
 # ============= Prepare matrices for individual (dummy) plots ==================
-## prepare matrices for heatmaps
+## prepare matrices for heatmaps (small heatmaps )
 if (mat4heatmapneeded){
   m_ = list()
   for (k in c('D0','D2', 'D4', 'D7')){
@@ -86,32 +90,32 @@ if (mat4heatmapneeded){
       } # end for sens UP or DOWN
     }# end for CT in cts
   }# end for k in vector of days
-  saveRDS(m_, file=paste0(odir,"GSEA/fgsea_matrices4heatmaps.rds" ))
+  saveRDS(m_, file=paste0(odir,"GSEA/rds/fgsea_matrices4heatmaps.rds" ))
 } # end if mat4heatmapneeded
 
 # ===================== Prepare giant single matrix ============================
-
-# TODO  : create one dfx for Reactome and another one for Hallmark 
 #           and exclude DISEASE (use str_detect) and DEVELOPMENT 
 r_path = c(); r_sens = c(); r_NES = c(); r_gene = c(); r_celltype = c(); r_day = c()
 h_path = c(); h_sens = c(); h_NES = c(); h_gene = c(); h_celltype = c(); h_day = c()
 
 # split into two dataframes : one for reactome, one for hallmark
 counter = 0
-cutoffnbg <- 3
+minnbg <- 5
+maxnbg <- 12
+print("detecting if reactome and hallmark are mixed, splitting into two dataframes")
 for (d in names(pathsFiltered)){
   for (t in names(pathsFiltered[[d]])){
-    tmp <- pathsFiltered[[d]][[t]]
-    path_ = tmp$path
+    tmp <- pathsFiltered[[d]][[t]] %>% group_by(sens) %>% slice_min(padj, n=10)
+    path_ = tmp$pathway
     for (i in 1:length(path_)){
-      pw = tmp[i,]$path
+      pw = tmp[i,]$pathway
       NES = tmp[i,]$NES
       se = tmp[i,]$sens
-      if (str_detect(pw, "DISEASE") | str_detect(pw, "DEVELOPMENT")){
+      if (str_detect(pw, "DISEASE") | str_detect(pw, "DEVELOPMENT") | str_detect(pw, "INFECTION`") ){
         print("excluded disease and devel row")
       } else if (str_detect(pw, "REACTOME")){
         for(lg in tmp[i,]$leadingEdge){
-          if(length(lg) > cutoffnbg){
+          if(length(lg) >= minnbg & length(lg) <= maxnbg){
             for (g in lg){
               print(g)
               counter = counter + 1
@@ -146,24 +150,42 @@ for (d in names(pathsFiltered)){
 
 df_reactome <- data.frame("path" = r_path, "sens"= r_sens, "NES" = r_NES,
                           "gene" = r_gene, "celltype" = r_celltype, "day"=r_day)
-df_hallmark <- data.frame("path" = h_path, "sens"= h_sens, "NES" = h_NES,
-                          "gene" = h_gene, "celltype" = h_celltype, "day"=h_day)
-
 df_reactome <- df_reactome %>% mutate(unigene = paste0(gene,"_", celltype),
                       unipath = paste0(path,"_", day)) 
-df_hallmark <- df_hallmark %>% mutate(unigene = paste0(gene,"_", celltype),
+if (length(h_path) != 0 ){
+  df_hallmark <- data.frame("path" = h_path, "sens"= h_sens, "NES" = h_NES,
+                          "gene" = h_gene, "celltype" = h_celltype, "day"=h_day)
+  df_hallmark <- df_hallmark %>% mutate(unigene = paste0(gene,"_", celltype),
                                       unipath = paste0(path,"_", day)) 
+}else{print("no hallmark terms detected")}
+head(df_reactome)
+# path sens        NES   gene celltype day    unigene                                            unipath
+# 1 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abcb4      ECs  D0  Abcb4_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
+# 2 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abcc1      ECs  D0  Abcc1_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
+# 3 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abcc9      ECs  D0  Abcc9_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
+# 4 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abca5      ECs  D0  Abca5_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
+# 5                 REACTOME_ADAPTIVE_IMMUNE_SYSTEM DOWN -1.0629117 Zbtb16      ECs  D0 Zbtb16_ECs                 REACTOME_ADAPTIVE_IMMUNE_SYSTEM_D0
 
-# build megamatrix:
 
+# add information about genes (padj, lfc):
+toto <- df_reactome %>% select(unigene, gene, celltype, day)
+fuu <- fullDEsta %>% select(symbol, padj, log2FoldChange, type, day) %>% 
+  mutate(gene = symbol, celltype = type)
+tototo <- left_join(toto, fuu, by = c("day", "gene", "celltype" ) )
+tototo <- tototo %>% mutate( genepadj = padj) %>% select(unigene, genepadj, log2FoldChange, day )
+xx = left_join(df_reactome, tototo, by=c("unigene", "day"))   
+df_reactome = xx
+rm(toto, fuu, tototo, xx)
+
+df_reactome <- df_reactome %>% group_by(path) %>% slice_min(genepadj, n=50) 
+
+# funciton to build megamatrix:
 dfTomatrix <- function(dfx){
-  
   mat <- array(NA,dim=c( length(unique(dfx$unipath)),
                           length(unique(dfx$unigene))
   ))
   rownames(mat) <- unique(dfx$unipath)
   colnames(mat) <- unique(dfx$unigene)
-  
   for (p in dfx$unipath){
     for (g in dfx$unigene){
       tryCatch({
@@ -175,14 +197,19 @@ dfTomatrix <- function(dfx){
       })
       if (length(val)!= 0 ){
         mat[p,g] <- val
+        print(val)
       }
     }
   }
   return(mat)
 }
 
+print("building megamatrix, take a cup of coffee (takes 15 minutes)")
 m_reac <- dfTomatrix(df_reactome)
-m_hall <- dfTomatrix(df_hallmark)
+
+if (length(h_path) != 0 ){
+  m_hall <- dfTomatrix(df_hallmark)
+}else{print("no hallmark for making matrix")}
 
 clearmatrix <- function(mat, m){
   keep.c <- apply(mat, 2, function(col) {
@@ -204,9 +231,13 @@ clearmatrix <- function(mat, m){
   return(mati)
 }
 
+print("clearing megamatrix")
 m_reac2 <- clearmatrix(m_reac, 3)
-m_hall2 <- clearmatrix(m_hall, 3)
-# =============================== REACTOME plot ================================== 
+
+if (length(h_path) != 0 ){
+  m_hall2 <- clearmatrix(m_hall, 3)
+}else{print("no hallmark for clearing matrix")}
+# =============================== REACTOME plot ================================ 
 # render plot reactome
 
 reac_daysvec <- sapply(rownames(m_reac2), function(x) {
@@ -242,7 +273,7 @@ ha = HeatmapAnnotation(foo = anno_block(gp = gpar(fill = c("darkblue", "orange",
                                                            "darkgreen","royalblue") )
 )) #  labels = c("ECs","FAPs","M1","M2","Neutro","sCs") 
 oh <- ComplexHeatmap::Heatmap(m_reac2, 
-                              na_col = "floralwhite",
+                              na_col = "whitesmoke",
                               cluster_rows = FALSE,
                               cluster_columns = FALSE,
                               row_split = reac_splitdays,
@@ -256,18 +287,14 @@ oh <- ComplexHeatmap::Heatmap(m_reac2,
                               top_annotation = ha
 )
 
-pdf(paste0(odir,"GSEA/test4.pdf"), width = 20, height = 13)
-
+pdf(paste0(odir,"GSEA/test_NEW_29sept.pdf"), width = 22, height = 13)
 draw (oh, column_title = "GSEA Old vs Young (REACTOME)",
       heatmap_legend_side = "bottom", padding = unit(c(2, 2, 2, 60), "mm"))
 
 dev.off()
 
 # ================================== HALLMARK ================================== 
-# TODO :  h_
-
-# --
-
+# no needed as not performed
 
 # ===================== Test some other plot =============================
 m_ = readRDS(paste0(odir,"GSEA/fgsea_matrices4heatmaps.rds" ))
@@ -358,7 +385,6 @@ print("end")
 #     }
 #   }
 # }
-
 
 # copypathsFiltered <- pathsFiltered
 # for (d in names(pathsFiltered)){

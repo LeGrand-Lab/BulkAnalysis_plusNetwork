@@ -1,5 +1,10 @@
-# test to cross specificity and DE results
-# by day by cell type
+# Test Differential enrichment of pathways
+# BY DAY, on unique ensemblids based on Tau filtering
+# outputs into 'exam_inter_conditions/static' :
+#           rds/Intx_conseTau_ensemblid.rds
+#           rds/Intx_shot_onTauExtract.rds
+#           GSEA/rds/Intx_fgsea_full.rds
+#           
 # JohaGL
 setwd("~/BulkAnalysis_plusNetwork/")
 library(tidyverse)
@@ -7,12 +12,9 @@ library(ggmosaic)
 library(DESeq2)
 
 odir = "exam_INTER_conditions/static/"
-DEf = readRDS(paste0(odir,"shot_rds_full.rds"))
-dim(DEf)
-head(DEf,2)
 
 needconsensus <- F
-doconcat <- F
+doDEtest <- F
 daysv = c("D0","D2","D4","D7")
 CUTOFFTAU = 0.3
 fmat <- readRDS("data/prefiltered_counts.rds")
@@ -38,25 +40,23 @@ if (needconsensus){
     brut <- brut  %>% filter(nbMAX == 1 ) %>%
       group_by(id, whichMAX) %>%    # whichMAX is the cell type
       slice_max(Tau) 
-    
     consensus_tau[[day]] <- brut %>% select(id, symbol, Tau, class, whichMAX)
-  }
-  for (i in (names(consensus_tau))){
-    print("")
-    print(i)
-    print(table(consensus_tau[[i]]$whichMAX))
-    print(table(consensus_tau[[i]]$class))
-  }
-  saveRDS(consensus_tau, paste0(odir,"conseTau4DEGs/", "Ext_conseTau_ensemblid.rds"))
-}else{
-  print(paste0("consensuslist already exists in :",
-               odir,"conseTau4DEGs/", "Ext_conseTau_ensemblid.rds"))}
+    }
+    for (i in (names(consensus_tau))){
+      print("")
+      print(i)
+      print(table(consensus_tau[[i]]$whichMAX))
+      print(table(consensus_tau[[i]]$class))
+    }
+    saveRDS(consensus_tau, paste0(odir,"rds/", "Intx_conseTau_ensemblid.rds"))
+  }else{
+    print(paste0("consensuslist already exists in :",
+                 odir,"rds/", "Intx_conseTau_ensemblid.rds")) }
 # ========================== end creating consensu =============================
 
-# ==================== give uniqueness, keep into list 'dedup' =================
-# UNIQUE list:
+# ==================== give uniqueness, function importdedup() =================
 importdedup <- function(){
-    consensus_tau <- readRDS(paste0(odir,"conseTau4DEGs/", "Ext_conseTau_ensemblid.rds"))
+    consensus_tau <- readRDS(paste0(odir,"rds/", "Intx_conseTau_ensemblid.rds"))
     # extract only Tau > CUTOFFTAU and deduplicate with max tau
     dedup <- list()
     for (d in daysv){
@@ -70,60 +70,91 @@ importdedup <- function(){
 
 # ===================== heatmap day by day ====================================
 library(ComplexHeatmap)
-# !!  use here function importdedup
-d = "D2" ############ !!!!!!!!!!!!!!!!!!!!!!! by day !!!!!!!!!!!!!!!!!
-zo <- left_join(dedup[[d]], genes_df, by="symbol")
-smx <- fmat[rownames(fmat) %in% zo$Geneid, str_detect(colnames(fmat),d)]
-smm <- metadata %>% filter(time==d)
-#  rownames for this day must be unique, set as symbols then:
-if (length(unique(rownames(smx))) == length(rownames(smx))){
-  print("ok, rownames are unique (ensemblid), setting rownames as symbols")
-  chrw = zo[match(rownames(smx), zo$Geneid),]$symbol
-  names(chrw) =  zo[match(rownames(smx), zo$Geneid),]$whichMAX
-  rownames(smx) = chrw
-}else{
-  print("stop, rownames must be set unique")
-}
-predsv <- DESeqDataSetFromMatrix(countData=smx, colData=smm, design = ~age)
-dsv <- DESeq2::varianceStabilizingTransformation(predsv)
-mysplitcol = data.frame(x=sapply(colnames(assay(dsv)), 
-                                 function(x) unlist(str_split(x, "\\."))[2]))
-rownames(mysplitcol) = colnames(assay(dsv))
 
 library(circlize)
 library(viridis)
+# !!  use here function importdedup
+dedup <- importdedup()
+
+
+d = "D7" ############ !!!!!!!!!!!!!!!!!!!!!!! by day !!!!!!!!!!!!!!!!!
+zo <- left_join(dedup[[d]], genes_df, by=c("id"="Geneid")) # ensemblids
+zo$symbol <- zo$symbol.x    # one symbol can correspond to two distinct ids 
+zo$symbol.y <- zo$symbol.x <- NULL
+smx <- fmat[rownames(fmat) %in% zo$id, str_detect(colnames(fmat),d)]
+smm <- metadata %>% filter(time==d)
+#  rownames for this day must be unique 
+if (length(unique(rownames(smx))) == length(rownames(smx))){
+  print("ok, rownames are unique (ensemblid)")
+}else{
+  print("stop, rownames must be set unique")
+}
+
+predsv <- DESeqDataSetFromMatrix(countData=smx, colData=smm, design = ~age)
+dsv <- DESeq2::varianceStabilizingTransformation(predsv)
+dsv <- DESeq2::rlog(predsv)
+mysplitcol = data.frame(x=sapply(colnames(assay(dsv)),
+                                 function(x) unlist(str_split(x, "\\."))[2]))
+rownames(mysplitcol) = colnames(assay(dsv))
+# reorder matrix, begin with a empty, then give rownames :
+
+orderrows = zo[match(rownames(assay(dsv)), zo$id),]
+
+givemereorderedMX <- function(amatrix, orderrw, ordercl){
+  empty <- array(NA, dim=dim(amatrix))
+  colnames(empty) <- ordercl
+  rownames(empty) <- orderrw
+  for (r in rownames(empty)){
+    for (c in colnames(empty)){
+      empty[r,c] <- amatrix[r,c]
+    }
+  }
+  return(empty)
+}
+tempocol = data.frame("c" = rownames(mysplitcol),"x"=mysplitcol$x)
+a = orderrows %>% arrange(str_to_lower(whichMAX)) %>% pull(id)
+b = tempocol %>% arrange(str_to_lower(x)) %>% pull(c)
+FOFO <- givemereorderedMX(assay(dsv), a , b)
+
+mysplitcol = data.frame(x=sapply(colnames(FOFO),
+                                 function(x) unlist(str_split(x, "\\."))[2]))
+rownames(mysplitcol) = colnames(FOFO)
+
+
 # pick  viridis scale for continuous values (vst)
-scalecontinuous = viridis(10, alpha = 1, begin = 0, end = 1, direction = -1)
-minscalecol = scalecontinuous[9]
-maxscalecol = scalecontinuous[5] 
+scalecontinuous = viridis(10, alpha = 1, begin = 1, end = 0, direction = 1)
+minscalecol = scalecontinuous[5]
+maxscalecol = scalecontinuous[1] 
 #col_fun = colorRamp2(c(0,20), c("lightgray", "firebrick4"))
-col_fun = colorRamp2(c(0,round(max(as.array(assay(dsv)))+1, 0)),
+col_fun = colorRamp2(c(0,round(max(as.array(FOFO))+1, 0)),
                      c(minscalecol, maxscalecol))
-agesannot = sapply(colnames(assay(dsv)), 
+agesannot = sapply(colnames(FOFO), 
                  function(x) unlist(str_split(x, "\\."))[1])
 #listofcolorsage = sapply(agesvec, function(x) ifelse(x == "Old", "gold","darkgray"))
 hi = HeatmapAnnotation(age = agesannot,
                        col = list(age = c("Old"="gray10","Young"="gold")),
                        simple_anno_size = unit(3, "mm"))
 
-pdf(paste0(odir, "VSTtaufiltered.pdf"), width=15 )
-KKK = names(chrw)[300:400]
-cchm = ComplexHeatmap::Heatmap(assay(dsv)[300:400,],  col = col_fun,
+pdf(paste0(odir, "exam_Intx_heatmap_",d,".pdf"), width=6)
+KKK = zo[match(rownames(FOFO), zo$id),]$whichMAX
+cchm = ComplexHeatmap::Heatmap(FOFO,  col = col_fun,
                               cluster_rows = F,
-                              cluster_columns = TRUE,
+                              cluster_columns = T,
                               column_split = mysplitcol,
                              # split = KKK,
                               row_split = KKK,
                               row_names_gp = gpar(fontsize = 0 ),
-                              column_names_gp = gpar(fontsize = 9),
+                              column_names_gp = gpar(fontsize = 0),
                               column_names_rot = 45,
                               show_row_names = F, 
                               heatmap_legend_param = list(title="Transformed counts (vst)",
                                                           direction = "vertical"),
                               bottom_annotation = hi
                           )
-draw (cchm, 
-      column_title = paste("Expression of genes with Tau >",CUTOFFTAU, "across libraries" ),
+
+draw ( cchm, 
+      column_title = paste("Expression of genes with Tau >",
+                           CUTOFFTAU, "across libraries (", d,")" ),
       )
 dev.off()
 
@@ -135,94 +166,153 @@ dedup <- importdedup()
 for (d in daysv){
   print(d)
   foo <- table(dedup[[d]]$id)>=2
-  print(foo[foo==TRUE])
+  print(paste(foo[foo==TRUE], "==> duplicated ensemblids"))
 }
-resUniqMx <- list()
-for (d in daysv){
-  zo <- left_join(dedup[[d]], genes_df, by=c("id"="Geneid"))
-  zo$symbol <- zo$symbol.x
-  zo$symbol.y <- NULL
-  smx <- fmat[rownames(fmat) %in% zo$id, str_detect(colnames(fmat),d)]
-  smm <- metadata %>% filter(time==d)
-  if (length(unique(rownames(smx))) == length(rownames(smx))){
-    ( "ok" )
-    keep.s <- apply(smx, 1, function(w) ifelse(sum(w >= 5)>= 3, T, F ))
-    smx <- smx[keep.s,]
-    ds.s <- DESeqDataSetFromMatrix(countData=smx, colData=smm, design = ~age)
-    colData(ds.s)$age <- factor(colData(ds.s)$age,
-                                levels=c("Young","Old"))
-    res <- DESeq(ds.s, full = ~age)
-    restab <- as_tibble(results(res))
-    restab$id = rownames(results(res))
-    restab$symbol = zo[match(restab$id,zo$id),]$symbol
-    resUniqMx[[d]] <- restab %>% filter(! is.na(padj)) 
-  }else{
-    print("stop, rownames must be set unique!!!!!!!!!!!!!!!!!!")
-    stop()
+if (doDEtest){
+  resEnsDE <- list()
+  for (d in daysv){
+    zo <- left_join(dedup[[d]], genes_df, by=c("id"="Geneid")) # ensemblids
+    zo$symbol <- zo$symbol.x    # one symbol can correspond to two distinct ids 
+    zo$symbol.y <- zo$symbol.x <- NULL
+    smx <- fmat[rownames(fmat) %in% zo$id, str_detect(colnames(fmat),d)]
+    smm <- metadata %>% filter(time==d)
+    if (length(unique(rownames(smx))) == length(rownames(smx))){
+      ( "ok" )
+      keep.s <- apply(smx, 1, function(w) ifelse(sum(w >= 5)>= 3, T, F ))
+      smx <- smx[keep.s,]
+      ds.s <- DESeqDataSetFromMatrix(countData=smx, colData=smm, design = ~age)
+      colData(ds.s)$age <- factor(colData(ds.s)$age,
+                                  levels=c("Young","Old"))
+      res <- DESeq(ds.s, full = ~age)
+      restab <- as_tibble(results(res))
+      restab$id = rownames(results(res))
+      restab$symbol = zo[match(restab$id,zo$id),]$symbol
+      resEnsDE[[d]] <- restab %>% filter(! is.na(padj)) 
+      }else{
+        print("stop, rownames must be set unique !!")
+        stop()
+      }
   }
+  saveRDS(resEnsDE, paste0(odir, "rds/Intx_shot_onTauExtract.rds"))
 }
-saveRDS(resUniqMx, paste0(odir, "shot_rds_TauExtract.rds"))
-
 
 # =========================== end Test diff Tau Filtered =======================
 
+# ======================== GSEA on diff (gene symbols) =========================
+resEnsDE <- readRDS(paste0(odir, "rds/Intx_shot_onTauExtract.rds"))
 
-# =========================== GSEA on diff  ====================================
 library(fgsea)
-resUniqMx <- readRDS(paste0(odir, "shotbyday_gatheredDEtest.rds"))
-zo <- left_join(dedup[[d]], genes_df, by="symbol")
-resUniqMx[[d]]$celltype <- zo[match(resUniqMx[[d]]$symbol, zo$symbol),]$whichMAX
-interecool <- resUniqMx[[d]] %>% 
-  group_by(celltype) %>% slice_max( abs(log2FoldChange), n=3000)  %>%
-  arrange(desc(log2FoldChange))
-gseagenes <- interecool %>% pull(log2FoldChange)
-names(gseagenes) <- interecool$symbol
-barplot(gseagenes, main = d)
+# pick genes of interest from resEnsDE full results list : 
+intere_ <- list()
+for (d in daysv){
+  # !! attention: there can be symbols repetitions (as DE ran on ensemblids)
+  # make unique (slice_max on baseMean): 
+  resUniqMx <- list()
+  resUniqMx[[d]] <- resEnsDE[[d]] %>% group_by(symbol) %>% slice_max(baseMean, n=1)
+  zo <- left_join(dedup[[d]], genes_df, by="symbol")
+  resUniqMx[[d]]$celltype <- zo[match(resUniqMx[[d]]$symbol, zo$symbol),]$whichMAX
+  intere_uplfc <- resUniqMx[[d]] %>% filter(log2FoldChange > 0) %>%
+    group_by(celltype) %>% slice_max(log2FoldChange, n=1500)  %>%
+    arrange(desc(log2FoldChange))
+  intere_downlfc <- resUniqMx[[d]] %>% filter(log2FoldChange < 0) %>%
+    group_by(celltype) %>% slice_min(log2FoldChange, n=1500) %>%
+    arrange(desc(log2FoldChange))
+  intere_[[d]] <- rbind(intere_uplfc, intere_downlfc)
+}
+dobarplotpregsea <- F
+if (dobarplotpregsea){
+    pdf(paste0(odir, "intx_barplot_pregsea.pdf"), height = 8, width=12)
+    for (d in daysv){
+      gseagenes <- intere_[[d]] %>% pull(log2FoldChange)
+      names(gseagenes) <- intere_[[d]]$symbol
+      barplot(gseagenes, main = d)
+    }
+    dev.off()
+}
 # prepare gmt files for gsea 
 library(msigdbr)
 Reac_gmt <- msigdbr(species = "Mus musculus", category = 'C2', subcategory=c('CP:REACTOME'))
-
 msigdbr_list = split(x = Reac_gmt$gene_symbol, f = Reac_gmt$gs_name)
+doGSEAintx <- F
+if (doGSEAintx){
+  set.seed(42)
+  fgseaR_ <- list()
+  for (d in daysv){
+    print(d)
+    gseagenes <- intere_[[d]] %>% pull(log2FoldChange)
+    names(gseagenes) <- intere_[[d]]$symbol
+    fgseaRes <- fgsea::fgsea(pathways = msigdbr_list,
+                             stats = gseagenes,
+                             minSize = 5,
+                             maxSize = Inf
+    ) # no nperm because Multilevel 
+    fgseaR_[[d]] <- fgseaRes
+  } 
+}
 
-set.seed(42)
+rm(fgseaRes)
+saveRDS(fgseaR_, paste0(odir, "GSEA/rds/Intx_fgsea_full.rds"))
+# plots 
+for (d in daysv){
+  # pending to fillllll
+}
 
-fgseaRes <- fgsea::fgsea(pathways = msigdbr_list,
-                         stats = gseagenes,
-                         minSize = 5,
-                         maxSize = Inf,
-                         nperm = 10000 ) 
-
-View(fgseaRes %>% filter(padj < 0.2))
-
-summary(fgseaRes$padj)
-NumP = 15
-topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=NumP), ]
-topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=NumP), ]
-topPathBoth <- c(topPathwaysUp$pathway, rev(topPathwaysDown$pathway))
-ouif = plotGseaTable(msigdbr_list[topPathBoth], gseagenes, fgseaRes, 
-              gseaParam = 0.5 , render=F) 
 library(gridExtra)
 library(cowplot)
-plot_grid(ggdraw() + draw_label(paste(d , ": Top enriched Pathways (GSEA), Old vs Young")),
-          plot_grid(NULL, ouif , rel_widths =c(3,7)),
-          nrow = 2, rel_heights = c(1,9))
 
-dos <- plotEnrichment(msigdbr_list[[topPathBoth[1]]], gseagenes) + 
-  labs(title= d, subtitle=topPathwaysUp[1,]$pathway,
-       caption=paste(d,"Old vs Young" ))
-tres <- plotEnrichment(msigdbr_list[[topPathBoth[NumP*2]]], gseagenes) + 
-  labs(title= d, subtitle=topPathwaysDown[1,]$pathway,
-       caption=paste(d,"Old vs Young"))
-plot_grid(dos, tres, NA, ncol=3, rel_widths = c(4,4,2))
+# DO PLOTS, ORGANIZE BY PADJ (from smallest)
+for (d in daysv){
+  pdf(paste(odir, "meh", d,".pdf" ), width=15, height=15)
+  fgseaRes <- fgseaR_[[d]]
+  summary(fgseaRes$padj)
+  NumP = 15
+  topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=NumP), ]
+  topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=NumP), ]
+  topPathBoth <- c(topPathwaysUp$pathway, rev(topPathwaysDown$pathway))
+  ouif = fgsea::plotGseaTable(msigdbr_list[topPathBoth], gseagenes, fgseaRes, 
+                              gseaParam = 0.5 , render=F) 
+
+  plot_grid(ggdraw() + draw_label(paste(d , ": Top enriched Pathways (GSEA), Old vs Young")),
+            plot_grid(NULL, ouif , rel_widths =c(4,7)),
+            NA,
+            nrow = 3, rel_heights = c(1,9,9))
+  plotsenrichu_ <- list()
+  for (i in 1:NumP){
+    pup = topPathwaysUp[i,]
+    plotsenrichu_[[i]] <- fgsea::plotEnrichment(msigdbr_list[[pup$pathway]], gseagenes) + 
+      labs(title= d, subtitle = pup$pathway, 
+           caption=paste( "(NES:", pup$NES, ", padj :", pup$padj,")"))
+  }
+  plot_grid(plotlist = plotsenrichu_, nrow = 5)
+  plotsenrichdw_ <- list()
+  for (i in 1:NumP){
+    pdw = topPathwaysDown[i,]
+    plotsenrichdw_[[i]] <- fgsea::plotEnrichment(msigdbr_list[[pdw$pathway]], gseagenes) + 
+      labs(title= d, subtitle = pdw$pathway,
+           caption=paste( "(NES:", pdw$NES, ", padj :", pdw$padj,")") )
+  }
+  plot_grid(plotlist = plotsenrichdw_, nrow = 5)
+  # dos <- fgsea::plotEnrichment(msigdbr_list[[topPathBoth[1]]], gseagenes) + 
+  #   labs(title= d, subtitle=topPathwaysUp[1,]$pathway,
+  #        caption=paste(d,"Old vs Young" ))
+  # tres <- fgsea::plotEnrichment(msigdbr_list[[topPathBoth[NumP*2]]], gseagenes) + 
+  #   labs(title= d, subtitle=topPathwaysDown[1,]$pathway,
+  #        caption=paste(d,"Old vs Young"))
+  # plot_grid(dos, tres, NA, ncol=3, rel_widths = c(4,4,2))
+  dev.off()
+}
+
+
 # ==============================================================================
       
 
 # ================ concatenate Tau and *full* DEG information ==================
+# CONSIDER TO TRANSFORM THIS THIS PART INTO MARKDOWN
+# This uses DEG that resulted from script exam_Inter_cond_sta.R
 if (doconcat){
-  #consensus_tau <- readRDS( paste0(odir,"conseTau4DEGs/", "conseTau.rds"))
-  consensus_tau <- readRDS( paste0(odir,"conseTau4DEGs/", "Ext_conseTau.rds") )
+  consensus_tau <- readRDS( paste0(odir,"rds/", "Intx_conseTau_ensemblid.rds") )
   # cross information with DEG results FULL version
-  degfull <- readRDS(paste0(odir, "shot_rds_full.rds"))
+  degfull <- readRDS(paste0(odir, "rds/shot_rds_full.rds"))
   daysv = c("D0","D2","D4","D7")
   mdegtau <- list()
   for (d in daysv){
