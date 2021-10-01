@@ -95,70 +95,55 @@ if (mat4heatmapneeded){
 
 # ===================== Prepare giant single matrix ============================
 #           and exclude DISEASE (use str_detect) and DEVELOPMENT 
-r_path = c(); r_sens = c(); r_NES = c(); r_gene = c(); r_celltype = c(); r_day = c()
-h_path = c(); h_sens = c(); h_NES = c(); h_gene = c(); h_celltype = c(); h_day = c()
 
-# split into two dataframes : one for reactome, one for hallmark
-counter = 0
-minnbg <- 5
-maxnbg <- 12
-print("detecting if reactome and hallmark are mixed, splitting into two dataframes")
-for (d in names(pathsFiltered)){
-  for (t in names(pathsFiltered[[d]])){
-    tmp <- pathsFiltered[[d]][[t]] %>% group_by(sens) %>% slice_min(padj, n=10)
-    path_ = tmp$pathway
-    for (i in 1:length(path_)){
-      pw = tmp[i,]$pathway
-      NES = tmp[i,]$NES
-      se = tmp[i,]$sens
-      if (str_detect(pw, "DISEASE") | str_detect(pw, "DEVELOPMENT") | str_detect(pw, "INFECTION`") ){
-        print("excluded disease and devel row")
-      } else if (str_detect(pw, "REACTOME")){
-        for(lg in tmp[i,]$leadingEdge){
-          if(length(lg) >= minnbg & length(lg) <= maxnbg){
-            for (g in lg){
-              print(g)
-              counter = counter + 1
-              r_path = c(r_path, pw)
-              r_sens = c(r_sens, se) 
-              r_NES = c(r_NES, NES)
-              r_gene =  c(r_gene, g)
-              r_celltype = c(r_celltype, t)
-              r_day = c(r_day, d)
-            } 
+givemeltedDataframe <- function(pathsFiltered, minnbg, nbminpadj, COLLECTION){
+  r_path = c(); r_sens = c(); r_NES = c(); 
+  r_gene = c(); r_celltype = c(); r_day = c(); r_padj = c()
+  counter = 0
+  for (d in names(pathsFiltered)){
+    for (t in names(pathsFiltered[[d]])){
+      tmp <- pathsFiltered[[d]][[t]] %>% filter(str_detect(pathway, COLLECTION)) %>%
+          group_by(sens) %>% slice_min(padj, n=nbminpadj)
+      path_ = tmp$pathway
+      for (i in 1:length(path_)){
+        pw = tmp[i,]$pathway
+        NES = tmp[i,]$NES
+        se = tmp[i,]$sens
+        pj = tmp[i,]$padj
+        if (str_detect(pw, "DISEASE") | str_detect(pw, "DEVELOPMENT") | str_detect(pw, "INFECTION") ){
+          print("excluded disease, devel and infection terms")
+        } else {
+          for(lg in tmp[i,]$leadingEdge){
+            if(length(lg) >= minnbg ){
+              for (g in lg){
+                print(g)
+                counter = counter + 1
+                r_path = c(r_path, pw)
+                r_sens = c(r_sens, se) 
+                r_NES = c(r_NES, NES)
+                r_gene =  c(r_gene, g)
+                r_celltype = c(r_celltype, t)
+                r_day = c(r_day, d)
+                r_padj = c(r_padj, pj)
+              } 
+            }
           }
         }
-      }else if (str_detect(pw, "HALLMARK")){
-        for(lg in tmp[i,]$leadingEdge){
-          if(length(lg) > cutoffnbg){
-            for (g in lg){
-              print(g)
-              counter = counter + 1
-              h_path = c(h_path, pw)
-              h_sens = c(h_sens, se) 
-              h_NES = c(h_NES, NES)
-              h_gene =  c(h_gene, g)
-              h_celltype = c(h_celltype, t)
-              h_day = c(h_day, d)
-            } 
-          }
-        }
-      }
-    }#end for i in 1:length(path_)
+      }#end for i in 1:length(path_)
+    }
   }
-}
+  dfresu <- data.frame("pathway" = r_path, "sens"= r_sens, "NES" = r_NES,
+                            "gene" = r_gene, "celltype" = r_celltype,
+                            "day"=r_day, "padj" = r_padj)
+  dfresu <- dfresu %>% mutate(unigene = paste0(gene,"_", celltype),
+                                        unipath = paste0(pathway,"_", day)) 
 
-df_reactome <- data.frame("path" = r_path, "sens"= r_sens, "NES" = r_NES,
-                          "gene" = r_gene, "celltype" = r_celltype, "day"=r_day)
-df_reactome <- df_reactome %>% mutate(unigene = paste0(gene,"_", celltype),
-                      unipath = paste0(path,"_", day)) 
-if (length(h_path) != 0 ){
-  df_hallmark <- data.frame("path" = h_path, "sens"= h_sens, "NES" = h_NES,
-                          "gene" = h_gene, "celltype" = h_celltype, "day"=h_day)
-  df_hallmark <- df_hallmark %>% mutate(unigene = paste0(gene,"_", celltype),
-                                      unipath = paste0(path,"_", day)) 
-}else{print("no hallmark terms detected")}
-head(df_reactome)
+  return(dfresu)
+} 
+
+MELTED <- givemeltedDataframe(pathsFiltered, 5, 15, "REACTOME") 
+names(MELTED) 
+head(MELTED)
 # path sens        NES   gene celltype day    unigene                                            unipath
 # 1 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abcb4      ECs  D0  Abcb4_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
 # 2 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abcc1      ECs  D0  Abcc1_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
@@ -166,19 +151,23 @@ head(df_reactome)
 # 4 REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT   UP  0.7683668  Abca5      ECs  D0  Abca5_ECs REACTOME_ABC_FAMILY_PROTEINS_MEDIATED_TRANSPORT_D0
 # 5                 REACTOME_ADAPTIVE_IMMUNE_SYSTEM DOWN -1.0629117 Zbtb16      ECs  D0 Zbtb16_ECs                 REACTOME_ADAPTIVE_IMMUNE_SYSTEM_D0
 
-
-# add information about genes (padj, lfc):
-toto <- df_reactome %>% select(unigene, gene, celltype, day)
+print("adding information about genes (padj, lfc), from 'rds/shot_rds_full.rds'")
+toto <- MELTED %>% select(unigene, gene, celltype, day)
 fuu <- fullDEsta %>% select(symbol, padj, log2FoldChange, type, day) %>% 
-  mutate(gene = symbol, celltype = type)
+  mutate(gene = symbol, celltype = type, genepadj = padj)
 tototo <- left_join(toto, fuu, by = c("day", "gene", "celltype" ) )
-tototo <- tototo %>% mutate( genepadj = padj) %>% select(unigene, genepadj, log2FoldChange, day )
-xx = left_join(df_reactome, tototo, by=c("unigene", "day"))   
-df_reactome = xx
-rm(toto, fuu, tototo, xx)
+tototo <- tototo  %>% select(unigene, genepadj, log2FoldChange, day )
+ttp = left_join(MELTED, tototo, by=c("unigene", "day"))  %>% unique() 
+MELTED = ttp
 
-df_reactome <- df_reactome %>% group_by(path) %>% slice_min(genepadj, n=50) 
+rm(toto, fuu, tototo, ttp)
 
+approve <- MELTED %>% group_by(celltype, day) %>% slice_min(genepadj, n=10) %>%
+  filter(abs(log2FoldChange)>=0.3)
+length(unique(approve$pathway))
+length(unique(approve$unigene))
+
+MELTED <- approve
 # funciton to build megamatrix:
 dfTomatrix <- function(dfx){
   mat <- array(NA,dim=c( length(unique(dfx$unipath)),
@@ -205,38 +194,11 @@ dfTomatrix <- function(dfx){
 }
 
 print("building megamatrix, take a cup of coffee (takes 15 minutes)")
-m_reac <- dfTomatrix(df_reactome)
-
-if (length(h_path) != 0 ){
-  m_hall <- dfTomatrix(df_hallmark)
-}else{print("no hallmark for making matrix")}
-
-clearmatrix <- function(mat, m){
-  keep.c <- apply(mat, 2, function(col) {
-    if(length(col[is.na(col)]) >= length(col)-1){
-      return(FALSE) # at least 1 NES values by gene
-    }else{ return(TRUE) } } )
-  mati <- mat[, keep.c]
-  keep.r <- apply(mati, 1, function(row){
-    if(length(row[is.na(row)]) >= length(row)-m){
-      return(FALSE) # at least m NES values by path
-    }else{ return(TRUE) } } )
-  mati <- mati[keep.r, ]
-  keep.cbis <- apply(mati, 2, function(col){
-    if(length(col[is.na(col)]) >= length(col)-1){
-      return(FALSE)
-    }else{ return(TRUE) }
-  })
-  mati <- mati[, keep.cbis]
-  return(mati)
-}
-
+m_reac <- dfTomatrix(MELTED)
 print("clearing megamatrix")
-m_reac2 <- clearmatrix(m_reac, 3)
+keepro <- apply(m_reac, 1, function(r) sum(!is.na(r))>1)
+m_reac2 <- m_reac[keepro,]
 
-if (length(h_path) != 0 ){
-  m_hall2 <- clearmatrix(m_hall, 3)
-}else{print("no hallmark for clearing matrix")}
 # =============================== REACTOME plot ================================ 
 # render plot reactome
 
@@ -278,7 +240,7 @@ oh <- ComplexHeatmap::Heatmap(m_reac2,
                               cluster_columns = FALSE,
                               row_split = reac_splitdays,
                               column_split = reac_splitcols,
-                              row_names_gp = gpar(fontsize = 8),
+                              row_names_gp = gpar(fontsize = 9),
                               column_names_gp = gpar(fontsize = 8),
                               name = "REACTOME",
                               column_names_rot = 45,
@@ -287,10 +249,9 @@ oh <- ComplexHeatmap::Heatmap(m_reac2,
                               top_annotation = ha
 )
 
-pdf(paste0(odir,"GSEA/test_NEW_29sept.pdf"), width = 22, height = 13)
+pdf(paste0(odir,"GSEA/fgsea_byday_bycelltype.pdf"), width = 18, height = 10)
 draw (oh, column_title = "GSEA Old vs Young (REACTOME)",
       heatmap_legend_side = "bottom", padding = unit(c(2, 2, 2, 60), "mm"))
-
 dev.off()
 
 # ================================== HALLMARK ================================== 
@@ -334,83 +295,3 @@ print("end")
 
 
 
-# for (d in names(pathsFiltered)){
-#   for (t in names(pathsFiltered[[d]])){
-#     tmp <- pathsFiltered[[d]][[t]]
-#     path_ = tmp$path 
-#     if (str_detect(path_, "DISEASE") | str_detect(path_, "DEVELOPMENT")){
-#       print("excluded DISEASE or DEVELOMPENT row")
-#     }else if (str_detect(path_, "REACTOME")){
-#       for (i in 1:length(path_)){
-#         pw = tmp[i,]$path4graph
-#         NES = tmp[i,]$NES
-#         se = tmp[i,]$sens
-#         for(lg in tmp[i,]$leadingEdge){
-#           if(length(lg) > 5){
-#             for (g in lg){
-#               print(g)
-#               counter = counter + 1
-#               r_path = c(r_path, pw)
-#               r_sens = c(r_sens, se) 
-#               r_NES = c(r_NES, NES)
-#               r_gene =  c(r_gene, g)
-#               r_celltype = c(r_celltype, t)
-#               r_day = c(r_day, d)
-#               
-#             } 
-#           }
-#         }
-#       } #end for i in 1:length(path_)
-#     } else if (str_detect(path_, "HALLMARK")){
-#       for (i in 1:length(path_)){
-#         pw = tmp[i,]$path4graph
-#         NES = tmp[i,]$NES
-#         se = tmp[i,]$sens
-#         for(lg in tmp[i,]$leadingEdge){
-#           if(length(lg) > 5){
-#             for (g in lg){
-#               print(g)
-#               counter = counter + 1
-#               h_path = c(h_path, pw)
-#               h_sens = c(h_sens, se) 
-#               h_NES = c(h_NES, NES)
-#               h_gene =  c(h_gene, g)
-#               h_celltype = c(h_celltype, t)
-#               h_day = c(h_day, d)
-#               
-#             } 
-#           }
-#         }
-#       } #end for i in 1:length(path_)
-#     }
-#   }
-# }
-
-# copypathsFiltered <- pathsFiltered
-# for (d in names(pathsFiltered)){
-#   for (t in names(pathsFiltered[[d]])){
-#     print(dim(pathsFiltered[[d]][[t]]))
-#     tmp <- pathsFiltered[[d]][[t]]
-#     tmp <- tmp %>% mutate(pathway = sapply(path4graph, function(x){
-#       if (str_starts(x,"HALLMARK")){
-#         return(x)
-#       }else{return(paste0("REACTOME_",x))}
-#     })) %>% select(-path4graph)
-#     copypathsFiltered[[d]][[t]] <- tmp
-#   }}
-# saveRDS(copypathsFiltered, paste0(odir, "GSEA/fgseaByDay_filtered.rds" ) )
-
-
-
-# ComplexHeatmap::Heatmap(m_reac2, na_col = "whitesmoke",
-#                         cluster_rows = FALSE,
-#                         cluster_columns = FALSE,
-#                         row_split = reac_splitdays,
-#                         column_split = reac_splitcols,
-#                         row_names_gp = gpar(fontsize = 8),
-#                         column_names_gp = gpar(fontsize = 8),
-#                         name = "REACTOME",
-#                         column_names_rot = 45, 
-#                         heatmap_legend_param = list(title="NES", 
-#                                                     just = c("left", "bottom"))
-# )
