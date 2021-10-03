@@ -38,6 +38,28 @@ for (k in c('D0','D2', 'D4', 'D7')){
     arrange(padj,  .by_group = TRUE) %>% slice_min(padj, n=500)
   DE_l[[k]] <-  rbind(tmp_up,tmp_down)
 }
+infoinput <- data.frame("day_celltype" = c(), "inputsize"=as.integer(c()), 
+                        "maxpadj" = c(), "minabslfc" = c())
+for (k in c('D0', 'D2', 'D4', 'D7')){
+  print("")
+  print(paste(":::::",k,":::::"))
+  cts <- unique(DE_l[[k]]$type) 
+  tmpplots_ <- list()
+  for (CT in cts) {
+    print(paste("   --->", CT))
+    here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
+      select(log2FoldChange, symbol, padj)
+    nbg = dim(here.df)[1]
+    maxp = max(here.df$padj)
+    minalf = min(abs(here.df$log2FoldChange))
+    infoinput <- rbind(infoinput, c(paste0(k,"_",CT),
+                                    nbg, maxp, minalf))
+  } }
+colnames(infoinput) <- c("day_celltype" , "inputsize", 
+                         "maxpadj" , "minabslfc" )
+infoinput$inputsize <- as.integer(infoinput$inputsize)
+write.table(infoinput, paste0(odir,"GSEA/csv/infoinput.csv"), sep='\t', 
+            col.names = T, row.names = F)
 
 # ======================== perform Gsea on top ranked genes ====================
 

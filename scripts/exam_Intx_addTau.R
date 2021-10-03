@@ -203,6 +203,8 @@ resEnsDE <- readRDS(paste0(odir, "rds/Intx_shot_onTauExtract.rds"))
 
 library(fgsea)
 # pick genes of interest from resEnsDE full results list : 
+infoinput <- data.frame("day" = c(), "inputsize"=as.integer(c()), 
+                        "maxpadj" = c(), "minabslfc" = c())
 intere_ <- list()
 for (d in daysv){
   # !! attention: there can be symbols repetitions (as DE ran on ensemblids)
@@ -212,16 +214,25 @@ for (d in daysv){
   zo <- left_join(dedup[[d]], genes_df, by="symbol")
   resUniqMx[[d]]$celltype <- zo[match(resUniqMx[[d]]$symbol, zo$symbol),]$whichMAX
   intere_uplfc <- resUniqMx[[d]] %>% filter(log2FoldChange > 0) %>%
-    group_by(celltype) %>% slice_max(log2FoldChange, n=1500)  %>%
-    arrange(desc(log2FoldChange))
+    group_by(celltype) %>% slice_max(log2FoldChange, n=1000, with_ties=F)  %>%
+    arrange(desc(log2FoldChange)) %>% filter(abs(log2FoldChange) >= 0.2)
   intere_downlfc <- resUniqMx[[d]] %>% filter(log2FoldChange < 0) %>%
-    group_by(celltype) %>% slice_min(log2FoldChange, n=1500) %>%
-    arrange(desc(log2FoldChange))
+    group_by(celltype) %>% slice_min(log2FoldChange, n=1000, with_ties=F) %>%
+    arrange(desc(log2FoldChange)) %>% filter(abs(log2FoldChange) >= 0.2)
   intere_[[d]] <- rbind(intere_uplfc, intere_downlfc)
+  infoinput <- rbind(infoinput, c(d,
+                                  dim(intere_[[d]])[1],
+                                  max(intere_[[d]]$padj),
+                                  min(abs(intere_[[d]]$log2FoldChange)) ) )
 }
+colnames(infoinput) <- c("day_celltype" , "inputsize", 
+                         "maxpadj" , "minabslfc" )
+infoinput$inputsize <- as.integer(infoinput$inputsize)
+write.table(infoinput, paste0(odir,"GSEA/infoinput_Intx.csv"), sep='\t', 
+            col.names = T, row.names = F)
 dobarplotpregsea <- F
 if (dobarplotpregsea){
-    pdf(paste0(odir, "intx_barplot_pregsea.pdf"), height = 8, width=12)
+    pdf(paste0(odir, "GSEA/intx_barplot_pregsea.pdf"), height = 8, width=12)
     for (d in daysv){
       gseagenes <- intere_[[d]] %>% pull(log2FoldChange)
       names(gseagenes) <- intere_[[d]]$symbol
@@ -251,7 +262,7 @@ if (doGSEAintx){
 }
 
 rm(fgseaRes)
-saveRDS(fgseaR_, paste0(odir, "GSEA/rds/Intx_fgsea_full.rds"))
+saveRDS(fgseaR_, paste0(odir, "GSEA/rds/Intx_fgsea_fullNEW.rds"))
 # plots 
 for (d in daysv){
   # pending to fillllll
