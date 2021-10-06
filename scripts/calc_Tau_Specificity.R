@@ -3,14 +3,13 @@
 # --
 # johaGL 2021
 #
-# This script will save into different txt and xlsx files:
-#     housekeeping genes
-#     specific genes
+# This script will save into different txt and xlsx files to 'Tau/' folder.
 # in this way, separately for young and old:
 #       ids    symbol    Tau   class  whichMAX   nbMAX    day
 # if several tissues exhibit max logTPM, they are all registered separated 
 # by commas as single string in column whichMAX
-# so 'housekeeping' and 'specific' are going to appear at the tau_class column
+# so 'housekeeping' and 'specific' are going to appear at the  class column
+# A consensus is also generated : 
 library(dplyr)
 library(tidyverse)
 library(openxlsx)
@@ -19,14 +18,14 @@ library(reshape2)
 setwd("~/BulkAnalysis_plusNetwork/")
 
 genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
-
-
+consensusfile <- "conseTau_ensemblid.rds"
+needconsensus <- T
 ###  CALCULATE
 # we want, for type&day,´ to obtain sample specific genes, 
 # and done separately by age (old separated from young)
 # import TPM matrices by day by age
 # do Tau by cell type but also by celltype&day
-# ====================================================================
+# ====================== Calculate =============================
 calculateTau <- function(vec){
   if(max(vec) == 0){ # avoid zero division error
     tau.index <- 0
@@ -83,9 +82,7 @@ saveTau.bytissue <- function(age,  days, myquantile=0.25){
 print( saveTau.bytissue("Young", days=c("D0","D2","D4","D7")) )
 print( saveTau.bytissue("Old",  days=c("D0","D2","D4","D7")) ) 
 
-## ====================================================================
-# Filter generated Tau matrices : 
-## ====================================================================
+## ===================== Filter generated Tau matrices =======================
 ages = c("Young", "Old")
 days = c("D0","D2","D4","D7")
 for (age in ages){
@@ -116,12 +113,49 @@ for (age in ages){
     #openXL("...xlsx")
   }
 }
-## ====================================================================
-# END formal Tau calc
 
+# END formal Tau calc
+## ============================ Consensus ====================================
+
+if (needconsensus){ 
+  print("building consensus")
+  consensus_tau <- list()
+  daysv = c("D0","D2","D4","D7")
+  for (day in daysv){
+    ty <- read.table(paste0("Tau/TauSpecificity_Young",day, ".txt"), sep="\t", header=T)
+    to <- read.table(paste0("Tau/TauSpecificity_Old",day, ".txt"), sep="\t", header=T)
+    # remember = Tau is calculated on meanTPM (mean over replicates' TPMs)
+    #  therefore, its value is also influenced by changes in expression due to age
+    # for example, a hypothetical gene1 : [FAPS, sCs, ECs, M1], their meanTPMs
+    # being :   Old =  [100,100,100,100]  ; Young = [100,2000,100,100]
+    # check documentation for justification of following code: 
+    ty$age = "Young"
+    to$age = "Old"
+    rownames(ty) = ty$id
+    rownames(to) = to$id
+    tmpdf = data.frame( "id"=character(), "symbol"=character(), "Tau"=numeric(), 
+                        "class"=character(),  "whichMAX"=character(), 
+                        "nbMAX"=numeric(), "exclusiveOld"=numeric() )
+    allids.here = unique(c(ty$id,to$id))
+    for (i in allids.here){
+      if (is.na(ty[i,]$id)){
+        print(paste0("detected exclusive old : ", i))
+        tmpdf[i,] <- c( i, to[i,]$symbol,  to[i,]$Tau, 
+                        to[i,]$class, to[i,]$whichMAX, to[i,]$nbMAX, 1  )
+      } else {
+        tmpdf[i, ] <-  c( i, ty[i,]$symbol, ty[i,]$Tau, 
+                          ty[i,]$class, ty[i,]$whichMAX, ty[i,]$nbMAX, 0 )
+      }   
+    }
+    consensus_tau[[day]] = tmpdf
+  }
+  saveRDS(consensus_tau, paste0("Tau/", consensusfile))
+}else{
+  print(paste0("consensuslist already exists in :",
+               "Tau/", consensusfile)) }
 
 # ================================ * * ====================================
-## ADDENDUM
+# =============================== ADDENDUM ================================
 # =========================================================================
 # I. PROCESSING both by day and by age TPM matrices for eventual
 # downstream purposes :

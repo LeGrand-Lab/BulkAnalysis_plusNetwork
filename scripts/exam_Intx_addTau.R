@@ -12,56 +12,28 @@ library(ggmosaic)
 library(DESeq2)
 
 odir = "exam_INTER_conditions/static/"
+taudir = "Tau/"
+consensusfile <- "conseTau_ensemblid.rds"
 
-needconsensus <- F
+#taudefile <- "TauPlusDEinfo_full.rds"
+taudefile <- "TauPlusDEinfo_fullV4.rds"
 doDEtest <- F
 daysv = c("D0","D2","D4","D7")
 CUTOFFTAU = 0.3
 fmat <- readRDS("data/prefiltered_counts.rds")
 metadata <- readRDS("data/metadata.rds")
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
-# ================ creating consensus TAu lists to rds file ===================
-if (needconsensus){ 
-  print("an extended version of consensus, including all Tau values")
-  consensus_tau <- list()
-  daysv = c("D0","D2","D4","D7")
-  for (day in daysv){
-    ty <- read.table(paste0("Tau/TauSpecificity_Young",day, ".txt"), sep="\t", header=T)
-    to <- read.table(paste0("Tau/TauSpecificity_Old",day, ".txt"), sep="\t", header=T)
-    # remember = Tau is calculated on meanTPM (mean over replicates' TPMs)
-    #  therefore, its value is influenced by changes in expression due to age
-    # for example, a hypothetical gene1 : [FAPS, sCs, ECs, M1], their meanTPMs
-    # being :   Old =  [100,100,100,100]  ; Young = [100,2000,100,100]
-    #  the result will say that gene1 is 'sCs' specific, but only in Young.
-    #  As a matter of simplicity, by day and by cell type:
-    #             if gene has max TPM in 1 single celltype in at least one age,
-    # it will be included in consensus list:
-    brut <- rbind(ty,to)
-    brut <- brut  %>% filter(nbMAX == 1 ) %>%
-      group_by(id, whichMAX) %>%    # whichMAX is the cell type
-      slice_max(Tau) 
-    consensus_tau[[day]] <- brut %>% select(id, symbol, Tau, class, whichMAX)
-    }
-    for (i in (names(consensus_tau))){
-      print("")
-      print(i)
-      print(table(consensus_tau[[i]]$whichMAX))
-      print(table(consensus_tau[[i]]$class))
-    }
-    saveRDS(consensus_tau, paste0(odir,"rds/", "Intx_conseTau_ensemblid.rds"))
-  }else{
-    print(paste0("consensuslist already exists in :",
-                 odir,"rds/", "Intx_conseTau_ensemblid.rds")) }
-# ========================== end creating consensu =============================
 
-# ==================== give uniqueness, function importdedup() =================
-importdedup <- function(){
-    consensus_tau <- readRDS(paste0(odir,"rds/", "Intx_conseTau_ensemblid.rds"))
+
+
+# ======== Import tauconsensus and give uniqueness: function importdedup() =======
+importdedup <- function(consensusfile, CUTOFFTAU){
+    consensus_tau <- readRDS(paste0(taudir, consensusfile))
     # extract only Tau > CUTOFFTAU and deduplicate with max tau
     dedup <- list()
     for (d in daysv){
       tf <- consensus_tau[[d]] %>% filter(Tau >= CUTOFFTAU) %>% 
-        group_by(id) %>% slice_max(Tau)
+        group_by(id) %>% slice_max(Tau)  ### ??? is this ok ????
       dedup[[d]] <- tf
       } # end for
     return(dedup)
@@ -74,7 +46,7 @@ library(ComplexHeatmap)
 library(circlize)
 library(viridis)
 # !!  use here function importdedup
-dedup <- importdedup()
+dedup <- importdedup(consensusfile, CUTOFFTAU)
 
 
 d = "D7" ############ !!!!!!!!!!!!!!!!!!!!!!! by day !!!!!!!!!!!!!!!!!
@@ -162,7 +134,7 @@ dev.off()
 # ============================ END heatmap =====================================
 
 # ==================== Test diff expr on Tau filtered  =========================
-dedup <- importdedup()
+dedup <- importdedup(consensusfile, CUTOFFTAU)
 for (d in daysv){
   print(d)
   foo <- table(dedup[[d]]$id)>=2
@@ -193,13 +165,13 @@ if (doDEtest){
         stop()
       }
   }
-  saveRDS(resEnsDE, paste0(odir, "rds/Intx_shot_onTauExtract.rds"))
+  saveRDS(resEnsDE, paste0(odir, "rds/", "Intx_shot_onTauExtract.rds"))
 }
 
 # =========================== end Test diff Tau Filtered =======================
 
 # ======================== GSEA on diff (gene symbols) =========================
-resEnsDE <- readRDS(paste0(odir, "rds/Intx_shot_onTauExtract.rds"))
+resEnsDE <- readRDS(paste0(odir, "rds/", "Intx_shot_onTauExtract.rds"))
 
 library(fgsea)
 # pick genes of interest from resEnsDE full results list : 
@@ -321,7 +293,7 @@ for (d in daysv){
 # CONSIDER TO TRANSFORM THIS THIS PART INTO MARKDOWN
 # This uses DEG that resulted from script exam_Inter_cond_sta.R
 if (doconcat){
-  consensus_tau <- readRDS( paste0(odir,"rds/", "Intx_conseTau_ensemblid.rds") )
+  consensus_tau <- readRDS( paste0(odir,"rds/", consensusfile) )
   # cross information with DEG results FULL version
   degfull <- readRDS(paste0(odir, "rds/shot_rds_full.rds"))
   daysv = c("D0","D2","D4","D7")
@@ -374,11 +346,11 @@ if (doconcat){
     mdegtau[[d]] <- f
   }
   giant <- bind_rows(mdegtau)
-  saveRDS(giant, paste0(odir, "TauPlusDEinfo_full.rds"))
+  saveRDS(giant, paste0(odir, "rds/", taudefile))
 }
 
 # ===============================  load element for plots:   :=======================
-giant <- readRDS(paste0(odir, "TauPlusDEinfo_full.rds"))
+giant <- readRDS(paste0(odir, "rds/", taudefile))
 for (d in daysv){
   f <- giant %>% filter(day==d & Tau_discrete=="SPECIFIC") 
   n_occ <- data.frame(table(f$symbol))
@@ -387,7 +359,20 @@ for (d in daysv){
   if(dim(n_occ[n_occ$Freq > 1,])[1] == 0){ print("ok for plots (no duplics)")
     }else{print("attention, duplicated symbols across celltypes this day")}
 }
-# =================================  end load =======================
+# =====================================  end load ==============================
+
+# ==================================== MAplot ===============================
+giant <- readRDS(paste0(odir, "rds/", taudefile))
+#pdf(paste0(odir, "TauPlusDEinfo_plot.pdf"), width=10, height=6)
+ggplot(giant, aes(x=Tau, y=log2FoldChange, color= Tau >= .5) ) + 
+  geom_point(size=.5) + geom_hline(yintercept = c(-1.2,1.2),
+                                   linetype = "dashed") +
+  scale_color_brewer(palette = "Dark2") + facet_grid(padj<=0.05 ~ day) + 
+  labs(title="DE information and Tau index", 
+       caption="y axis plot labels: TRUE correspond to padj <=0.05") 
+#dev.off()
+# ====================================  end MAplot ===========================
+
 
 # =================================  use Mosaic Plot :=======================
 # reorder factors : 

@@ -10,13 +10,18 @@ library(tidyverse)
 library(msigdbr)
 library(cowplot)
 setwd("~/BulkAnalysis_plusNetwork/")
-# take top 1000 ranked genes by pvalue (500 up, 500 down)
-# and perform gsea (fgsea)
-
+# take top M ranked genes by pvalue (M/2 up, M/2 down) and perform gsea (fgsea)
+M = 1000
+daysv = c('D0', 'D2', 'D4', 'D7')
+DEfile = "rds/shot_rds_full.rds"
 odir = "exam_INTER_conditions/static/"
-# degfile = "shot_dataframe_softfilter.csv"   # this is soft filtered version
-# DEdf <- read.table(paste0(odir, degfile), header=T, sep='\t')
-DEdf <- readRDS(paste0(odir,"rds/shot_rds_full.rds"))
+infoinputfile = "GSEA/csv/infoinput"  # csv or md_txt extensions (lines 67 71 )
+pdfplotfile = "preGSEA_byday_bycelltype.pdf"
+gseards = "GSEA/rds/"
+gseaoutfull = "fgsea_bd_bct_full.rds" 
+gseaoutfiltered = "GSEA/rds/fgsea_bd_bct_filtered.rds"
+
+DEdf <- readRDS(paste0(odir, DEfile))
 summary(DEdf)
 
 if (!"symbol" %in% colnames(DEdf)){
@@ -28,19 +33,19 @@ if (!"symbol" %in% colnames(DEdf)){
 
 # ======= split by day and keep in a list of dataframes (each df ~1000 genes): =====
 DE_l = list()  #  
-for (k in c('D0','D2', 'D4', 'D7')){
+for (k in daysv){
   tmp <- DEdf %>% filter(day == k)  %>% 
      mutate(sens= ifelse(log2FoldChange < 0,"down", "up"))
   # keep top genes by abslfc and pval
   tmp_up <- tmp %>% filter(sens == "up") %>% group_by(type) %>%
-    arrange(padj, .by_group = TRUE) %>% slice_min(padj, n=500)
+    arrange(padj, .by_group = TRUE) %>% slice_min(padj, n=M/2, with_ties = F)
   tmp_down <- tmp %>% filter(sens == "down") %>% group_by(type)   %>%
-    arrange(padj,  .by_group = TRUE) %>% slice_min(padj, n=500)
-  DE_l[[k]] <-  rbind(tmp_up,tmp_down)
+    arrange(padj,  .by_group = TRUE) %>% slice_min(padj, n=M/2, with_ties = F)
+  DE_l[[k]] <-  rbind(tmp_up, tmp_down)
 }
 infoinput <- data.frame("day_celltype" = c(), "inputsize"=as.integer(c()), 
                         "maxpadj" = c(), "minabslfc" = c())
-for (k in c('D0', 'D2', 'D4', 'D7')){
+for (k in daysv){
   print("")
   print(paste(":::::",k,":::::"))
   cts <- unique(DE_l[[k]]$type) 
@@ -58,14 +63,18 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
 colnames(infoinput) <- c("day_celltype" , "inputsize", 
                          "maxpadj" , "minabslfc" )
 infoinput$inputsize <- as.integer(infoinput$inputsize)
-write.table(infoinput, paste0(odir,"GSEA/csv/infoinput.csv"), sep='\t', 
+write.table(infoinput, paste0(odir, infoinputfile, ".csv"), sep='\t', 
+            col.names = T, row.names = F)
+write.table(infoinput %>% mutate(day_celltype = paste("|  ", day_celltype)) %>%
+              mutate(minabslfc = paste(minabslfc, " |")), 
+            file = paste0(odir, infoinputfile, "_md.txt"), sep=" | ", 
             col.names = T, row.names = F)
 
 # ======================== perform Gsea on top ranked genes ====================
 
 # visualize and save barplots before running fgsea
 plots_ <- list()
-for (k in c('D0', 'D2', 'D4', 'D7')){
+for (k in daysv){
   cts <- unique(DE_l[[k]]$type) 
   tmpplots_ <- list()
   for (CT in cts) {
@@ -78,9 +87,7 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
     here.df <- here.df %>% mutate(seq=1:n())
     new <- c(here.df[1,]$symbol) # new labels, first element
     saut = 40
-    if (k == 'D2' & (CT == 'ECs' | CT == 'M1')){
-      addsum = 500
-    }else{addsum = 40}
+    addsum = 40
     for (i in 2:dim(here.df)[1]){
       if( i == saut){
         new = c(new, here.df[i,]$symbol )
@@ -96,8 +103,8 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
   }
   plots_[[k]] <- tmpplots_
 }
-pdf(paste0(odir, "GSEA/preGSEA_byday_bycelltype.pdf"), width=12, height=30)
-plots[['D0']][["e1"]] <- NULL
+pdf(paste0(odir, "GSEA/", pdfplotfile), width=12, height=30)
+plots_[['D0']][["e1"]] <- NULL
 plot_grid(
   plot_grid(plotlist = plots_[['D0']], nrow=2, ncol=3),
   plot_grid(plotlist = plots_[['D2']], nrow= 2, ncol = 3),
@@ -117,7 +124,7 @@ msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
 
 pathsFull_l <- list("D0"=list(),"D2"=list(),"D4"=list(),"D7"=list())
 pathsFiltered  <- list("D0"=list(),"D2"=list(),"D4"=list(),"D7"=list())
-for (k in c('D0', 'D2', 'D4', 'D7')){
+for (k in daysv){
   cts <- unique(DE_l[[k]]$type) 
   dd <- list()
   dd_f <- list()
@@ -147,7 +154,20 @@ for (k in c('D0', 'D2', 'D4', 'D7')){
   pathsFiltered[[k]] <- dd_f
 }
 
-saveRDS(pathsFull_l, file=paste0(odir,"GSEA/rds/fgseaByDay_full.rds" ))
-saveRDS(pathsFiltered, file=paste0(odir, "GSEA/rds/fgseaByDay_filtered.rds" ))
+saveRDS(pathsFull_l, file=paste0(odir,gseards, gseaoutfull ))
+saveRDS(pathsFiltered, file=paste0(odir,gseards, gseaoutfiltered  ))
 
 
+# ================== printing GSEA min padj results ==========================
+XX = readRDS(paste0(odir,gseardsl, gseaoutfull))
+padjofpaths = array(NA, dim=c(4,6))
+rownames(padjofpaths) = daysv
+colnames(padjofpaths) = names(XX[['D2']])
+for (d in daysv){
+  for (n in names(XX[[d]])){
+    print(n)
+    print(min(XX[[d]][[n]]$padj))
+    padjofpaths[d, n] <- min(XX[[d]][[n]]$padj)
+  }
+}
+# =========================================================================
