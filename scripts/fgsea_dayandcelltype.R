@@ -1,5 +1,5 @@
 #  Runs GSEA by day and celltype
-# from 'static' DEGs
+# from 'static' DEGs and non DEGs
 # Saves rds objects into exam_INTER_conditions/static/GSEA/rds/
 # * Major modification : only REACTOME pathways tested *
 # note: filtered rds file contains only top 15 up and top 15 down pathways
@@ -19,7 +19,7 @@ infoinputfile = "GSEA/csv/infoinput"  # csv or md_txt extensions (lines 67 71 )
 pdfplotfile = "preGSEA_byday_bycelltype.pdf"
 gseards = "GSEA/rds/"
 gseaoutfull = "fgsea_bd_bct_full.rds" 
-gseaoutfiltered = "GSEA/rds/fgsea_bd_bct_filtered.rds"
+gseaoutfiltered = "fgsea_bd_bct_filtered.rds"
 
 DEdf <- readRDS(paste0(odir, DEfile))
 summary(DEdf)
@@ -31,7 +31,7 @@ if (!"symbol" %in% colnames(DEdf)){
   print("added symbols to dataframe")
 }else{ print("symbol already in dataframe")}
 
-# ======= split by day and keep in a list of dataframes (each df ~1000 genes): =====
+# ======= split by day and keep in a list of dataframes (each df M genes): =====
 DE_l = list()  #  
 for (k in daysv){
   tmp <- DEdf %>% filter(day == k)  %>% 
@@ -43,78 +43,85 @@ for (k in daysv){
     arrange(padj,  .by_group = TRUE) %>% slice_min(padj, n=M/2, with_ties = F)
   DE_l[[k]] <-  rbind(tmp_up, tmp_down)
 }
-infoinput <- data.frame("day_celltype" = c(), "inputsize"=as.integer(c()), 
-                        "maxpadj" = c(), "minabslfc" = c())
-for (k in daysv){
-  print("")
-  print(paste(":::::",k,":::::"))
-  cts <- unique(DE_l[[k]]$type) 
-  tmpplots_ <- list()
-  for (CT in cts) {
-    print(paste("   --->", CT))
-    here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
-      select(log2FoldChange, symbol, padj)
-    nbg = dim(here.df)[1]
-    maxp = max(here.df$padj)
-    minalf = min(abs(here.df$log2FoldChange))
-    infoinput <- rbind(infoinput, c(paste0(k,"_",CT),
-                                    nbg, maxp, minalf))
-  } }
-colnames(infoinput) <- c("day_celltype" , "inputsize", 
-                         "maxpadj" , "minabslfc" )
-infoinput$inputsize <- as.integer(infoinput$inputsize)
-write.table(infoinput, paste0(odir, infoinputfile, ".csv"), sep='\t', 
-            col.names = T, row.names = F)
-write.table(infoinput %>% mutate(day_celltype = paste("|  ", day_celltype)) %>%
-              mutate(minabslfc = paste(minabslfc, " |")), 
-            file = paste0(odir, infoinputfile, "_md.txt"), sep=" | ", 
-            col.names = T, row.names = F)
+
+saveinfoinput <- function(DE_l){
+  infoinput <- data.frame("day_celltype" = character(), "inputsize"=numeric(), 
+                          "maxpadj" = numeric(), "minabslfc" = numeric())
+  for (k in daysv){
+    print("")
+    print(paste(":::::",k,":::::"))
+    cts <- unique(DE_l[[k]]$type) 
+    tmpplots_ <- list()
+    for (CT in cts) {
+      print(paste("   --->", CT))
+      here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
+        select(log2FoldChange, symbol, padj)
+      nbg = dim(here.df)[1]
+      maxp = max(here.df$padj)
+      minalf = min(abs(here.df$log2FoldChange))
+      infoinput <- rbind(infoinput, c(paste0(k,"_",CT),
+                                      nbg, maxp, minalf))
+    } }
+  colnames(infoinput) <- c("day_celltype" , "inputsize", 
+                           "maxpadj" , "minabslfc" )
+  infoinput$inputsize <- as.numeric(infoinput$inputsize)
+  write.table(infoinput, paste0(odir, infoinputfile, ".csv"), sep='\t', 
+              col.names = T, row.names = F)
+  write.table(infoinput %>% mutate(day_celltype = paste("|  ", day_celltype)) %>%
+                mutate(minabslfc = paste(minabslfc, " |")), 
+              file = paste0(odir, infoinputfile, "_md.txt"), sep=" | ", 
+              col.names = T, row.names = F)
+}
+saveinfoinput(DE_l)
 
 # ======================== perform Gsea on top ranked genes ====================
 
 # visualize and save barplots before running fgsea
-plots_ <- list()
-for (k in daysv){
-  cts <- unique(DE_l[[k]]$type) 
-  tmpplots_ <- list()
-  for (CT in cts) {
-    here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
-      select(log2FoldChange, symbol)
-    gseagenes = here.df %>% pull(log2FoldChange)
-    names(gseagenes) = here.df$symbol
-    barplot(gseagenes, main=paste(k, CT))
-    # same barplot but on ggplot: 
-    here.df <- here.df %>% mutate(seq=1:n())
-    new <- c(here.df[1,]$symbol) # new labels, first element
-    saut = 40
-    addsum = 40
-    for (i in 2:dim(here.df)[1]){
-      if( i == saut){
-        new = c(new, here.df[i,]$symbol )
-        saut = saut + addsum
-      }else{ new = c(new, "") } } # end for
-    gplo <- ggplot(here.df , aes(x=reorder(symbol, log2FoldChange),y=log2FoldChange)) +
-      geom_col() + 
-      theme( axis.ticks.x = element_blank(),
-             axis.text.x = element_text(angle = 90)) +
-      scale_x_discrete(labels= new) + 
-      labs(title=paste(k, CT), x = "genes") 
-    tmpplots_[[CT]] <- gplo
+dobarplotbefore <- function(DE_l){
+  plots_ <- list()
+  for (k in daysv){
+    cts <- unique(DE_l[[k]]$type) 
+    tmpplots_ <- list()
+    for (CT in cts) {
+      here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
+        select(log2FoldChange, symbol)
+      gseagenes = here.df %>% pull(log2FoldChange)
+      names(gseagenes) = here.df$symbol
+      barplot(gseagenes, main=paste(k, CT))
+      # same barplot but on ggplot: 
+      here.df <- here.df %>% mutate(seq=1:n())
+      new <- c(here.df[1,]$symbol) # new labels, first element
+      saut = 40
+      addsum = 40
+      for (i in 2:dim(here.df)[1]){
+        if( i == saut){
+          new = c(new, here.df[i,]$symbol )
+          saut = saut + addsum
+        }else{ new = c(new, "") } } # end for
+      gplo <- ggplot(here.df , aes(x=reorder(symbol, log2FoldChange),y=log2FoldChange)) +
+        geom_col() + 
+        theme( axis.ticks.x = element_blank(),
+               axis.text.x = element_text(angle = 90)) +
+        scale_x_discrete(labels= new) + 
+        labs(title=paste(k, CT), x = "genes") 
+      tmpplots_[[CT]] <- gplo
+    }
+    plots_[[k]] <- tmpplots_
   }
-  plots_[[k]] <- tmpplots_
+  pdf(paste0(odir, "GSEA/", pdfplotfile), width=12, height=30)
+  plots_[['D0']][["e1"]] <- NULL
+  print( plot_grid(
+    plot_grid(plotlist = plots_[['D0']], nrow=2, ncol=3),
+    plot_grid(plotlist = plots_[['D2']], nrow= 2, ncol = 3),
+    plot_grid(NULL),
+    plot_grid(plotlist = plots_[['D4']], nrow=2, ncol = 3),
+    plot_grid(NULL),
+    plot_grid(plotlist = plots_[['D7']], nrow=2, ncol = 3),
+    nrow = 6, rel_heights = c(3,3,1,3,1,3)
+  ) ) # end print
+  dev.off()
 }
-pdf(paste0(odir, "GSEA/", pdfplotfile), width=12, height=30)
-plots_[['D0']][["e1"]] <- NULL
-plot_grid(
-  plot_grid(plotlist = plots_[['D0']], nrow=2, ncol=3),
-  plot_grid(plotlist = plots_[['D2']], nrow= 2, ncol = 3),
-  plot_grid(NULL),
-  plot_grid(plotlist = plots_[['D4']], nrow=2, ncol = 3),
-  plot_grid(NULL),
-  plot_grid(plotlist = plots_[['D7']], nrow=2, ncol = 3),
-  nrow = 6, rel_heights = c(3,3,1,3,1,3)
-)
-dev.off()
+# dobarplotbefore(DE_l)
 
 # ======================== RUNNING GSEA =======================================
 thegmt <- msigdbr(species = "Mus musculus", 
@@ -170,4 +177,4 @@ for (d in daysv){
     padjofpaths[d, n] <- min(XX[[d]][[n]]$padj)
   }
 }
-# =========================================================================
+# ===============================end ========================================

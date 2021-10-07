@@ -9,11 +9,13 @@ library(ComplexHeatmap)
 
 setwd("~/BulkAnalysis_plusNetwork/")
 odir <- "exam_INTER_conditions/static/"
-tablesneeded <- F
-mat4heatmapneeded <- F
+tablesneeded <- T
+mat4heatmapneeded <- T
+gseaoutfull = "fgsea_bd_bct_full.rds" 
+gseaoutfiltered = "fgsea_bd_bct_filtered.rds"
 
-fullrds <- readRDS(paste0(odir,"GSEA/rds/fgseaByDay_full.rds"))
-pathsFiltered = readRDS( paste0(odir, "GSEA/rds/fgseaByDay_filtered.rds" ) )
+fullrds <- readRDS(paste0(odir,"GSEA/rds/", gseaoutfull))
+pathsFiltered = readRDS( paste0(odir, "GSEA/rds/",  gseaoutfiltered) )
 
 fullDEsta = readRDS(paste0(odir, "rds/shot_rds_full.rds"))
 
@@ -44,6 +46,81 @@ if (tablesneeded){
   rm(fullrds)
 }
 
+getgeneslistmod <- function(gseadatafr, d){
+  outi <- c()
+  for (i in gseadatafr$leadingEdge){
+    outi <- c(outi, i)
+  }
+  moo <- unique(outi)
+  tmpdfdeg <- fullDEsta %>% filter(day==d)
+  lfcs <- tmpdfdeg[match(moo, tmpdfdeg$symbol),]$log2FoldChange
+  names(lfcs) <- moo
+  return(lfcs)
+}
+thegmt <- msigdbr(species = "Mus musculus", 
+                  category = 'C2', 
+                  subcategory=c('CP:REACTOME'))
+msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
+
+plotme <- function(pathsFiltered, d,  outfilename, NumP){
+  fgsea_ <- pathsFiltered[[d]]
+  NumP = 3
+  replotme <- function(CT, NumP){
+    fgseaRes <- fgsea_[[CT]]
+    print(min(fgseaRes$padj))
+    topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=NumP), ]
+    topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=NumP), ]
+    topPathBoth <- c(topPathwaysUp$pathway, rev(topPathwaysDown$pathway))
+    a <- getgeneslistmod(topPathwaysUp, d)
+    b <- getgeneslistmod(topPathwaysDown, d)
+    gseagenes <- c(a, b)
+    print(gseagenes)
+    ouif = fgsea::plotGseaTable(msigdbr_list[topPathBoth], gseagenes, fgseaRes, 
+                                gseaParam = 0.5 , render=F) 
+    plotsenrichu_ <- list()
+    for (i in 1:NumP){
+      pup = topPathwaysUp[i,]
+      tmpup <- fgsea::plotEnrichment(msigdbr_list[[pup$pathway]], gseagenes) + 
+        labs(title= CT, subtitle = str_replace(pup$pathway, "REACTOME_", ""), 
+             caption=paste( "(NES:", round(pup$NES, 2), ", padj :", round(pup$padj,2),")"), 
+             render = F)
+      if (dim(tmpup$data)[1] <= 2 ){
+        plotsenrichu_[[i]] <- NULL
+      }else{ plotsenrichu_[[i]] <- tmpup}
+    }
+    plotsenrichdw_ <- list()
+    for (i in 1:NumP){
+      pdw = topPathwaysDown[i,]
+      tmpdw <- fgsea::plotEnrichment(msigdbr_list[[pdw$pathway]], gseagenes) + 
+        labs(title= CT, subtitle = str_replace(pdw$pathway,"REACTOME_", ""),
+             caption=paste( "(NES:", round(pdw$NES,2), ", padj :", round(pdw$padj,2),")") , 
+             render = F)
+      if (dim(tmpdw$data)[1] <= 2 ){
+        plotsenrichdw_[[i]] <- NULL
+      } else {plotsenrichdw_[[i]] <- tmpdw }
+    }
+    plot_grid(
+    plot_grid(ggdraw() + draw_label(paste(d, CT, ": Top enriched Pathways (GSEA), Old vs Young")),
+                plot_grid(NULL,  ouif, rel_widths =c(4,7)),
+                nrow = 2, rel_heights = c(1,9,9)) ,
+    plot_grid(
+        plot_grid(plotlist = plotsenrichu_),
+        plot_grid(plotlist = plotsenrichdw_) , ncol = 2, rel_widths = c(5,5)), 
+    nrow=2, rel_heights = c(2,4))
+  }
+  
+  pdf("takaka", width = 15)
+  types = c("M1", "FAPs")
+  for (CT in types){
+    print(CT)
+    print(replotme(CT, NumP=5))
+  }  
+  dev.off()
+}
+
+
+
+
 # ============= Prepare matrices for individual (dummy) plots ==================
 ## prepare matrices for heatmaps (small heatmaps )
 if (mat4heatmapneeded){
@@ -69,7 +146,7 @@ if (mat4heatmapneeded){
             aggreg_genes <- c(aggreg_genes, here.dico[[path]] )
           }
           colnamesgenes = unique(aggreg_genes)
-          matrx = matrix(NA, length(here.data$path4graph), length(colnamesgenes))
+          matrx = array(NA, dim=c(length(here.data$path4graph), length(colnamesgenes)))
           rownames(matrx) = here.data$path4graph
           colnames(matrx) = colnamesgenes
           for (path in here.data$path4graph){

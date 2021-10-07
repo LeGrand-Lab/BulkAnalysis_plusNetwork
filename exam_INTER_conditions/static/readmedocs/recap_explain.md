@@ -6,7 +6,7 @@ Why are we interested in "static" approach (and not dynamic one) ?. The answer:
 
 1. **Neutro** cell type is only present at day D2, if we only take account of dynamic approach, we will neglect this important celltype for differences Old vs Young at D2 (furthermore, it has interactions with other celltypes at D2, see numeral 3).
 2. We are interested in seing what happens to Pathways across time, with details into every single day, so we need to run Pathway analysis day by day.
-3. We need to integrate DE information (FC, padj, etc)  to Ligand-Receptor networks. These Networks were built **by day**.
+3. We need to integrate DE information (FC==log2FoldChange, padj, etc)  to Ligand-Receptor networks. These Networks were built **by day**.
 
 ## Recap
 
@@ -40,6 +40,7 @@ One can think that taking **Young** Tau values would be enough (they differentia
 
 Note:  Even for those genes whom Tau was low, there is a "whichMax" (celltype), so be careful.
 
+Note about **cutoff** for defining "Specific" category: Initially, tau > 0.7 was fixed. However in M1 at D2, Ly96 has tau 0.319711138642448, but Ly96 is macrophage specific. Other example in same M1 (D2) is Cd68, with tau 0.428672631480618. So for fixing a cutoff for future applications, johaGL recommends 0.3.
 
 ### C. GSEA  
 
@@ -69,7 +70,7 @@ Mixed housekeeping and specific (Tau info not integrated). Full DE info datafram
 |   D7_sCs | 1000 | 0.202909455037087 | 0.0284891378559077  |
 
 
-These cutoffs are the only possible to keep 1000 genes in input, as fgsea padj results improve with input size. Moreover, genes showing weak effects (or null) constitute a spectrum that does not deformate results, because strong effects will dominate and produce bigger NES.
+These cutoffs are the only possible to keep 1000 genes in input, as fgsea padj results improved with input size in our dataset. Moreover, genes showing weak effects (or null) constitute a spectrum that does not deformate results, because strong effects will dominate and produce bigger NES.
 The smallest FDR (padj) values obtained across GSEA results are :  
 
 ```
@@ -80,7 +81,7 @@ D4 2.622367e-06 8.362185e-01 0.7402079002 0.055212297        NA 1.133333e-08
 D7 1.054715e-02 5.747208e-01           NA 0.294533841        NA 7.095938e-06
 ```
 
-2. **GSEA by day by celltype**
+2. **Try to incorporate Tau to DE results by day by celltype**
 
 This time the aim was to "integrate" Tau information to DE information. By Day by Cell type.
 
@@ -99,19 +100,22 @@ mix %>% filter(is.na(padj) & !is.na(Tau) & Tau > 0.5) %>% slice_max(abs(log2Fold
 	* DE comes from count matrices whereas Tau comes from TPM matrices. 
 	* Calculating Tau implies to bring all libraries (for a given day) together. DE analysis, on the other side, was performed on separated libraries. In consequence, matching 'whichMAX' (in Tau info) with 'type' (in DE info) does not guarantees true correspondance. 
 
-In any case, when discussing with biologists it was concluded that it would be very interesting to filter by Tau values, which give an approximation to cell-type's markers and their behaviour accros time.    
+- Very few of the genes showed any effect (absFC > 1), so there was no utility of filtering by Tau. In conclusion, for contrast performed *Old vs Young by day by cell type*, using Tau index has no sense.
+
+In any case, when discussing with biologists it was concluded that it would be very interesting to filter by Tau values, which give an approximation to cell-type's markers and their behaviour accros time. But in this case, another contrast is necessary (Old vs Young by day).
 
 
+3. **GSEA by day (gathered celltypes)** 
 
-3. **GSEA by day** 
-
-Extracting only values superior to TAUCUTOFFNEW !!!!, 
-
-
+;;;;;, 
 
 
   `....` 
 
 ## Projection:
+
+
+## Useful sources:
+- [https://bioinformatics-core-shared-training.github.io/RNAseq_May_2020_remote/html/06_Gene_set_testing.html#fgsea](https://bioinformatics-core-shared-training.github.io/RNAseq_May_2020_remote/html/06_Gene_set_testing.html#fgsea)
 
  
