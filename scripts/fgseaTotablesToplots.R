@@ -6,16 +6,23 @@
 # johaGL
 library(tidyverse)
 library(ComplexHeatmap)
+library(msigdbr)
+library(cowplot)
 
 setwd("~/BulkAnalysis_plusNetwork/")
 odir <- "exam_INTER_conditions/static/"
-tablesneeded <- T
-mat4heatmapneeded <- T
+tablesneeded <- F
+mat4heatmapneeded <- F
 gseaoutfull = "fgsea_bd_bct_full.rds" 
 gseaoutfiltered = "fgsea_bd_bct_filtered.rds"
 
 fullrds <- readRDS(paste0(odir,"GSEA/rds/", gseaoutfull))
 pathsFiltered = readRDS( paste0(odir, "GSEA/rds/",  gseaoutfiltered) )
+
+thegmt <- msigdbr(species = "Mus musculus", 
+                  category = 'C2', 
+                  subcategory=c('CP:REACTOME'))
+msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
 
 fullDEsta = readRDS(paste0(odir, "rds/shot_rds_full.rds"))
 
@@ -46,7 +53,81 @@ if (tablesneeded){
   rm(fullrds)
 }
 
-getgeneslistmod <- function(gseadatafr, d){
+## NOTE : tryCatch in innerplot_fun allowed to handle the error : 
+#  Error in calcGseaStat(statsAdj, selectedStats = pathway, returnAllExtremes = TRUE) : 
+# GSEA statistic is not defined when all genes are selected 
+ 
+innerplot_fun <- function(fgsea.dayhere, d, CT, NumP, msigdbr_list){
+  print("running innerplot_fun")
+  fgseaRes <- fgsea.dayhere[[CT]] %>% mutate(log2err=replace_na(log2err, 1))  ## not use drop_na : all down faps D2 are log2err NA
+  print(min(fgseaRes$padj))
+  topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=NumP), ]
+  print(paste("nb of upregul paths", length(topPathwaysUp)))
+  topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=NumP), ]
+  print(paste("nb of downreg paths", length(topPathwaysDown)))
+  topPathBoth <- c(topPathwaysUp$pathway, rev(topPathwaysDown$pathway))
+  a <- sort(getgeneslist_mod(topPathwaysUp, d), decreasing = T)
+  b <- sort(getgeneslist_mod(topPathwaysDown, d), decreasing = T)
+  gseagenes <- c(a, b)
+  gseagenes <- sort(gseagenes, decreasing=T)
+  print(gseagenes)
+  ouif = fgsea::plotGseaTable(msigdbr_list[topPathBoth], gseagenes, fgseaRes, 
+            gseaParam = 0.5 ,  colwidths = c(3, 3, 0.8, 1.2, 1.2),  render=F) 
+  print('doneplotgseatable')
+  plotsenrichu_ <- list()
+  for (i in 1:NumP){
+    pup = topPathwaysUp[i,]
+    print("a path up")
+    print(pup)
+    tmpup <- NULL
+    tryCatch({ 
+      tmpup <- fgsea::plotEnrichment(msigdbr_list[[pup$pathway]], gseagenes) + 
+      labs(title = str_replace(pup$pathway, "REACTOME_", ""),
+           caption=paste( "(NES:", round(pup$NES, 2), ", padj :", 
+                          round(pup$padj,2),")") )
+    }, 
+    warning = function(w) {}, error = function(e){print("paths up error")} ) # endtrycatch
+    if ((dim(tmpup$data)[1] <= 2) || is.null(tmpup) ){
+      plotsenrichu_[[i]] <- NULL
+    }else{ plotsenrichu_[[i]] <- tmpup + theme(plot.title = element_text(size=8))}
+  }
+  print("done enrichu")
+  plotsenrichdw_ <- list()
+  for (i in 1:NumP){
+    pdw = topPathwaysDown[i,]
+    print("b path down")
+    print(pdw)
+    tmpdw <- NULL
+    tryCatch({
+      tmpdw <- fgsea::plotEnrichment(msigdbr_list[[pdw$pathway]], stats=gseagenes) + 
+          labs(title = str_replace(pdw$pathway,"REACTOME_", ""),
+           caption=paste( "(NES:", round(pdw$NES,2), ", padj :", 
+                          round(pdw$padj,2),")") )
+        }, 
+      warning = function(w){}, error = function(e){print("paths down error")} ) # trycatch
+    if (dim(tmpdw$data)[1] <= 2 || is.null(tmpdw)){
+      plotsenrichdw_[[i]] <- NULL
+    } else {plotsenrichdw_[[i]] <- tmpdw + theme(plot.title = element_text(size=8)) }
+  }
+  print("done down")
+  print(
+  plot_grid(
+    # inner plotgrid 1 : the 'plotGseaTable',
+    plot_grid(ggdraw() + draw_label(paste(d, CT, ": Top enriched Pathways (GSEA), Old vs Young")),
+              plot_grid(NULL, ouif, NULL, nrow=1, rel_widths = c(10,9,1)), # NULL elem helps de-truncate names
+              nrow=2, rel_heights = c(2, 10)) ,
+    # inner plotgrid 2 : the 'plotEnrichment' : u_ == UP, dw_ == DOWN
+    plot_grid(
+      plot_grid(plotlist = plotsenrichu_, nrow = 1, ncol=NumP+1),
+      plot_grid(plotlist = plotsenrichdw_,  nrow = 1, ncol=NumP+1) , nrow = 2, rel_heights = c(5,5)), 
+    
+    nrow=2, rel_heights = c(4,5)
+    )# end plotgrid all  
+  ) # end print
+  print("done plotgrid")
+}
+
+getgeneslist_mod <- function(gseadatafr, d){
   outi <- c()
   for (i in gseadatafr$leadingEdge){
     outi <- c(outi, i)
@@ -55,69 +136,29 @@ getgeneslistmod <- function(gseadatafr, d){
   tmpdfdeg <- fullDEsta %>% filter(day==d)
   lfcs <- tmpdfdeg[match(moo, tmpdfdeg$symbol),]$log2FoldChange
   names(lfcs) <- moo
-  return(lfcs)
+  return(lfcs[!is.na(lfcs)])
 }
-thegmt <- msigdbr(species = "Mus musculus", 
-                  category = 'C2', 
-                  subcategory=c('CP:REACTOME'))
-msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
 
-plotme <- function(pathsFiltered, d,  outfilename, NumP){
-  fgsea_ <- pathsFiltered[[d]]
-  NumP = 3
-  replotme <- function(CT, NumP){
-    fgseaRes <- fgsea_[[CT]]
-    print(min(fgseaRes$padj))
-    topPathwaysUp <- fgseaRes[ES>0][head(order(padj),n=NumP), ]
-    topPathwaysDown <- fgseaRes[ES<0][head(order(padj), n=NumP), ]
-    topPathBoth <- c(topPathwaysUp$pathway, rev(topPathwaysDown$pathway))
-    a <- getgeneslistmod(topPathwaysUp, d)
-    b <- getgeneslistmod(topPathwaysDown, d)
-    gseagenes <- c(a, b)
-    print(gseagenes)
-    ouif = fgsea::plotGseaTable(msigdbr_list[topPathBoth], gseagenes, fgseaRes, 
-                                gseaParam = 0.5 , render=F) 
-    plotsenrichu_ <- list()
-    for (i in 1:NumP){
-      pup = topPathwaysUp[i,]
-      tmpup <- fgsea::plotEnrichment(msigdbr_list[[pup$pathway]], gseagenes) + 
-        labs(title= CT, subtitle = str_replace(pup$pathway, "REACTOME_", ""), 
-             caption=paste( "(NES:", round(pup$NES, 2), ", padj :", round(pup$padj,2),")"), 
-             render = F)
-      if (dim(tmpup$data)[1] <= 2 ){
-        plotsenrichu_[[i]] <- NULL
-      }else{ plotsenrichu_[[i]] <- tmpup}
-    }
-    plotsenrichdw_ <- list()
-    for (i in 1:NumP){
-      pdw = topPathwaysDown[i,]
-      tmpdw <- fgsea::plotEnrichment(msigdbr_list[[pdw$pathway]], gseagenes) + 
-        labs(title= CT, subtitle = str_replace(pdw$pathway,"REACTOME_", ""),
-             caption=paste( "(NES:", round(pdw$NES,2), ", padj :", round(pdw$padj,2),")") , 
-             render = F)
-      if (dim(tmpdw$data)[1] <= 2 ){
-        plotsenrichdw_[[i]] <- NULL
-      } else {plotsenrichdw_[[i]] <- tmpdw }
-    }
-    plot_grid(
-    plot_grid(ggdraw() + draw_label(paste(d, CT, ": Top enriched Pathways (GSEA), Old vs Young")),
-                plot_grid(NULL,  ouif, rel_widths =c(4,7)),
-                nrow = 2, rel_heights = c(1,9,9)) ,
-    plot_grid(
-        plot_grid(plotlist = plotsenrichu_),
-        plot_grid(plotlist = plotsenrichdw_) , ncol = 2, rel_widths = c(5,5)), 
-    nrow=2, rel_heights = c(2,4))
-  }
-  
-  pdf("takaka", width = 15)
-  types = c("M1", "FAPs")
+plotme_mod <- function(pathsFiltered, d, outfileprefix, NumP=5){
+  fgsea.dayhere <- pathsFiltered[[d]]
+  print(paste("pathways object is a list of lists, inner list has celltypes:",
+        ifelse((typeof(fgsea.dayhere) == "list" & 
+                 is.null(colnames(fgsea.dayhere))), "ok",  #colnames(a list) is null
+                  "ERROR no celltypes in names(fgsea.dayhere), type prblm" )))
+  types = names(fgsea.dayhere)
+  print(types)
+  pdf(paste0(odir, "GSEA/", outfileprefix, d,".pdf"), width = 14, height=8)
   for (CT in types){
     print(CT)
-    print(replotme(CT, NumP=5))
+    print( innerplot_fun( fgsea.dayhere, d, CT, NumP, msigdbr_list) )
   }  
   dev.off()
 }
-
+rm(d)
+plotme_mod(pathsFiltered, 'D0', "bd_bct_result_", NumP=5); dev.off()
+plotme_mod(pathsFiltered, 'D2', "bd_bct_result_", NumP=5); dev.off()
+plotme_mod(pathsFiltered, 'D4', "bd_bct_result_", NumP=5) ; dev.off()
+plotme_mod(pathsFiltered, 'D7', "bd_bct_result_", NumP=5) ; dev.off()
 
 
 
@@ -331,7 +372,7 @@ draw (oh, column_title = "GSEA Old vs Young (REACTOME)",
       heatmap_legend_side = "bottom", padding = unit(c(2, 2, 2, 60), "mm"))
 dev.off()
 
-# ================================== HALLMARK ================================== 
+# ========================= HALLMARK : not done ================================
 # no needed as not performed
 
 # ===================== Test some other plot =============================
