@@ -61,7 +61,7 @@ def filldicoSenders(dex, daydf, allcelltypes, day):
     -------
     dex : dicionary 
        'Sostdc1': {'ECs': [4.12, 0.39, 2.30, 40.75], 'FAPs': [0. ...],
-    EXPLANATION: 4 float list (1 expresion value per day)
+    EXPLANATION: 4 float list (1  value per day)
             An artifactual -1 means no data for that symbol+celltype+day
             """
     dki = {'D0':0,'D2':1, 'D4':2, 'D7':3}  
@@ -93,12 +93,12 @@ def seevariances_setcutoff(dex, QUANT4var, QUANT4exp ):
     expressAlone = [] # single day expression (no metrics at 2 or more days)
     for k in dex.keys():
         for ct in dex[k]:
-            realvalues = [i for i in dex[k][ct] if i > -1]
+            realvalues = [float(i) for i in dex[k][ct] if float(i) > -1]
             if len(realvalues) > 1:
                 print(realvalues)
                 varthroughdays.append(np.var(realvalues))  
             elif len(realvalues) == 1 :
-                expressAlone.append(realvalues)
+                expressAlone.append(realvalues[0])
     nonzerovars = [i for i in varthroughdays if i > 0]
     autoCutoffvar = np.quantile(np.log10(nonzerovars), q=QUANT4var)    
     plt.hist(np.log10(nonzerovars), alpha=0.6)
@@ -107,7 +107,8 @@ def seevariances_setcutoff(dex, QUANT4var, QUANT4exp ):
     plt.xlabel("variance")
     plt.ylabel("n")
     plt.show()
-    autoCutoffExpAlone = np.quantile(np.log10(expressAlone), q=QUANT4exp)
+    nonzeroexpress = [ i for i in expressAlone if i > 0 ]
+    autoCutoffExpAlone = np.quantile(np.log10(nonzeroexpress), q=QUANT4exp)
     plt.hist(np.log(expressAlone), color='green', alpha=0.4)
     plt.axvline(x=autoCutoffExpAlone, color='gray', linestyle='--')
     plt.show()
@@ -121,7 +122,7 @@ def pickovercutoff(dex, varcutoff, expcutoff):
     selection = []
     for k in dex.keys():
         for ct in dex[k]:
-            realvalues = [i for i in dex[k][ct] if i > -1]
+            realvalues = [float(i) for i in dex[k][ct] if float(i) > -1]
             if len(realvalues) > 1 :
                 tmpvariance = np.var(realvalues)
                 if tmpvariance > varcutoff:

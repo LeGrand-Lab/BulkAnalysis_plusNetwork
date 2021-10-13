@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
 I want to extract L-R pairs which, accross time, change the most.
  BUT celltypes are not the same accross days !
  how to handle ?  : 
      step 1 : 
-         - create sender dict using Natmi output dataframes all days : 
-             sender : 'Ligand derived specificity of average expression value'   
-                  keys celltypes associated: list expression values (4values)
+         - create sender NESTED dict using Natmi output dataframes all days :  
+           external keys are the gene symbols
+            calculate the product expression*specificity, nested dictionary,    
+                  keys are celltypes, values are list product values (4values)
+                  calculate variance of generated values across days
         - select, across sequential days,  MOST VARIABLE ligands (variance cutoff)
-              (Note: if value for only one day, filter by expression cutoff)
+              (Note: if value for only one day, filter by simple value cutoff)
      step 2 :
      - fill a 3D matrix, a cell in the matrix will be a list of 4 values
                  corresponding to 'Edge average expression weight' by each day
@@ -32,7 +35,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import copy
-from boxFunClass import *
+from boxFunClassVersion3 import *
 
 lr = pickle.load( open( '../graphobjs/dictio_lr.p', 'rb') )
 
@@ -42,19 +45,21 @@ allcelltypes = ['ECs', 'FAPs','M1','M2', 'Neutro', 'sCs']
 ds = {}
 for k in days:
     df1 = hom[k].frame  # hom[k].frame.sample(n=100) helps tests
-    ds = filldicoSenders(ds, df1, allcelltypes,  k)
+    ds = filldicoSenders(ds, df1, allcelltypes,  k)  # yes, add days iteratively to same dictionnary
     
-varcutoff, expcutoff = seevariances_setcutoff(ds, 0.85, 0.95) # QUANTILEs best tuned
+varcutoff, expcutoff = seevariances_setcutoff(ds, 0.65, 0.75) # QUANTILEs best tuned
 print(varcutoff)
 mysele = pickovercutoff(ds, varcutoff, expcutoff)
-texto = "symbol\tcellty\tvarianceORexpression\tcriterionselection\n"
+texto = "symbol\tcellty\tvarianceORproduct\tcriterionselection\n"
 for i in mysele:
     texto += '\t'.join([str(x) for x in i]) 
     texto += '\n'               
 
-with open("selectedLigands.txt", "w") as f:
+with open("selectedLigandsVersion3.txt", "w") as f:
     f.write(texto)
     f.close()
+    
+
 
 
 
