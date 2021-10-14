@@ -22,7 +22,7 @@ class LRinfos:
     class to handle  Natmi dataframe results
     one object by result ! 
     to create object, predf is needed (the Edges opened with pandas csv)
-    use 'frame' attribute to get dataframe suitable for graph conversion
+    use 'frame' attribute to get dataframe (is a pandas object)
     """
     def __init__(self, age, day, predf):
         self.age = age
@@ -150,12 +150,14 @@ def sortandfilterltupdic(groupedbct, N, myreverse=None):
     """"
     input : {'FAPs' : [('gene1', value), ('gene2',value) ... ] , .... }
     where values are variances
-    by default sorts from bigger to smaller tuple by 2nd element values"""
+    by default sorts from bigger to smaller tuple by 2nd element values (True)
+    Output: same dictionnary but N (number) selected (gene,value) tuples
+    """
     if myreverse is None:
         myreverse = True
     finalgrouped = {}
     for k in groupedbct.keys():    
-        givesorted = Sort(groupedbct[k], 1, myreverse) # 1 :default for lambda
+        givesorted = Sort(groupedbct[k], 1, myreverse) 
         if len(givesorted) > N:
             finalgrouped[k] = givesorted[:N]
         else: # fewer than N tuples
@@ -201,6 +203,21 @@ def groupsdicoUnique(uniquerelsdico, allcelltypes):
     print()
     return groupedbct
 
+def yieldtopUnique(fileligs, allcelltypes, N=None):
+    """"outputs a dictionary with keys celltypes:
+        { 'sCs' : [('Vim', '9538.6709'), ('Jam3', '93.680415'),  ...   
+    """
+    if N is None:
+        N = 25
+    with open(fileligs, 'r') as f:
+        text_ = f.readlines()
+    uniquerelsdico = makeUniqueRel(text_)
+    dicobyct = groupsdicoUnique(uniquerelsdico, allcelltypes)
+    top = sortandfilterltupdic(dicobyct, N)
+    for k in top.keys():    
+        print(f'  *   {k} top ligands extracted: {len(top[k])}  *  ')    
+    return top
+
 def seeNonUnique_andgroup(text_, allcelltypes):
     groupedbct = {}
     for i in allcelltypes:
@@ -223,22 +240,6 @@ def yieldtopNonUnique(fileligs, allcelltypes, N=None):
     final = sortandfilterltupdic(groupedltup, N)
     return final
 
-def yieldtopUnique(fileligs, allcelltypes, N=None):
-    """"outputs a dictionary with keys celltypes:
-        { 'sCs' : [('Vim', '9538.6709'), ('Jam3', '93.680415'),  ...   
-    """
-    if N is None:
-        N = 25
-    with open(fileligs, 'r') as f:
-        text_ = f.readlines()
-    uniquerelsdico = makeUniqueRel(text_)
-    dicobyct = groupsdicoUnique(uniquerelsdico, allcelltypes)
-    top = sortandfilterltupdic(dicobyct, N)
-    for k in top.keys():    
-        print(f'  *   {k} top ligands extracted: {len(top[k])}  *  ')
-    print()
-    print(top['sCs'])
-    return top
 
 
 
