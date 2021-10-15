@@ -33,7 +33,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import copy
-from boxFunClass import *
+from boxFunClassVersion1 import *
 
 lr = pickle.load( open( '../graphobjs/dictio_lr.p', 'rb') )
 

@@ -14,17 +14,8 @@ I want to extract L-R pairs which, accross time, change the most.
         - select, across sequential days,  MOST VARIABLE ligands (variance cutoff)
               (Note: if value for only one day, filter by simple value cutoff)
      step 2 :
-     - fill a 3D matrix, a cell in the matrix will be a list of 4 values
-                 corresponding to 'Edge average expression weight' by each day
-                  (for each day dataframe, get sender-receiver as named in matrix
-                   matching to celltype as said in dictionary Z)
-        - variance matrix : find the days edges variance from 3D matrix
-            - explore  : do some plots of that variance 
-            - filter pairs having the biggest variance
-            - do plot
-        - write a simple csv file containing most variable edges as found 
-        in variance matrix, containing same columns as Natmi output dataframes
-
+         - see homeoTime_step2.py
+     
 @author: johaGL
 """
 

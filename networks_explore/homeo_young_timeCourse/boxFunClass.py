@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-functions necessary to step1, 2, etc
+Functions and class necessary 
 for Homeostasis Time course L-R analysis
 
 @author: johaGL, oct 2021
@@ -48,6 +48,16 @@ class LRinfos:
         tf = self.frame.loc[ self.frame['log10_edge_sp'] >= cutoff ]
         self.filtered = tf
 
+def importcelltycolorsdico():
+    celltycolors = {
+          "ECs" : "#0072B2",
+          "FAPs" : "#F0E442",
+          "M1" : "#D55E00",
+          "M2" :  "#CC79A7",
+          "Neutro" : "#009E73",
+          "sCs" : "#56B4E9"
+        }
+    return celltycolors
 
 def filldicoSenders(dex, daydf, allcelltypes, day): 
     """

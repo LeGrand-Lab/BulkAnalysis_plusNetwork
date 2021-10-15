@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+- extract top variable ligands (tunable n)
+- find all receptors linked to top variable ligands from step 1 (L-R pairs)
+- for each L-R pair, extract a list of edge weights accross days (4 values):
+     use column 'Edge average expression weight' by each day;
+     group by ligand
+- for each ligand, calculate variance of edge weights across time
+- pick top variable edges (tunable n)                
+- plot and write csv
+
 Created on Wed Oct 13 11:54:37 2021
 
-@author: bioinfo
+@author: johaGL
 """
 
 import os
@@ -14,47 +23,46 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import copy
 import seaborn as sns
-from boxFunClassVersion3 import *
+from boxFunClass import *
 
-def filldaywvectorstodict(topligdfrec, deco, day):
+def filldaywvectorstodict(topligdfrec, dicow, day):
     """
     output: { ('Adam10_Neutro', 'Ehpa3_sCs') : [w1,w2,w3,w4] ...}
     """
     weis_ = [-1,-1,-1,-1]    
-    dki = {'D0':0,'D2':1, 'D4':2, 'D7':3}  
+    dki = {'D0' : 0, 'D2' : 1, 'D4' : 2, 'D7' : 3}  # indexes in vector 
     for i, row in topligdfrec.iterrows():
         fromvertex = row['uniq_Ligand_symbol']
         tovertex = row['uniq_Receptor_symbol']
         weiday = row['Edge average expression weight']
         try:
-            deco[(fromvertex,tovertex)][dki[day]] = float(weiday)
+            dicow[(fromvertex,tovertex)][dki[day]] = float(weiday)
         except KeyError:
-            deco[(fromvertex,tovertex)] = copy.deepcopy(weis_)
-            deco[(fromvertex,tovertex)][dki[day]] = float(weiday)  
-    return deco
+            dicow[(fromvertex,tovertex)] = copy.deepcopy(weis_)
+            dicow[(fromvertex,tovertex)][dki[day]] = float(weiday)  
+    return dicow
 
     
-def reorderdico_fillvariancew(deco):
+def reorderdico_fillvariancew(dicow):
     """
     output: dico { ligand : [(rec1, varianceweight, [w1,w2,w3,w4]),(rec2, .. }
     Note:  tup[0] is receptor, tup[1] is varianceweight, tup[2] the vector
     """
     varsdico = {}
-    for tupk in deco.keys():        
+    for tupk in dicow.keys():        
         ligand, receptor = tupk[0], tupk[1]
-        truewei = [i for i in deco[tupk] if i > -1]
+        truewei = [i for i in dicow[tupk] if i > -1]
         if len(truewei) > 1:
             v = np.var(truewei)
         elif len(truewei) == 1:
             v = truewei[0]
         try :
-            varsdico[ligand].append((receptor, v, deco[tupk] ))
+            varsdico[ligand].append((receptor, v, dicow[tupk] ))
         except KeyError:
-            varsdico[ligand] = [(receptor, v, deco[tupk])]
+            varsdico[ligand] = [(receptor, v, dicow[tupk])]
     return varsdico
 
-############## find for all celltypes the receptors for selected ligands
-
+########## prepare variables
 lr = pickle.load( open( '../graphobjs/dictio_lr.p', 'rb') )
 hom = lr['Young']
 days = ['D0', 'D2', 'D4', 'D7']
@@ -62,7 +70,7 @@ allcelltypes = ['ECs', 'FAPs','M1','M2', 'Neutro', 'sCs']
 
 #fileligs = "selectedLigands.txt"
 fileligs = "selectedLigandsVersion3.txt"
-
+celltycolors = importcelltycolorsdico()
 Nligs = 15
 NtoprecBylig = 4
 print(f"'\n'Finding top {Nligs} ligands, every celltype, you can modify this number")
@@ -74,96 +82,54 @@ for k in topdicoligs.keys():
     for tup in topdicoligs[k]: 
         topligslt_.append('_'.join([tup[0],k])) # ex: 'Ptn_FAPs'
         
-print(f"'\n'Getting the receptors for selected topligs list of tuples (topligslt_)") 
-deco = {} 
-for day in days:
-    daydf = hom[day].frame 
-    topligdfrec = daydf[daydf['uniq_Ligand_symbol'].isin(topligslt_)]
-    #print(topligdfrec[['uniq_Receptor_symbol', 'Edge average expression weight', 'uniq_Ligand_symbol']])
-    deco = filldaywvectorstodict(topligdfrec, deco, day)         
-
-print(f"\n Selecting top {NtoprecBylig} receptors for each of the selected ligands")
-defdicofiltered = sortandfilterltupdic(reorderdico_fillvariancew(deco), NtoprecBylig, True)
-
 
 ######### find only for sCs the receptors for selected ligands
-decosatelli = {}
+print("Show ligands from all cell types targeting receptor in Satellite Cells")
+prepsatelly = {}
 for day in days:
     daydf = hom[day].frame
     prepadf = daydf[daydf['Target cluster'] == 'sCs']
     topligdfrec = prepadf[prepadf['uniq_Ligand_symbol'].isin(topligslt_)]
-    decosatelli = filldaywvectorstodict(topligdfrec, decosatelli,day)
+    prepsatelly = filldaywvectorstodict(topligdfrec, prepsatelly,day)
     
-defisatellite = sortandfilterltupdic(reorderdico_fillvariancew(decosatelli), 1, True)   
-
-
-######## do  matrix with signals that arrive to satellite (I start from the end XD)
+defisatellite = sortandfilterltupdic(reorderdico_fillvariancew(prepsatelly), 1, True)  
 satellireceptors = set()
-ligands = set()
-
+liggs = set()
+    
 for k in defisatellite.keys():
     lig = k
-    ligands.add(k)
+    liggs.add(k)
     listofreceptors = defisatellite[k]
-    for tup in listofreceptors:
+    for tup in listofreceptors:        
         rec = tup[0]
         satellireceptors.add(rec)
-
+    
 # order ligands by celltype origin, alphabetical
-preligorder = Sort([i.split("_") for i in ligands], 1, False)
-ligorder = ["_".join(l_) for l_ in preligorder]
-
-def createdicoindexes(alistofstrings):
-    """
-    map of indexes, matches with matrix indexes
-    """
-    d = {}
-    inde = 0
-    while inde < len(alistofstrings):
-        d[alistofstrings[inde]] = inde
-        inde += 1
-    return d
-
-ligosin = createdicoindexes(ligorder)
-recosin = createdicoindexes(list(satellireceptors))
-matrice = np.empty(shape=(len(ligorder), len(satellireceptors)))
-for k in defisatellite.keys():
-    lig = k
-    i = ligosin[lig]
-    listofreceptors = defisatellite[k]
-    for tup in listofreceptors:  # tup
-        rec = tup[0]
-        j = recosin[rec]
-        matrice[i,j] = tup[2][0] #tup[2]  is the 4 weights vector
-
-#ax = sns.heatmap(matrice, cmap="Greens")
-#plt.show()
-print("we saw that matrix is very very sparse, not the good choice")
+preligorder = Sort([i.split("_") for i in liggs], 1, False)
+ligorder = ["_".join(l_) for l_ in preligorder] 
 
 """
-better alternative:
-    heatmap with weights across time
+Heatmap with weights across time
 """
 #print(ligorder)
 #print(satellireceptors)
 rowlabels = [] 
+symboligs = [] ; symborecs = []
 origcelltype = []
 targetcelltype = [] 
-day0 = []
-day2 = []
-day4 = []
-day7 = []
+day0 = [] ; day2 = [] ; day4 = [] ; day7 = []
 
 for k in ligorder:
     tmpli = k.split("_")
     lig, origct = tmpli[0], tmpli[1]
-    print(lig)
     listofreceptors = defisatellite[k] # use key directly to catch lig infos
     for tup in listofreceptors:  # tup
         tmpre = tup[0]
         tmpre = tmpre.split("_")
         rec, targrec = tmpre[0], tmpre[1]
         rowlabels.append(" --> ".join([lig,rec]))
+        symboligs.append(lig)
+        symborecs.append(rec)
         origcelltype.append(origct)
         targetcelltype.append(targrec)
         day0.append(tup[2][0])
@@ -171,7 +137,6 @@ for k in ligorder:
         day4.append(tup[2][2])
         day7.append(tup[2][3])
         
-#'Index': [i for i in range(len(rowlabels))],
 dfplot = pd.DataFrame({  'LR_pairs': rowlabels,
                        '0' : np.log10(day0),
                         '2' : np.log10(day2),
@@ -179,11 +144,10 @@ dfplot = pd.DataFrame({  'LR_pairs': rowlabels,
                        '7' : np.log10(day7)})
 dfplot = dfplot.set_index(['LR_pairs'])
 
-# celltypes labels:
-#row_co = [ (.2, .2,.2, .5) for i in range(84)]
-colordictio = {'ECs': '#0000FF', 'M1':'#0000FF',
-             'M2':'#0000FF', 'FAPs' : '#0000FF', 'Neutro': '#0000FF', 'sCs': '#0000FF'}
-row_co = pd.DataFrame({"Sender_Type" : ['#0000FF' for i in range(84)],
+
+print(f'\nprinting celltypes colors dictionary (celltycolors)')
+print(celltycolors)
+row_co = pd.DataFrame({"Sender_Type" : [celltycolors[ct] for ct in origcelltype],
                       "LR_pairs" : rowlabels})
 row_co = row_co.set_index(['LR_pairs'])
 g = sns.clustermap(dfplot, center=1,
@@ -198,112 +162,88 @@ g = sns.clustermap(dfplot, center=1,
                               'label':'log10 edge weight'  },
                     figsize=(8,18)
                     )
-for label in colordictio.keys():
+
+for label in celltycolors.keys():
     print(label)
-    g.ax_col_dendrogram.bar(1.5, 0 , color=colordictio[label],
+    g.ax_col_dendrogram.bar(1.5, 0 , color=celltycolors[label],
                             label=label, linewidth=0)
+
 g.ax_col_dendrogram.legend(loc="center right", ncol=2, title="Sender cell types")
 ax = g.ax_heatmap
 ax.set_xlabel("DAYS")
-ax.tick_params( bottom=False) 
+ax.tick_params(bottom=False) 
 #g.cax.set_position([.03, .2, .03, .45])
 g.fig.suptitle("Ligand-Receptor pairs: \n top signals to Satellite Cell receptors" ,
-                   fontsize=24, horizontalalignment='center' )
+                    fontsize=24, horizontalalignment='center' )
+g.savefig("MainSignalstoSatelliteCells.pdf", pad_inches=1)
+plt.show()
 
-g.savefig("MainSignalstoSatelliteCells.pdf", figsize=(12,18))
+#### save a csv file with data used to plot 'MainSignalstoSatelliteCells.pdf'
 
+satellidf = pd.DataFrame({'Sender group' : origcelltype,
+                       'Ligand' : symboligs,
+                       'Receptor' : symborecs,
+                       'Target group' : targetcelltype ,
+                       'weight D0' : day0,
+                        'weight D2' : day2,
+                        'weight D4' : day4,
+                        'weight D7' : day7})
 
-#g.ax_col_dendrogram.legend(loc="center", ncol=6)
-#plt.show()
-
-#g.cax.set_position([.15, .2, .03, .45])
-#plt.setp(g.ax_heatmap.xaxis.get_majorticklabels(), fontsize=8)
-
-
-# import seaborn as sns; sns.set(color_codes=True)
-# import string
-# iris = sns.load_dataset("iris")
-# species = iris.pop("species")
-# lut = dict(zip(species.unique(), "rbg"))
-# samples = np.repeat(list(string.ascii_letters[0:8]),20)[:150]
-# sample_cols = dict(zip(set(samples), sns.color_palette("cubehelix", 8)))
-
-# row_colors = pd.DataFrame({'sample':['g' for i in samples]})
-# g = sns.clustermap(iris, row_colors=row_colors,row_cluster=False)
-
-# for k in defisatellite.keys():satellireceptors = []ligands = []
+satellidf.to_csv("MainSignalstoSatelliteCells.csv", sep=",")
 
 
-#     lig = k
-#     listofreceptors = defisatellite[k]
-#     for tup in listofreceptors:
-#         rec = tup[0]
-#         weis_ = tup[2]
-#         delta1 = weis_[1] - weis_[0]
-#         delta2 = weis_[2] - weis_[1]
-#         delta3 = weis_[3] - weis_[2]
-#         satellireceptors.append(rec)
-#         ligands.append(lig)
-#         delta2vs0.append(delta1)
-#         delta4vs2.append(delta2)
-#         delta7vs4.append(delta3)
- 
-# **       
-# iris = sns.load_dataset("iris").sample(n=20)
-# species = iris.pop("species")
-# lut = dict(zip(species.unique(), "rbg"))
-# row_colors = species.map(lut)
-# g = sns.clustermap(iris, row_colors=row_colors,row_cluster=False)
+############## find for all celltypes the receptors for selected ligands        
+print(f"'\n'Getting the receptors for selected topligs list of tuples (topligslt_)") 
+prepall = {} 
+for day in days:
+    daydf = hom[day].frame 
+    topligdfrec = daydf[daydf['uniq_Ligand_symbol'].isin(topligslt_)]
+    #print(topligdfrec[['uniq_Receptor_symbol', 'Edge average expression weight', 'uniq_Ligand_symbol']])
+    prepall = filldaywvectorstodict(topligdfrec, prepall, day)         
 
-# df = pd.DataFrame({'Idx1': ['Bar', 'Bar', 'Foo', 'Foo', 'Hop', 'Hop', 'Hop'],
-#                     'Idx2': ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
-#                     'Col1': np.random.rand(7),
-#                     'Col2': np.random.rand(7)})
-# df = df.set_index(['Idx1', 'Idx2'])
+print(f"\n Selecting top {NtoprecBylig} receptors for each of the selected ligands")
+defdicofiltered = sortandfilterltupdic(reorderdico_fillvariancew(prepall), NtoprecBylig, True)
 
-# g = sns.clustermap(df, center=1, row_cluster=False, cmap="GnBu", yticklabels=True, xticklabels=True, linewidths=0.004)
-# g.ax_heatmap.yaxis.set_ticks_position("left")
+############## APENDIX
 
-# plt.setp(g.ax_heatmap.xaxis.get_majorticklabels(), fontsize=12)
-# plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), fontsize=12)
-# plt.show()
+def doasmatrix(defisatellite, ligorder, satellireceptors, day=None):
+    """
+     Matrix plot idea :  with signals that arrive to satellite 
+     I saw not a good idea: very sparse, time not easy to show in same plot
+    """     
+    def createdicoindexes(alistofstrings):
+        # map of indexes, matches with matrix indexes
+        d = {}
+        inde = 0
+        while inde < len(alistofstrings):
+            d[alistofstrings[inde]] = inde
+            inde += 1
+        return d
+    if day is None:
+        day = 2
+    ligosin = createdicoindexes(ligorder)
+    recosin = createdicoindexes(list(satellireceptors))
+    matrice = np.empty(shape=(len(ligorder), len(satellireceptors)))
+    for k in defisatellite.keys():
+        lig = k
+        i = ligosin[lig]
+        listofreceptors = defisatellite[k]
+        for tup in listofreceptors:  # tup
+            rec = tup[0]
+            j = recosin[rec]
+            matrice[i,j] = tup[2][0] #tup[2]  is the 4 weights vector    
+    
+    ax = sns.heatmap(matrice, cmap="Greens")
+    plt.show()
+    return 0
+doasmatrix(defisatellite, ligorder, satellireceptors, day=2)
+print("BAD, very sparse matrix, not the good choice; Time not plottable in 1 step")
 
-# **
 
 
-#cutvar, cutvalue = seevar_setcutWeights(deco, 0.75,0.95)            
-  
-# def seevar_setcutWeights(dex, QUANT4var, QUANT4valu ):   
-#     """ I know i am repeating myself: this is similar to seevariances_setcutoff
-#     helps to seek for best cutoffs  ): 
-#         - a variance cutoff when more than 2 real products values (not -1)
-#         - an product cutoff if only 1 real product available
-#     """
-#     varthroughdays = [] # variances (if 2 or more day measured)
-#     pAlone = [] # single day metrics (no metrics at 2 or more days)
-#     for tupk in dex.keys():
-#         realvalues = [i for i in dex[tupk] if i > -1]
-#         if len(realvalues) > 1:
-#             print(realvalues)
-#             varthroughdays.append(np.var(realvalues))  
-#         elif len(realvalues) == 1 :
-#             pAlone.append(realvalues[0])
-#     nonzerovars = [i for i in varthroughdays if i > 0.0]
-#     autoCutoffvar = np.quantile(np.log10(nonzerovars), q=QUANT4var)    
-#     plt.hist(np.log10(nonzerovars), alpha=0.8, color="orangered")
-#     plt.axvline(x=autoCutoffvar, color='gray', linestyle='--')
-#     plt.title("variances of ... across days")     
-#     plt.xlabel("log10(variance)")
-#     plt.ylabel("n")
-#     plt.show()
-#     nonzerop = [ i for i in pAlone if i > 0 ]
-#     autoCutoffpAlone = np.quantile(np.log10(nonzerop), q=QUANT4valu)
-#     plt.hist(np.log(pAlone), color='gold', alpha=0.6)
-#     plt.axvline(x=autoCutoffpAlone, color='orangered', linestyle='--')
-#     plt.title(";;;;;; when 1 single day available")
-#     plt.xlabel("log10(value)"); plt.ylabel("n")
-#     plt.show()
-#     return 10**autoCutoffvar, 10**autoCutoffpAlone
+
+
+
   
 
 
