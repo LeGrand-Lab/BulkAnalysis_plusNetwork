@@ -70,7 +70,7 @@ Mixed housekeeping and specific (Tau info not integrated). Full DE info datafram
 |   D7_sCs | 1000 | 0.202909455037087 | 0.0284891378559077  |
 
 
-These cutoffs are the only possible to keep 1000 genes in input, as fgsea padj results improved with input size in our dataset. Moreover, genes showing weak effects (or null) constitute a spectrum that does not deformate results, because strong effects will dominate and produce bigger NES.
+These cutoffs are the only possible to keep 1000 genes in input, as fgsea padj results improved with input size in our dataset. Moreover, genes showing weak effects (or null) constitute a spectrum that does not deformate results, because strong effects will dominate and produce bigger absolute NES.
 The smallest FDR (padj) values obtained across GSEA results are :  
 
 ```
@@ -90,7 +90,7 @@ For each produced *mixed* dataframe, there were some discoveries:
 - rows containing  NA padj values were sometimes associated with Tau > 0.5, but as expected FC was near zero.
 ```
 mix %>% filter(is.na(padj) & !is.na(Tau) & Tau > 0.5) %>% slice_max(abs(log2FoldChange),n=1)
-# A tibble: 1 × 15
+# A tibble: 1 ?? 15
   baseMean log2FoldChange lfcSE  pvalue  padj id                 day   type  symbol.x symbol.y Tau               class    whichMAX nbMAX exclusiveOld
      <dbl>          <dbl> <dbl>   <dbl> <dbl> <chr>              <chr> <chr> <chr>    <chr>    <chr>             <chr>    <chr>    <chr> <chr>       
 1     18.8        -0.0616 0.139 0.00679    NA ENSMUSG00000030559 D7    sCs   Rab38    Rab38    0.979686856413078 specific sCs      1     0      
@@ -107,13 +107,13 @@ In any case, when discussing with biologists it was concluded that it would be v
 
 3. **GSEA by day (gathered celltypes)** 
 
-;;;;;, 
-
-
-  `....` 
+It is performed by script :
+  `exam_Intx_TauSelec.R` .
+  
+See 'exam_Intx_report.pdf' file to see if matrices filtered by Tau are suitable for DESeq2 (the answer is yes, dispersions are coherent with the model required by DESeq2).
 
 ## Projection:
-
+To make integrated heatmaps, or network "graph" style representations integrating the notion of ages differences across time, and if possible, add Reactome pathways terms in some way. Hard work yet to come ! 
 
 ## Useful sources:
 - [https://bioinformatics-core-shared-training.github.io/RNAseq_May_2020_remote/html/06_Gene_set_testing.html#fgsea](https://bioinformatics-core-shared-training.github.io/RNAseq_May_2020_remote/html/06_Gene_set_testing.html#fgsea)
