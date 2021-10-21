@@ -1,3 +1,4 @@
+# Failed attempt to make an alluvial plot with pathways
 # https://stackoverflow.com/questions/52970275/ggalluvial-order-flow-of-lines-based-on-a-variable-within-stratum
 library(ggalluvial)
 data(majors)

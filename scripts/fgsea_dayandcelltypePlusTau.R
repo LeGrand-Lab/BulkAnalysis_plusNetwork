@@ -1,5 +1,4 @@
-#  Explains why GSEA was not performed in Tau selected genes.
-#  for this contrast (Old vs Young by celltype by day)
+#  Explains why GSEA was not performed in Tau selected genes for this contrast (Old vs Young by celltype by day)
 # --
 # johaGL
 library(fgsea)

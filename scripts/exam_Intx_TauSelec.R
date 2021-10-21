@@ -26,15 +26,12 @@ consensusfile <- "conseTau_ensemblid.rds"
 taudefile <- "TauPlusDEinfo_full.rds"
 doDEtest <- F # done
 doGSEAintx <- F # done
+dopreplots <- F # done
 daysv = c("D0","D2","D4","D7")
 CUTOFFTAU = 0.3
 fmat <- readRDS("data/prefiltered_counts.rds")
 metadata <- readRDS("data/metadata.rds")
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
-
-if (!doDEtest){
-  print("you set 'doDEtest' variable as FALSE, which means already in static/rds the DEG list exists")
-}else{print("doDEtest is TRUE, will run DESeq2")}
 
 # ======== Import tauconsensus and give uniqueness: function importdedup() =======
 importdedup <- function(consensusfile, CUTOFFTAU){
@@ -50,10 +47,14 @@ importdedup <- function(consensusfile, CUTOFFTAU){
 }
 cat("read how 'consensus' is determined and why, in folder 'exam_INTER_conditions/static/readmedocs' :",
     "\n","file recap_explain.md, section **Tau classification and consensus** ")
-# =============================================================================
-
 # !!  use here function importdedup
 dedup <- importdedup(consensusfile, CUTOFFTAU)
+# =============================================================================
+
+if (!doDEtest){
+  print("you set 'doDEtest' variable as FALSE, which means already in static/rds the DEG list exists")
+}else{print("doDEtest is TRUE, will run DESeq2")}
+
 
 # ===================== Preliminary heatmaps : vst values day by day ====================================
 
@@ -136,12 +137,13 @@ preliminaryheatmapvst <- function(d, destinyfilepdf ){
   dev.off()
   
 }
-  
-preliminaryheatmapvst('D0', paste0(odir, "exam_Intx_heatmap_",'D0',".pdf") )
-preliminaryheatmapvst('D2', paste0(odir, "exam_Intx_heatmap_",'D2',".pdf") )
-preliminaryheatmapvst('D4', paste0(odir, "exam_Intx_heatmap_",'D4',".pdf") )
-preliminaryheatmapvst('D7', paste0(odir, "exam_Intx_heatmap_",'D7',".pdf") )
 
+if (dopreplots){
+  preliminaryheatmapvst('D0', paste0(odir, "exam_Intx_heatmap_",'D0',".pdf") )
+  preliminaryheatmapvst('D2', paste0(odir, "exam_Intx_heatmap_",'D2',".pdf") )
+  preliminaryheatmapvst('D4', paste0(odir, "exam_Intx_heatmap_",'D4',".pdf") )
+  preliminaryheatmapvst('D7', paste0(odir, "exam_Intx_heatmap_",'D7',".pdf") )
+}  
 # ====================================== END preliminary heatmaps =====================================
 
 # ==================== Test diff expr on Tau filtered  (if doDEtest is TRUE) ==================

@@ -1,4 +1,4 @@
-# Organize GSEA results into tables
+# Organize GSEA results 'bd_bct' into tables
 #   check fgsea_dayandcelltype.R
 # output dir: exam_INTER_conditions/static/GSEA/ 
 # and pdf plots
