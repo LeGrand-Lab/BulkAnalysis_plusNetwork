@@ -1,8 +1,7 @@
 # Test Differential enrichment of pathways
-# BY DAY, on unique ensemblids based on Tau filtering
+# BY DAY, on unique symbols (unique symbol:celltype) based on Tau filtering
 # outputs into 'exam_inter_conditions/static' :
 #           rds/Intx_shot_onTauExtract.rds
-#           GSEA/rds/Intx_fgsea_full.rds
 #           
 # JohaGL
 setwd("~/BulkAnalysis_plusNetwork/")
@@ -18,12 +17,12 @@ library(gridExtra)
 library(cowplot)
 library(RColorBrewer)
 
+M = 1000 # M genes up + M genes down, total of 2M genes for GSEA (each celltype)
 
 odir = "exam_INTER_conditions/static/"
 taudir = "Tau/"
 consensusfile <- "conseTau_ensemblid.rds"
 
-taudefile <- "TauPlusDEinfo_full.rds"
 doDEtest <- F # done
 doGSEAintx <- F # done
 dopreplots <- F # done
@@ -33,6 +32,11 @@ fmat <- readRDS("data/prefiltered_counts.rds")
 metadata <- readRDS("data/metadata.rds")
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
 
+gdir <- "GSEA_Intx/"
+
+print(paste0("cd ",odir, "; if [ ! -d ", 
+              gdir,"   ] ;then mkdir -p ", gdir,"rds/; cd ", gdir, "; mkdir csv/; fi"))
+
 # ======== Import tauconsensus and give uniqueness: function importdedup() =======
 importdedup <- function(consensusfile, CUTOFFTAU){
     consensus_tau <- readRDS(paste0(taudir, consensusfile))
@@ -40,7 +44,7 @@ importdedup <- function(consensusfile, CUTOFFTAU){
     dedup <- list()
     for (d in daysv){
       tf <- consensus_tau[[d]] %>% filter(Tau >= CUTOFFTAU) %>% 
-        group_by(id) %>% slice_max(Tau)  ### ??? is this ok ????
+        group_by(symbol) %>% slice_max(Tau, n=1, with_ties = F)  ### ??? is this ok ????
       dedup[[d]] <- tf
       } # end for
     return(dedup)
@@ -49,12 +53,16 @@ cat("read how 'consensus' is determined and why, in folder 'exam_INTER_condition
     "\n","file recap_explain.md, section **Tau classification and consensus** ")
 # !!  use here function importdedup
 dedup <- importdedup(consensusfile, CUTOFFTAU)
+for (i in names(dedup)){
+  write.table(dedup[[i]] %>% select(symbol, whichMAX ) ,
+              paste0(odir, "GSEA_Intx/csv/UNIQUEsym_ct_",i,".csv"), sep='\t', col.names=T)
+}
+
 # =============================================================================
 
 if (!doDEtest){
   print("you set 'doDEtest' variable as FALSE, which means already in static/rds the DEG list exists")
 }else{print("doDEtest is TRUE, will run DESeq2")}
-
 
 # ===================== Preliminary heatmaps : vst values day by day ====================================
 
@@ -139,10 +147,10 @@ preliminaryheatmapvst <- function(d, destinyfilepdf ){
 }
 
 if (dopreplots){
-  preliminaryheatmapvst('D0', paste0(odir, "exam_Intx_heatmap_",'D0',".pdf") )
-  preliminaryheatmapvst('D2', paste0(odir, "exam_Intx_heatmap_",'D2',".pdf") )
-  preliminaryheatmapvst('D4', paste0(odir, "exam_Intx_heatmap_",'D4',".pdf") )
-  preliminaryheatmapvst('D7', paste0(odir, "exam_Intx_heatmap_",'D7',".pdf") )
+  preliminaryheatmapvst('D0', paste0(odir, gdir, "1prep_Intx_heatmap_",'D0',".pdf") )
+  preliminaryheatmapvst('D2', paste0(odir, gdir, "1prep_Intx_heatmap_",'D2',".pdf") )
+  preliminaryheatmapvst('D4', paste0(odir, gdir, "1prep_Intx_heatmap_",'D4',".pdf") )
+  preliminaryheatmapvst('D7', paste0(odir, gdir, "1prep_Intx_heatmap_",'D7',".pdf") )
 }  
 # ====================================== END preliminary heatmaps =====================================
 
@@ -191,17 +199,15 @@ infoinput <- data.frame("day" = c(), "inputsize"=as.integer(c()),
                         "maxpadj" = c(), "minabslfc" = c())
 intere_ <- list()
 for (d in daysv){
-  # !! attention: there can be symbols repetitions (as DE ran on ensemblids)
-  # make unique (slice_max on baseMean): 
   resUniqMx <- list()
   resUniqMx[[d]] <- resEnsDE[[d]] %>% group_by(symbol) %>% slice_max(baseMean, n=1)
   Z <- left_join(dedup[[d]], genes_df, by="symbol")
   resUniqMx[[d]]$celltype <- Z[match(resUniqMx[[d]]$symbol, Z$symbol),]$whichMAX
   intere_uplfc <- resUniqMx[[d]] %>% filter(log2FoldChange > 0) %>%
-    group_by(celltype) %>% slice_max(log2FoldChange, n=1000, with_ties=F)  %>%
+    group_by(celltype) %>% slice_max(log2FoldChange, n=M, with_ties=F)  %>%
     arrange(desc(log2FoldChange)) %>% filter(abs(log2FoldChange) >= 0.2)
   intere_downlfc <- resUniqMx[[d]] %>% filter(log2FoldChange < 0) %>%
-    group_by(celltype) %>% slice_min(log2FoldChange, n=1000, with_ties=F) %>%
+    group_by(celltype) %>% slice_min(log2FoldChange, n=M, with_ties=F) %>%
     arrange(desc(log2FoldChange)) %>% filter(abs(log2FoldChange) >= 0.2)
   intere_[[d]] <- rbind(intere_uplfc, intere_downlfc)
   infoinput <- rbind(infoinput, c(d,
@@ -212,11 +218,11 @@ for (d in daysv){
 colnames(infoinput) <- c("day_celltype" , "inputsize", 
                          "maxpadj" , "minabslfc" )
 infoinput$inputsize <- as.integer(infoinput$inputsize)
-write.table(infoinput, paste0(odir,"GSEA/infoinput_Intx.csv"), sep='\t', 
+write.table(infoinput, paste0(odir,gdir, "csv/infoinput_Intx.csv"), sep='\t', 
             col.names = T, row.names = F)
 dobarplotpregsea <- F
 if (dobarplotpregsea){
-    pdf(paste0(odir, "GSEA/intx_barplot_pregsea.pdf"), height = 8, width=12)
+    pdf(paste0(odir, gdir, "1prep_barplot_pregsea.pdf"), height = 8, width=12)
     for (d in daysv){
       gseagenes <- intere_[[d]] %>% pull(log2FoldChange)
       names(gseagenes) <- intere_[[d]]$symbol
@@ -226,6 +232,7 @@ if (dobarplotpregsea){
 }
 # prepare gmt files for gsea 
 
+print("Running GSEA on selected gene set")
 Reac_gmt <- msigdbr(species = "Mus musculus", category = 'C2', subcategory=c('CP:REACTOME'))
 msigdbr_list = split(x = Reac_gmt$gene_symbol, f = Reac_gmt$gs_name)
 if (doGSEAintx){
@@ -246,145 +253,8 @@ if (doGSEAintx){
 }
 
 rm(fgseaRes)
-saveRDS(fgseaR_, paste0(odir, "GSEA/rds/Intx_fgsea_full.rds"))
+saveRDS(fgseaR_, paste0(odir, gdir, "rds/Intx_fgsea_full.rds"))
 
-
-
-# ================ concatenate Tau and *full* DEG information ==================
-# This uses DEG that resulted from script exam_Inter_cond_sta.R
-doconcat = TRUE
-if (doconcat){
-  # cross information with DEG results FULL version
-  degfull <- readRDS(paste0(odir, "rds/shot_rds_full.rds"))
-  daysv = c("D0","D2","D4","D7")
-  mdegtau <- list()
-  for (d in daysv){
-    Ddeg <- degfull %>% filter(day == d) %>% select(symbol,log2FoldChange,padj,type)
-    
-    df_tmp <- right_join(dedup[[d]] %>% mutate(type = whichMAX),
-                        Ddeg %>% filter(padj <= 0.5), # this also excludes NA padj
-                        by=c("symbol","type"))
-    
-    df_tmp <- df_tmp %>% filter(abs(log2FoldChange) > 0.1)
-    df_tmp <- df_tmp %>% mutate(tauAvailable=ifelse(is.na(Tau), "no", "yes"))
-    df_tmp <- df_tmp %>% mutate(Tau_discrete = case_when(
-     # is.na(Tau) ~ "NA", # was not available
-          Tau >= CUTOFFTAU ~ "SPECIFIC",
-          TRUE ~ "HOUSEKEEPING"
-        ), LFC_discrete = case_when(
-          log2FoldChange >= 1 ~ "A. UP",
-          log2FoldChange < 1 & log2FoldChange >= .5  ~ "B. 0.5 to 1",
-          log2FoldChange <= -.5 & log2FoldChange > -1 ~ "D. -1 to -0.5",
-          log2FoldChange <= -1 ~  "E. DOWN",
-          TRUE ~ "C. -0.5 < lfc < 0.5"     )  ) # end mutate
-    
-    df_tmp <- df_tmp %>% mutate(padj_discrete =  case_when(
-      is.na(padj) ~ "NApadj",
-      padj <= 0.005 ~ "a. SIGNIFICANT (<= 0.005)",
-      padj <= 0.05 & padj > 0.005 ~ "b. SIGNIFICANT (0.05 to 0.005)",
-      padj > 0.05 & padj <= 0.5 ~ "c. 0.05 to 0.5",
-      padj > 0.5 ~ "d. more than 0.5") )
-    df_tmp$day <- d
-    mdegtau[[d]] <- df_tmp
-  }
-  giant = bind_rows(mdegtau)
-  # check EACH DAY: there are still some genes classified as "specific" that appear 
-  # *duplicated*  among two cell types
-  for (d in daysv){
-    f <- giant %>% filter(day==d & Tau_discrete=="SPECIFIC") 
-    n_occ <- data.frame(table(f$symbol))
-    print("checking each day , printing duplicates")
-    print(unique(f$type))
-    print(n_occ[n_occ$Freq > 1,])
-  }
-  # make unique (a symbol cannot be repeated across celltypes in one day )
-  # criterion : smallest padj
-  mdegtau <- list() # clear to reuse this var
-  for (d in daysv){
-    f <- giant %>% filter(day==d) %>% group_by(symbol) %>%
-      slice_min(padj)
-    mdegtau[[d]] <- f
-  }
-  giant <- bind_rows(mdegtau)
-  saveRDS(giant, paste0(odir, "rds/", taudefile))
-}
-
-# ===============================  load element for plots:   :=======================
-giant <- readRDS(paste0(odir, "rds/", taudefile))
-for (d in daysv){
-  f <- giant %>% filter(day==d & Tau_discrete=="SPECIFIC") 
-  n_occ <- data.frame(table(f$symbol))
-  print("checking each day , printing duplicates")
-  print(unique(f$type))
-  if(dim(n_occ[n_occ$Freq > 1,])[1] == 0){ print("ok for plots (no duplics)")
-    }else{print("attention, duplicated symbols across celltypes this day")}
-}
-# =====================================  end load ==============================
-
-# ==================================== MAplot ===============================
-giant <- readRDS(paste0(odir, "rds/", taudefile))
-#pdf(paste0(odir, "TauPlusDEinfo_plot.pdf"), width=10, height=6)
-ggplot(giant, aes(x=Tau, y=log2FoldChange, color= Tau >= .5) ) + 
-  geom_point(size=.5) + geom_hline(yintercept = c(-1.2,1.2),
-                                   linetype = "dashed") +
-  scale_color_brewer(palette = "Dark2") + facet_grid(padj<=0.05 ~ day) + 
-  labs(title="DE information and Tau index", 
-       caption="y axis plot labels: TRUE correspond to padj <=0.05") 
-#dev.off()
-# ====================================  end MAplot ===========================
-
-
-# =================================  use Mosaic Plot :=======================
-# reorder factors : 
-giant$Tau_discrete <- ordered(giant$Tau_discrete, levels = c("SPECIFIC", "HOUSEKEEPING"))
-revlevelpj <- rev(levels(as.factor(giant$padj_discrete) ))
-giant$padj_discrete <- ordered(giant$padj_discrete, levels = revlevelpj)
-#revlevelLFC <- rev(levels(as.factor(giant$LFC_discrete) ))
-#giant$LFC_discrete <- ordered(giant$LFC_discrete, levels = revlevelLFC)
-modx_labs = sapply(levels(as.factor(giant$padj_discrete)), function(x)
-  unlist(str_split(x,"\\."))[1])
-
-pdf(paste0(odir,"TauPlusDEinfo_mosaic_C.pdf"), width=12, height=10)
-ggplot(giant)  +
-geom_mosaic(aes(x=product(LFC_discrete), 
-                conds = product(Tau_discrete), 
-                fill = padj_discrete )) + 
-  scale_fill_manual(values=c( "#404788FF", "#238A8DFF",
-                                 "#55C667FF"), 
-                    name="padj") +
-  labs(x= "padj", title="Tau, Log2FC and padj values") + 
-   scale_x_productlist("padj_categorical", labels=c("c","b","a", "","","")) +
-   theme_mosaic() + theme(axis.text.x = element_text(angle = 90),
-        plot.margin = unit(c(.1,.1,.1,.1), "cm"),
-        plot.title= element_text(hjust=0.5)) + coord_flip() +  
-  facet_grid(day~Tau_discrete)
-dev.off()
-  
-# manual colors viridis --> scale_fill_manual(values=c("#440145FF", "#404788FF", "#238A8DFF",
-#                              "#55C667FF", "#FDE725FF")),   
-# =================================  another Plot :=======================
-# proportion of housekeeping and prop specific along celltypes and days
-
-worko <- giant %>% filter(abs(log2FoldChange) >= 0.5) # select only interesting changes
-
-maxpj = round(max(worko$padj),1)
-minlfc = round(min(abs(worko$log2FoldChange)),1)
-
-ggplot(worko %>% group_by(type) %>% tally(),
-       aes(x=type,y=n)) + geom_bar(position="dodge", stat="identity") + 
-  geom_text(aes(label=n), position=position_dodge(width=0.9),vjust=-.25) +
-  labs(title=paste("Number of top listed genes (padj < ",maxpj,", abs(lfc) ",minlfc,")"))
-
-# among top listed genes (as seen in barplot)
-# check proportion of "specific" Tau_discrete
-ox <- worko %>% group_by(time_Day, type, Tau_discrete) %>% 
-         summarise(n = n()) %>%
-        group_by(time_Day,type) %>%
-        mutate(Prop = n / sum(n))
-ggplot(ox,
-       aes(x=time_Day, y=Prop, fill=Tau_discrete)) +
-  geom_col() + facet_grid(~type) +
-labs(title = "Tissue Specific Proportion among Top listed genes, by cell type") 
 
 
 
@@ -414,7 +284,7 @@ ggplot(as_tibble(vgf), aes(age,tpm)) +
   stat_summary( geom = "point", fun = "mean", col="white", size=4, shape=21,
                 fill="salmon") +
   ggtitle("TPM, gene ENSMUSG00000023951 ( Vegfa ) in M2 D2")
-
+# THIS IS A UNRESOLVED QUESTION !!!! did not find biblio about it.
 ##############################################################################
 #??end caution
 

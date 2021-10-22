@@ -1,6 +1,6 @@
 # Organize GSEA results 'bd_bct' into tables
 #   check fgsea_dayandcelltype.R
-# output dir: exam_INTER_conditions/static/GSEA/ 
+# output dir: exam_INTER_conditions/static/GSEA_bd_bct/ 
 # and pdf plots
 # --
 # johaGL
@@ -16,8 +16,8 @@ mat4heatmapneeded <- F
 gseaoutfull = "fgsea_bd_bct_full.rds" 
 gseaoutfiltered = "fgsea_bd_bct_filtered.rds"
 
-fullrds <- readRDS(paste0(odir,"GSEA/rds/", gseaoutfull))
-pathsFiltered = readRDS( paste0(odir, "GSEA/rds/",  gseaoutfiltered) )
+fullrds <- readRDS(paste0(odir,"GSEA_bd_bct/rds/", gseaoutfull))
+pathsFiltered = readRDS( paste0(odir, "GSEA_bd_bct/rds/",  gseaoutfiltered) )
 
 thegmt <- msigdbr(species = "Mus musculus", 
                   category = 'C2', 
@@ -27,7 +27,7 @@ msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
 fullDEsta = readRDS(paste0(odir, "rds/shot_rds_full.rds"))
 
 if (tablesneeded){
-  system(paste0("cd ",odir,"GSEA/; ", 
+  system(paste0("cd ",odir,"GSEA_bd_bct/; ", 
                "if [ ! -d csv/ ]; then mkdir csv; else echo 'csv/ exists, no action';fi"))
   print(" ** see keys in full results rds list of lists ** ")
   print(names(fullrds)) # the days
@@ -46,7 +46,7 @@ if (tablesneeded){
                .before = leadingEdge) %>%
         select(-leadingEdge)
       
-      write.table(tmpdf, paste0(odir,"GSEA/csv/", t,"_",d,"_pathways.csv"), sep="\t", 
+      write.table(tmpdf, paste0(odir,"GSEA_bd_bct/csv/", t,"_",d,"_pathways.csv"), sep="\t", 
                   col.names = T, row.names=F              )
     }
   }
@@ -147,7 +147,7 @@ plotme_mod <- function(pathsFiltered, d, outfileprefix, NumP=5){
                   "ERROR no celltypes in names(fgsea.dayhere), type prblm" )))
   types = names(fgsea.dayhere)
   print(types)
-  pdf(paste0(odir, "GSEA/", outfileprefix, d,".pdf"), width = 14, height=8)
+  pdf(paste0(odir, "GSEA_bd_bct/", outfileprefix, d,".pdf"), width = 14, height=8)
   for (CT in types){
     print(CT)
     print( innerplot_fun( fgsea.dayhere, d, CT, NumP, msigdbr_list) )
@@ -208,7 +208,7 @@ if (mat4heatmapneeded){
       } # end for sens UP or DOWN
     }# end for CT in cts
   }# end for k in vector of days
-  saveRDS(m_, file=paste0(odir,"GSEA/rds/fgsea_matrices4heatmaps.rds" ))
+  saveRDS(m_, file=paste0(odir,"GSEA_bd_bct/rds/fgsea_matrices4heatmaps.rds" ))
 } # end if mat4heatmapneeded
 
 # ===================== Prepare giant single matrix ============================
@@ -367,7 +367,7 @@ oh <- ComplexHeatmap::Heatmap(m_reac2,
                               top_annotation = ha
 )
 
-pdf(paste0(odir,"GSEA/fgsea_byday_bycelltype.pdf"), width = 18, height = 10)
+pdf(paste0(odir,"GSEA_bd_bct/fgsea_byday_bycelltype.pdf"), width = 18, height = 10)
 draw (oh, column_title = "GSEA Old vs Young (REACTOME)",
       heatmap_legend_side = "bottom", padding = unit(c(2, 2, 2, 60), "mm"))
 dev.off()
@@ -376,7 +376,7 @@ dev.off()
 # no needed as not performed
 
 # ===================== Test some other plot =============================
-m_ = readRDS(paste0(odir,"GSEA/fgsea_matrices4heatmaps.rds" ))
+m_ = readRDS(paste0(odir,"GSEA_bd_bct/fgsea_matrices4heatmaps.rds" ))
 library(pheatmap)
 library(cowplot)
 library(heatmap3)

@@ -1,6 +1,6 @@
 #  Runs GSEA by day and celltype
 # from 'static' DEGs and non DEGs
-# Saves rds objects into exam_INTER_conditions/static/GSEA/rds/
+# Saves rds objects into exam_INTER_conditions/static/GSEA_bd_bct/rds/
 # * Major modification : only REACTOME pathways tested *
 # note: filtered rds file contains only top 15 up and top 15 down pathways
 # --
@@ -15,14 +15,16 @@ M = 1000
 daysv = c('D0', 'D2', 'D4', 'D7')
 DEfile = "rds/shot_rds_full.rds"
 odir = "exam_INTER_conditions/static/"
-infoinputfile = "GSEA/csv/infoinput"  # csv or md_txt extensions (lines 67 71 )
+infoinputfile = "GSEA_bd_bct/csv/infoinput"  # csv or md_txt extensions (lines 67 71 )
 pdfplotfile = "preGSEA_byday_bycelltype.pdf"
-gseards = "GSEA/rds/"
+gseards = "GSEA_bd_bct/rds/"
 gseaoutfull = "fgsea_bd_bct_full.rds" 
 gseaoutfiltered = "fgsea_bd_bct_filtered.rds"
 
 DEdf <- readRDS(paste0(odir, DEfile))
 summary(DEdf)
+system(paste0("cd ",odir, "; if [ ! -d ", 
+              gseards,"   ] ;then mkdir -p ", gseards, ";fi"))
 
 if (!"symbol" %in% colnames(DEdf)){
   genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
@@ -47,31 +49,31 @@ for (k in daysv){
 saveinfoinput <- function(DE_l){
   infoinput <- data.frame("day_celltype" = character(), "inputsize"=numeric(), 
                           "maxpadj" = numeric(), "minabslfc" = numeric())
-  for (k in daysv){
-    print("")
-    print(paste(":::::",k,":::::"))
-    cts <- unique(DE_l[[k]]$type) 
-    tmpplots_ <- list()
-    for (CT in cts) {
-      print(paste("   --->", CT))
-      here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
-        select(log2FoldChange, symbol, padj)
-      nbg = dim(here.df)[1]
-      maxp = max(here.df$padj)
-      minalf = min(abs(here.df$log2FoldChange))
-      infoinput <- rbind(infoinput, c(paste0(k,"_",CT),
-                                      nbg, maxp, minalf))
-    } }
-  colnames(infoinput) <- c("day_celltype" , "inputsize", 
-                           "maxpadj" , "minabslfc" )
-  infoinput$inputsize <- as.numeric(infoinput$inputsize)
-  write.table(infoinput, paste0(odir, infoinputfile, ".csv"), sep='\t', 
-              col.names = T, row.names = F)
-  write.table(infoinput %>% mutate(day_celltype = paste("|  ", day_celltype)) %>%
-                mutate(minabslfc = paste(minabslfc, " |")), 
-              file = paste0(odir, infoinputfile, "_md.txt"), sep=" | ", 
-              col.names = T, row.names = F)
-}
+    for (k in daysv){
+        print("")
+        print(paste(":::::",k,":::::"))
+        cts <- unique(DE_l[[k]]$type) 
+        tmpplots_ <- list()
+        for (CT in cts) {
+          print(paste("   --->", CT))
+          here.df <- DE_l[[k]] %>% filter(type == CT) %>% arrange(desc(log2FoldChange)) %>%
+            select(log2FoldChange, symbol, padj)
+          nbg = dim(here.df)[1]
+          maxp = max(here.df$padj)
+          minalf = min(abs(here.df$log2FoldChange))
+          infoinput <- rbind(infoinput, c(paste0(k,"_",CT),
+                                          nbg, maxp, minalf))
+        } }
+      colnames(infoinput) <- c("day_celltype" , "inputsize", 
+                               "maxpadj" , "minabslfc" )
+      infoinput$inputsize <- as.numeric(infoinput$inputsize)
+      write.table(infoinput, paste0(odir, infoinputfile, ".csv"), sep='\t', 
+                  col.names = T, row.names = F)
+      write.table(infoinput %>% mutate(day_celltype = paste("|  ", day_celltype)) %>%
+                    mutate(minabslfc = paste(minabslfc, " |")), 
+                  file = paste0(odir, infoinputfile, "_md.txt"), sep=" | ", 
+                  col.names = T, row.names = F)
+    }
 saveinfoinput(DE_l)
 
 # ======================== perform Gsea on top ranked genes ====================
@@ -108,7 +110,7 @@ dobarplotbefore <- function(DE_l){
     }
     plots_[[k]] <- tmpplots_
   }
-  pdf(paste0(odir, "GSEA/", pdfplotfile), width=12, height=30)
+  pdf(paste0(odir, "GSEA_bd_bct/", pdfplotfile), width=12, height=30)
   plots_[['D0']][["e1"]] <- NULL
   print( plot_grid(
     plot_grid(plotlist = plots_[['D0']], nrow=2, ncol=3),
