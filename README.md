@@ -3,7 +3,9 @@
 This repository contains a bio-informatic analysis related to Skeletal Muscle Repair in Aged vs Juvenile backgrounds RNA-seq time-series (Chazaud + Feige + LeGrand teams).
 
 This work is still under development.
-
+,
+RNA-seq data are pre-processed with nf-core pipeline https://nf-co.re/rnaseq (Mapping with STAR, counting with FeatureCount and StringTie)
+,
 `scripts` folder contains R code which is detailed in [this relative link](scripts/README_scripts.md). In summary, they run DE analyses, Tau specificity index on whole protein coding elements, prepare data for ligand-receptor network and finally launch NATMI  https://github.com/asrhou/NATMI. 
 
 Many thanks to Dr.Rui Hou for advice concerning NATMI to use it specifically in our context.
