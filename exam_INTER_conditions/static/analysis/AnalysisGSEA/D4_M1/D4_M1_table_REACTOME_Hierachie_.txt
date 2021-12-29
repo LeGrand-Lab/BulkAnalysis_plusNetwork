@@ -1,0 +1,5 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13"
+"1" "<b>IN REACTOME HIERARCHIE</b>" "cell cycle" "cell cycle mitotic" "<b>M PHASE</b>" "" "" "" "" "" "" "" "" ""
+"2" "<b>IN REACTOME HIERARCHIE</b>" "cell cycle" "cell cycle mitotic" "<b>M PHASE</b>" "<b>MITOTIC METAPHASE AND ANAPHASE</b>" "" "" "" "" "" "" "" ""
+"3" "<b>IN REACTOME HIERARCHIE</b>" "cell cycle" "cell cycle mitotic" "<b>M PHASE</b>" "<b>MITOTIC METAPHASE AND ANAPHASE</b>" "mitotic anaphase" "<b>SEPARATION OF SISTER CHROMATIDS</b>" "" "" "" "" "" ""
+"4" "<b>IN REACTOME HIERARCHIE</b>" "immune system" "innate immune system" "antimicrobial peptides" "<b>DEFENSINS</b>" "" "" "" "" "" "" "" ""

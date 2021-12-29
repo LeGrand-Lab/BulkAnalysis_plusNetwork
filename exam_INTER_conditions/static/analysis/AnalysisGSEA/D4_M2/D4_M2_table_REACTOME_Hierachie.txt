@@ -1,0 +1,21 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" NA
+"2" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "" "" "" "" "" "" "" "" "" "" 517
+"3" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC METAPHASE AND ANAPHASE" "" "" "" "" "" "" "" "" 221
+"4" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "S PHASE" "" "" "" "" "" "" "" "" "" 157
+"5" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "" "" "" "" "" "" "" "" "" "" 272
+"6" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC METAPHASE AND ANAPHASE" "mitotic anaphase" "SEPARATION OF SISTER CHROMATIDS" "" "" "" "" "" "" 178
+"7" "IN REACTOME HIERARCHIE" "DNA REPAIR" "" "" "" "" "" "" "" "" "" "" "" 311
+"8" "IN REACTOME HIERARCHIE" "CELL CYCLE" "" "" "" "" "" "" "" "" "" "" "" 642
+"9" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "" "" "" "" "" "" "" "" "" 380
+"10" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "" "" "" "" "" "" "" "" 198
+"11" "IN REACTOME HIERARCHIE" "DNA REPLICATION" "" "" "" "" "" "" "" "" "" "" "" 123
+"12" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "MITOTIC G1 PHASE AND G1 S TRANSITION" "" "" "" "" "" "" "" "" "" 143
+"13" "IN REACTOME HIERARCHIE" "metabolism" "metabolism of lipids" "biosynthesis of specialized proresolving mediators spms" "SYNTHESIS OF LIPOXINS LX" "" "" "" "" "" "" "" "" 6
+"14" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "G2 M CHECKPOINTS" "" "" "" "" "" "" "" "" "" 156
+"15" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "esr mediated signaling" "ESTROGEN DEPENDENT GENE EXPRESSION" "" "" "" "" "" "" "" "" 114
+"16" "IN REACTOME HIERARCHIE" "hemostasis" "platelet activation signaling and aggregation" "response to elevated platelet cytosolic ca2+" "DISINHIBITION OF SNARE FORMATION" "" "" "" "" "" "" "" "" 5
+"17" "IN REACTOME HIERARCHIE" "metabolism" "metabolism of lipids" "biosynthesis of specialized proresolving mediators spms" "BIOSYNTHESIS OF EPA DERIVED SPMS" "" "" "" "" "" "" "" "" 5
+"18" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "" "" "" "" "" "" "" "" "" "" 240
+"19" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HATS ACETYLATE HISTONES" "" "" "" "" "" "" "" "" "" 116
+"20" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" NA

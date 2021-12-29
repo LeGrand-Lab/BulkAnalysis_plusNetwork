@@ -1,0 +1,4 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13"
+"1" "<b>IN REACTOME HIERARCHIE</b>" "cellular responses to stimuli" "cellular responses to stress" "<b>CELLULAR RESPONSE TO STARVATION</b>" "" "" "" "" "" "" "" "" ""
+"2" "<b>IN REACTOME HIERARCHIE</b>" "cellular responses to stimuli" "cellular responses to stress" "<b>CELLULAR RESPONSE TO STARVATION</b>" "<b>AMINO ACIDS REGULATE MTORC1</b>" "" "" "" "" "" "" "" ""
+"3" "<b>IN REACTOME HIERARCHIE</b>" "signal transduction" "signaling by wnt" "tcf dependent signaling in response to wnt" "<b>DISASSEMBLY OF THE DESTRUCTION COMPLEX AND RECRUITMENT OF AXIN TO THE MEMBRANE</b>" "" "" "" "" "" "" "" ""

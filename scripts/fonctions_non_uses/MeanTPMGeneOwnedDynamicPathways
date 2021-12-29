@@ -1,0 +1,59 @@
+
+PlotGeneCountNorm <- function(tablePlot6,msigdbr_list,numberCond,vertical){
+  pathway_list<-lapply(unique(tablePlot6$name), function(x)  tablePlot6 %>% filter(name == x) %>% select(pathway) %>% unique() %>% as.vector())
+  gene_list<-lapply(1:length(pathway_list), function(x) msigdbr_list[pathway_list[[x]]$pathway] %>% unlist() %>% unique())
+  names(gene_list)<-unique(tablePlot6$name)
+  tablePlot<-data.frame()
+  for ( name in  names(gene_list)){
+    DayType<-unlist(str_split(name, pattern = " "))
+    NameDynCol<-paste(DayType[1:numberCond],collapse=".")
+    for (DT in 1:numberCond){
+      Day<-unlist(str_split(DayType[DT], pattern = "_"))[1]
+      Type<-unlist(str_split(DayType[DT], pattern = "_"))[2]
+      for ( gene in unlist(gene_list[name])){
+        tablePlot<-rbind(tablePlot,c(name,NameDynCol,Day,Type,gene,paste(gene,Day,Type, sep = '_')))
+      }
+    }
+  }
+  names(tablePlot) <- c("nameDyn","nameDynType","Day","Type","GeneName","GeneDayType")
+  tablePlot <- tablePlot %>% mutate( condition = paste0(Day,'_',Type))
+  conditionUnique<- tablePlot$condition %>% unique() %>% sort()
+  col<- lapply(str_split(conditionUnique, pattern = "_" ) , function(x) tablecolor[x[1],x[2]]) %>% unlist() %>% as.character()
+  tablePlot<- tablePlot %>% mutate( padj = as.numeric(fullDEsta[match(tablePlot$GeneDayType,fullDEsta$GeneDayType,nomatch = 1),]$padj))
+  tablePlot<- tablePlot %>% mutate( log2F = as.numeric(fullDEsta[match(tablePlot$GeneDayType,fullDEsta$GeneDayType,nomatch = 1),]$log2FoldChange))
+  tablePlotY<- tablePlot %>% mutate( meanTPM = as.numeric(TPMYoung[match(tablePlot$GeneDayType,TPMYoung$GeneDayType,nomatch = 1),]$meanTPM)) %>% mutate( age = rep("Young",length(tablePlot$Day)))
+  tablePlotO<- tablePlot %>% mutate( meanTPM = as.numeric(TPMOld[match(tablePlot$GeneDayType,TPMOld$GeneDayType,nomatch = 1),]$meanTPM)) %>% mutate( age = rep("Old",length(tablePlot$Day)))
+  tablePlot <- rbind(tablePlotY,tablePlotO)
+  
+  PlotDEGonlyOneDayVioline<-ggplot(tablePlot, aes(x=Day, y=meanTPM, fill=age, col=condition, group=GeneDayType)) +scale_y_log10() + # fill=name allow to automatically dedicate a color for each group
+    geom_jitter(show.legend=F, aes(shape=age,col=condition))+
+    geom_line(aes(group=GeneDayType),color="black") +
+    scale_fill_manual(values =col)+scale_color_manual(values =col) +
+    facet_wrap(~nameDyn,dir = "v", ncol=vertical) +
+    theme(panel.grid.major=element_blank(),axis.text.x = element_text(angle = 45)) +ylab("meanTPM")+
+    theme_minimal()
+  
+  PlotDEGonlyOneDayVioline
+}
+
+tablePlottest4 <- tablePlot %>% filter(nameDyn == "D0_FAPs_down D0_sCs_down D2_FAPs_down D2_sCs_down D4_ECs_up D4_sCs_up ,there are 4 with this dynamic" ) %>% arrange(GeneName,Day,Type)
+tablePlottest1 <- tablePlot %>% filter(nameDyn == "D0_FAPs_down D0_sCs_down D2_FAPs_down D2_M2_down D2_sCs_down D4_sCs_up ,there are 1 with this dynamic" ) %>% arrange(GeneName,Day,Type)
+
+conditionUnique<- tablePlottest$condition %>% unique() %>% sort()
+col<- lapply(str_split(conditionUnique, pattern = "_" ) , function(x) tablecolor[x[1],x[2]]) %>% unlist() %>% as.character()
+tablePlottest <- tablePlottest %>% unite("a",c(nameDynType,Type),sep = ' ',remove = F) 
+tablePlottest1 <- tablePlottest %>% unite("DayAge",c(Day,age),sep = ' ',remove = F) 
+tablePlottest <-tablePlottest %>% mutate( Type = as.factor(NameDynType6[match(tablePlottest$a,NameDynType6$a),]$NameDynType))
+tablePlottest <- tablePlottest %>% arrange(nameDynType,Day,Type,GeneName)
+
+PlotDEGonlyOneDayVioline<-ggplot(tablePlottest3, aes(x=paste0(Day,age), y=meanTPM, fill=age, col=condition, group=paste0(GeneName,Day,Type))) +scale_y_log10() + # fill=name allow to automatically dedicate a color for each group
+  geom_line(position = position_jitter(width = .3, height = 0, seed = 1),aes(alpha=log(abs(log2F)/padj))) +
+  geom_point(position = position_jitter(width = .3, height = 0, seed = 1), aes(shape=age,col=condition,alpha=log(abs(log2F)/padj)),show.legend=T)+
+  facet_wrap(~Type,dir = "v", ncol=vertical) +
+  scale_fill_manual(values =col)+scale_color_manual(values =col) +
+  theme(panel.grid.major=element_blank()) +ylab("meanTPM")+ggtitle(unique(tablePlottest$nameDyn))+
+  theme_minimal()
+
+PlotDEGonlyOneDayVioline
+
+

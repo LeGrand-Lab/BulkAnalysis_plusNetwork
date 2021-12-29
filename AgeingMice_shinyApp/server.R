@@ -13,12 +13,12 @@ library(heatmap3)
 
 # TODO: !!somewhere take note: 'dynamic' DE, for M1 yielded no significant 
 #  because from one day to the next the change was not important
-# that is why I take only old vs youn in staticsnapshot comparisons
+# that is why I take only old vs young in staticsnapshot comparisons
 
 mywdir <- "~/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/"
 setwd(mywdir)
-grdir <- "graphobjs_copy/"
 source("ui.R") #TODO:  set good ui
+grdir <- "graphobjs_copy/"
 DEclassic_file <- "DE_copy/shot_dataframe.csv"
 aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
 mhp = readRDS("Data/fgsea_matrices4heatmaps.rds")
@@ -75,7 +75,7 @@ server <- function(input, output, session ){
   # ========================== display DEGs by default =========================
   displayDEGS <- function(){
     DEGs <- read.table(DEclassic_file, sep=',',header=T) 
-    DEclassic.show$x <- DEGs %>% select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
+    DEclassic.show$x <- DEGs %>% dplyr::select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
     rm(DEGs)
     output$DE_classical <- renderDT(
       DEclassic.show$x,

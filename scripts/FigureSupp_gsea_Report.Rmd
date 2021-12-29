@@ -1,0 +1,181 @@
+---
+title: "Exploration enrichment pathways with differentially expressed (DE) genes  between old versus young"
+author: "Team Le Grand"
+date: "`r format(Sys.time(),'%d %B,%Y')`"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+    df_print : paged
+    fig_width: 15
+    fig_height: 12
+    toc: true
+    toc_float: true
+params:
+  tablePlot : NA
+  tablePlottest : NA
+  subset : NA
+  TypeUnique : NA
+  col1 : NA
+  col2 : NA
+  minCountNormalized : NA
+  maxCountNormalized : NA
+  minlogF : NA
+  maxlogF : NA
+  title : NA
+  subtitle : NA
+  numberGeneInPathway : NA
+  tableLeadingEdge : NA
+  Heatmplot : NA
+   
+---
+
+<style type="text/css">
+
+h1.title {
+  background-color: #158cba;
+  font-size: 34px;
+  color: white;
+}
+h1 { /* Header 1 */
+  background-color: #158cba;
+  font-size: 23px;
+    color: white;
+}
+h2 { /* Header 2 */
+  background-color: #158cba ;
+  font-size: 20px;
+    color: white;
+}
+h3 { /* Header 3 */
+  background-color: #158cba ;
+  font-size: 14px;
+    color: white;
+}
+tr:nth-child(even){background-color: #f2f2f2;}
+
+tr:hover {background-color: #ddd;}
+
+th {
+  background-color: #84c1d8ff;
+  color: white;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, rows.print=5)
+```
+```{r pathsLoads , echo=FALSE,warning=FALSE,message=FALSE }
+
+library(tidyverse)
+library(ComplexHeatmap)
+library(msigdbr)
+library(cowplot)
+library(openxlsx)
+library(htmlwidgets)
+library(gridExtra)
+library(rmarkdown)
+library(kableExtra)
+library(formattable)
+library(knitr)
+library(DT)
+library(ggrepel)
+library(ggnewscale)# for labels to point
+ library(circlize)
+
+```
+# Pathway explored : `r str_replace_all(params$title, "_", " ") `
+
+This pathway contain `r params$numberGeneInPathway ` genes.
+
+In these `r params$numberGeneInPathway` genes for each day and cell type, they are not all expressed and they are not all  differentially expressed between old versus young. 
+
+Inside these differents genes, there are (cf table below) number of genes  in the enrichment.
+
+`r kbl(params$tableLeadingEdge)%>%kable_paper("striped") `
+
+
+## Dynamic through conditions (day and type cell): `r params$subtitle`
+
+--------
+
+
+
+```{r DynamicPathways, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+
+typebytime<-ggplot( params$tablePlot, aes(x=day,y=as.numeric(NES),fill=type,color=type,group=paste0(pathway,'_',type))) +
+    geom_point(aes(alpha=0.7,size=12),show.legend = F)+
+    ylab("NES")+
+    geom_line()+
+    geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5,slope=F)+
+    scale_color_manual(values=params$tablePlot %>% arrange(type) %>% select(color) %>% unique() %>% unlist() %>% as.character())+
+    theme_linedraw()+ theme(axis.title= element_text(face="bold"),axis.text = element_text(face="bold",size=14))
+
+typebytime
+
+```
+
+## Heatmap of the top 40 genes DE between old versus young
+
+--------
+
+```{r Heatmap, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+
+reactomeGSEAheatmap<-draw (params$Heatmplot, column_title = params$title,
+                           heatmap_legend_side = "bottom", padding = unit(c(2, 2, 2, 60), "mm"))
+
+```
+
+## Expression of genes DE in this pathway through days and type cells for young versus old 
+
+--------
+
+```{r ExpressGenesPathways, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+PlotGenelogFacrossDay <- ggplot(params$tablePlottest, aes(x=DayAge, y=log2(meanCountNormalized+1),  color=log2F, group=GeneDayType)) +
+      scale_y_continuous(limits=c(params$minCountNormalized,params$maxCountNormalized),breaks = c(0,log2(10),log2(100),log2(1000),log2(10000)),labels=c("0",'10',"100","1000","10000")) + # fill=name allow to automatically dedicate a color for each group
+      geom_line(aes(col=log2F)) +
+      geom_point(aes(shape=age,col=log2F))+
+      scale_color_gradient2(midpoint=0,  low="blue", mid="grey88",high="red", limits = c(params$minlogF,params$maxlogF))+
+      new_scale("color") +
+      geom_text_repel(data= params$subset,
+        aes(label=symbol, color = type), size=3, segment.size = .1, force=2, force_pull = 2, max.overlaps=15)  +
+      facet_wrap(~type,dir = "v", ncol=1, labeller = labeller(type=params$TypeUnique)) +
+      scale_color_manual(values = params$col2, name="Top 10 genes padj<0.05")+
+      ylab("meanCountNormalized")+ggtitle(unique(params$tablePlottest$Pathway))+
+      theme_linedraw()+ theme(strip.text  = element_text(size = 12 , face = "bold"),strip.background = element_rect(fill="grey"),panel.grid.major.x = element_line(color = "gray60", size = 0.8),axis.title= element_text(face="bold"),axis.text = element_text(face="bold",size=14))
+PlotGenelogFacrossDay
+```
+
+## Dynamic of log2foldchange genes DE in this pathway through days and  cell type for young versus old 
+
+--------------
+
+```{r DynamiueGenesPathways, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+
+PlotGenelogFacrossDay2 <- ggplot(params$tablePlottest, aes(x=day, y=log2F, group=paste(symbol,type,age))) +
+      scale_y_continuous(limits=c(params$minlogF,params$maxlogF),) + # fill=name allow to automatically dedicate a color for each group
+      geom_line() +
+      scale_color_gradient2(midpoint=0,  low="blue", mid="grey88",high="red", limits = c(params$minlogF,params$maxlogF),name="log2FoldChange")+
+      geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5,slope=F)+
+      geom_point(aes(col=log2F,size=log10(meanCountNormalized+1)))+
+      scale_size(name="Counts normalised",limits=c(1,params$maxCountNormalized),breaks = c(log10(10),log10(100),log10(1000),log10(50000)),labels=c('10',"100","1000","50000"))+
+      new_scale("color") +
+      geom_text_repel(data= params$subset,
+                      aes(label=symbol, color = type), size=3, segment.size = .1, force=5, force_pull = 5, max.overlaps=15)  +
+      facet_grid(vars(type),vars(age),
+                  labeller=labeller(type=params$TypeUnique))+
+      scale_color_manual(values = params$col2, name="Top 10 genes padj<0.05")+
+      ylab("log2FoldChange")+ggtitle(unique(params$tablePlottest$Pathway))+
+      theme_linedraw()+ theme(strip.text  = element_text(size = 12 , face = "bold"),strip.background = element_rect(fill="grey"),panel.grid.major.x = element_line(color = "gray60", size = 0.8),axis.title= element_text(face="bold"),axis.text = element_text(face="bold",size=14))
+    print(PlotGenelogFacrossDay2)
+```
+
+## Info on genes DE in this pathway
+
+----------
+
+```{r TableInfoGenes, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+
+tablePlotfilter<-params$tablePlottest %>% select(symbol,DayType,day,type,age,padj,log2F,meanCountNormalized) %>% arrange(symbol)
+DT::datatable(tablePlotfilter, filter = 'top', extensions = c('Select', 'SearchPanes'),options = list(dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 2:8 ))),selection = 'none')
+```

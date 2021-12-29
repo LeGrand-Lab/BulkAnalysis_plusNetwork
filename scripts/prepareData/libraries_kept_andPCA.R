@@ -13,7 +13,9 @@ library(DESeq2)
 library(ggsci) # publishing palettes
 library(cowplot)
 library(gridExtra)
-setwd("~/BulkAnalysis_plusNetwork/")
+library(ggforce)
+library("factoextra")
+setwd("~/BulkAnalysis_plusNetwork2/")
 
 ofig <- "plotsPrelim/"
 #outputs:
@@ -29,15 +31,27 @@ pc.mat <- readRDS("data/protcod_counts.rds")
 pc.TPM <- readRDS("data/protcod_TPM.rds")
 design <- read.table("data/design.csv",header=T,sep=",", row.names=1)
 
+# Remove transcrits associated with gene witch associated with several genes
+genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
+pc.TPM.tempo <- data.frame(pc.TPM ,genes_df[match(rownames(pc.TPM), genes_df$Geneid),]$symbol)
+extractGeneDuplicate <- rownames(pc.TPM.tempo[duplicated(pc.TPM.tempo$symbol),])
+
+pc.mat<-pc.mat[!rownames(pc.mat) %in% extractGeneDuplicate,]
+pc.TPM<-pc.TPM[!rownames(pc.TPM) %in% extractGeneDuplicate,]
+
+
 # make sure numeric format (as.matrix), and filter out all-zeroes rows:
+
+fTPM <- mutate_all(pc.TPM, function(x) as.numeric(as.character(x)))
 fTPM <- as.matrix(pc.TPM, dim=dim(pc.TPM))
+fmat <- mutate_all(pc.mat, function(x) as.numeric(as.character(x)))
 fmat <- as.matrix(pc.mat, dim=dim(pc.mat))
-fTPM <- fTPM[!rowSums(fmat)==0,]  # yes, c'est bien COUNTS criterium, OK 
+fTPM <- fTPM[!rowSums(fTPM)==0,]  # yes, c'est bien COUNTS criterium, OK 
 fmat <- fmat[!rowSums(fmat)==0,]  
 typeof(fmat[3000,50])
 #[1] "integer"
 badquality <- setdiff(colnames(fmat),design$sample)
-# bad quality libraries , they were already deleted from design.csv:
+# bad quality libraries (cf huong) , they were already deleted from design.csv:
 #[1] "X2.422363" "X2.422364" "X2.424030" "X2.424031" "X2.428151" "X2.428100" "X2.429794" "X2.429793"
 exclu <- fmat[,badquality]
 fmat <- fmat[,!(colnames(fmat) %in% badquality)]
@@ -121,7 +135,7 @@ mycolors = list("CellType"=colorsType,
               "Time" = colorsTime,
               "Age" =colorsAge , "Batch" = colorsBatch)
 pdf(paste0(ofig,"Heatmap_libraries.pdf"), width=10, height= 8 )
-pheatmap(cor.mat, fontsize = 8,
+heatmap_lib<-pheatmap(cor.mat, fontsize = 8,
     color = colorRampPalette(c("darkgray","white" ,"orange1"))(100),
      cluster_rows = TRUE,
      cluster_cols = TRUE, clustering_distance_rows = "euclidean",
@@ -129,6 +143,8 @@ pheatmap(cor.mat, fontsize = 8,
      annotation_colors=mycolors, fontsize_row = 5, fontsize_col = 5,
      angle_col = "315", 
     main= "TPM correlation among libraries (Spearman rho scores)")
+heatmap_lib
+save_plot(paste0(ofig,"Heatmap_libraries.png"),heatmap_lib, base_width=12, base_height= 8)
 dev.off()
 # rev(brewer.pal(n = 7, name = "PRGn")))(100),
 
@@ -160,7 +176,9 @@ gg1 <- ggplot(pcavst1, aes(x=PC1, y=PC2, color=age)) +
   xlab(paste0("PC1: ", percentVar[1],"% variance" )) +
   ylab(paste0("PC2: ", percentVar[2],"% variance" )) +
   ggtitle("PCA", subtitle="grouping by age")
-  
+gg1  
+save_plot(paste0(ofig,"PCA_grouping_by_age.png"),gg1)
+
 pcavst2 <- plotPCA(vst, intgroup=c("time","age"),returnData=T)
 gg2 <- ggplot(pcavst2, aes(x=PC1, y=PC2, color=time, shape=age)) +
   geom_point(size=1) + theme_light() + stat_ellipse() +
@@ -168,19 +186,26 @@ gg2 <- ggplot(pcavst2, aes(x=PC1, y=PC2, color=time, shape=age)) +
   xlab(paste0("PC1: ", percentVar[1],"% variance" )) +
   ylab(paste0("PC2: ", percentVar[2],"% variance" )) +
   ggtitle("", subtitle="grouping by age + time")
+gg2
+save_plot(paste0(ofig,"PCA_grouping_by_age_time.png"),gg2)
 
 pcavst3 <- plotPCA(vst, intgroup=c("type", "time","age"), returnData=T)
+
 gg3 <- ggplot(pcavst3, aes(x=PC1, y=PC2,  color=type, shape=time)) +
   geom_point(size=2) + 
   stat_ellipse(aes(group=type)) + 
   scale_color_manual(values=rev(mycol)) +
-  theme_light() +  
+  theme_light() +
   xlab(paste0("PC1: ", percentVar[1],"% variance" )) +
   ylab(paste0("PC2: ", percentVar[2],"% variance" )) +
   ggtitle("PCA when grouping by type + time + age")
-
+gg3
+save_plot(paste0(ofig,"PCA_grouping_by_age_time_typecell.png"),gg3)
 pdf(paste0(ofig, "samplesPCA_2.pdf"))
-plot_grid(plot_grid(gg1,gg2,nrow=1),gg3, nrow=2,rel_heights=c(1,2))
+PCA_grouping<-plot_grid(plot_grid(gg1,gg2,nrow=1),gg3, nrow=2,rel_heights=c(1,2))
+PCA_grouping
+save_plot(paste0(ofig,"PCA_gridplot_grouping_by_age_time_typecell.png"),PCA_grouping, base_width=12, base_height= 8)
+
 dev.off()
 
 # ====
@@ -213,6 +238,7 @@ facets1 <- ggplot(pca_dfA, aes(x=PC1, y=PC2, color=age, shape=time)) +
   ylab(paste0("PC2: ", perc.P2[2],"% variance" )) +
   facet_grid(. ~ type2)
 
+facets1
 facets2 <- ggplot(pca_dfA, aes(x=PC1, y=PC2, color=time, shape=age)) +
   geom_point(size=2, alpha=.6) + 
   scale_color_d3()+
@@ -220,7 +246,8 @@ facets2 <- ggplot(pca_dfA, aes(x=PC1, y=PC2, color=time, shape=age)) +
   xlab(paste0("PC1: ", perc.P1[1],"% variance" )) +
   ylab(paste0("PC2: ", perc.P2[2],"% variance" )) +
   facet_grid(. ~ type2)
-
+facets2
+save_plot(paste0(ofig,"PCA_typecell_grouping_age_time.png"),facets2, base_width=8, base_height= 3)
 plot_grid(facets1, facets2, nrow=2)
 
 facets3 <- ggplot(pca_dfA, aes(x=PC1, y=PC2, color=time, shape=age)) +
@@ -292,11 +319,14 @@ pca_dfC$type <- unname(sapply(pca_dfC$timetype,
                               function(x){ str_split(x,"\\.")[[1]][2]}))
 
 pdf(paste0(ofig,"pca_typebytime.pdf"))
-ggplot(pca_dfC, aes(x=PC1,y=PC2, color=age)) +
+pcatypebytime<-ggplot(pca_dfC, aes(x=PC1,y=PC2, color=age)) +
   geom_point(size=2, alpha=.6) +
-  scale_color_d3() + theme_light() +
+  scale_color_d3() + theme_light() + geom_mark_ellipse(expand = unit(1, "mm"),)+
   facet_grid(vars(time),vars(type)) +
   ggtitle("PCA on vst sub-matrices time_type")
+pcatypebytime
+save_plot(paste0(ofig,"pca_typebytime.png"),pcatypebytime, base_width=10, base_height= 6)
+
 dev.off()
 
 #  ====================== DISPERSIONS, SIZE FACTORS =========================

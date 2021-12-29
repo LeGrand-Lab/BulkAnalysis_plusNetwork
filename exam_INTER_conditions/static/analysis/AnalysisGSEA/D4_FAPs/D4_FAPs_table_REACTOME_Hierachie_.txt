@@ -1,0 +1,5 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13"
+"1" "<b>IN REACTOME HIERARCHIE</b>" "immune system" "<b>CYTOKINE SIGNALING IN IMMUNE SYSTEM</b>" "" "" "" "" "" "" "" "" "" ""
+"2" "<b>IN REACTOME HIERARCHIE</b>" "immune system" "<b>CYTOKINE SIGNALING IN IMMUNE SYSTEM</b>" "<b>SIGNALING BY INTERLEUKINS</b>" "" "" "" "" "" "" "" "" ""
+"3" "<b>IN REACTOME HIERARCHIE</b>" "immune system" "<b>INNATE IMMUNE SYSTEM</b>" "" "" "" "" "" "" "" "" "" ""
+"4" "<b>IN REACTOME HIERARCHIE</b>" "immune system" "<b>INNATE IMMUNE SYSTEM</b>" "<b>NEUTROPHIL DEGRANULATION</b>" "" "" "" "" "" "" "" "" ""

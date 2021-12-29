@@ -14,12 +14,12 @@ library(MASS)
 setwd("~/BulkAnalysis_plusNetwork/")
 
 btf <- "data/biotype_bulk.csv"
-mat <- readRDS("geneID_samp_matrix.rds")
 
 #outputs
 out.counts <- "data/protcod_counts.rds"
 out.tpm <- "data/protcod_TPM.rds"
 out1.pdf <- "plotsPrelim/biotypes.pdf"
+out1.png <-  "plotsPrelim/biotypes.png"
 out2.pdf <- "plotsPrelim/rawcounts_obs.pdf"
 out3.pdf <- "plotsPrelim/TPM_obs.pdf"
 # =========================================================================
@@ -37,12 +37,18 @@ biotyfreqs <- table(biotype$gene_biotype)
 
 # for plotting, select only biotypes represented by >10 genes:
 tab.bt <- table(biotype$gene_biotype)
-sel4plot <- biotype$gene_biotype[biotype$gene_biotype %in% names(tab.bt[tab.bt>10])]
-mycols <- rep(brewer.pal(8,"Set2"),4)[-c(1,2,3)]
-ggbiotypes <- ggplot(tibble("biotype"=sel4plot)) + 
-  geom_bar( aes(x=forcats::fct_infreq(biotype), y=..count..), fill=mycols) +
-  labs(title="gene biotypes (n genes >10)", x="biotype", y="n genes") +
-  coord_flip() + theme_bw()
+data2plot = table(biotype$gene_biotype) %>% data.frame() 
+sumFreq=sum(as.numeric(data2plot$Freq))
+data2plot$gene_pourcent = round(as.numeric(data2plot$Freq)/sumFreq*100,2)
+data2plot = data2plot[-as.numeric(rownames(data2plot[data2plot$Var1 == "NOTFOUND",])), ]
+
+ggbiotypes<-ggplot(dplyr::filter(data2plot,Freq>100), aes(x=reorder(Var1,-gene_pourcent),y=gene_pourcent,fill=Var1)) +
+  geom_bar(stat="identity", show.legend = FALSE) + 
+  labs(title="Gene biotypes (n genes >100)", x="Biotype", y="Pourcent Genes")+
+  coord_flip() + theme_bw()+
+  theme (axis.text.y = element_text(color="black",  face="bold",size =12),
+         axis.text.x = element_text(color="black",  face="bold",size =10, angle =45))
+save_plot(out1.png,ggbiotypes, base_height=8, base_width=5)
 # =========================================================================
 
 # =========================================================================
@@ -51,7 +57,7 @@ ggbiotypes <- ggplot(tibble("biotype"=sel4plot)) +
 ###### take away all that is not protein-coding from both :
 #         -TPM matrix 
 #         -raw count matrix
-prot.ty <- biotype %>% filter(gene_biotype=="protein_coding")
+prot.ty <- biotype %>% dplyr::filter(gene_biotype=="protein_coding")
 protcodTPM <- TPM[prot.ty$ensembl_gene_id,]
 protcod.mat <- mat[prot.ty$ensembl_gene_id,]
 # =========================================================================
@@ -61,6 +67,8 @@ protcod.mat <- mat[prot.ty$ensembl_gene_id,]
 # [1] 21930   127
 print(paste("we got rid of", (dim(TPM)[1]-dim(protcodTPM)[1]), "genes"))
 
+
+# EXPLORATIONs
 # =========================================================================
 # observe  and raw counts and TPM (only protein coding) 
 # =========================================================================
@@ -199,7 +207,7 @@ dev.off()
 # msim <- tapply(seq(1:length(pred.d)), pred.d, mean)
 # vsim <- tapply(seq(1:length(pred.d)), pred.d, var)
 # simregr <- lm(log10(vsim+1)~log10(msim+1))
-# plot(msim,vsim)
+# plot(msim,vsim )
 # abline(simregr)
 # fitting did not work ! 
 #x <- seq(1:21930); plot(x, x*(1+x/modNB$theta), col="red")

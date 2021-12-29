@@ -1,0 +1,12 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"2" "IN REACTOME HIERARCHIE" "cell cycle" "cell cycle mitotic" "M PHASE" "MITOTIC METAPHASE AND ANAPHASE" "" "" "" "" "" "" "" "" 221
+"3" "IN REACTOME HIERARCHIE" "cell cycle" "cell cycle mitotic" "M PHASE" "MITOTIC METAPHASE AND ANAPHASE" "mitotic anaphase" "SEPARATION OF SISTER CHROMATIDS" "" "" "" "" "" "" 178
+"4" "IN REACTOME HIERARCHIE" "cell cycle" "cell cycle mitotic" "M PHASE" "" "" "" "" "" "" "" "" "" 380
+"5" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by receptor tyrosine kinases" "signaling by met" "MET RECEPTOR ACTIVATION" "" "" "" "" "" "" "" "" 5
+"6" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "complement cascade" "INITIAL TRIGGERING OF COMPLEMENT" "" "" "" "" "" "" "" "" 12
+"7" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "antimicrobial peptides" "DEFENSINS" "" "" "" "" "" "" "" "" 5
+"8" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "complement cascade" "ACTIVATION OF C3 AND C5" "" "" "" "" "" "" "" "" 6
+"9" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by receptor tyrosine kinases" "SIGNALING BY MST1" "" "" "" "" "" "" "" "" "" 5
+"10" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by tgfb family members" "SIGNALING BY BMP" "" "" "" "" "" "" "" "" "" 21
+"11" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf

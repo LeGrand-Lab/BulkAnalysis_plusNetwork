@@ -1,0 +1,145 @@
+---
+title: "Exploration enrichment pathways with differentially expressed (DE) genes  between old versus young"
+author: "Team Le Grand"
+date: "`r format(Sys.time(),'%d %B,%Y')`"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+    df_print : paged
+    fig_width: 15
+    fig_height: 12
+    toc: true
+    toc_float: true
+params:
+  title : NA
+  d : NA
+  t : NA
+  GSEAsigni : NA
+   
+---
+
+<style type="text/css">
+
+h1.title {
+  background-color: #158cba;
+  font-size: 34px;
+  color: white;
+}
+h1 { /* Header 1 */
+  background-color: #158cba;
+  font-size: 23px;
+    color: white;
+}
+h2 { /* Header 2 */
+  background-color: #158cba ;
+  font-size: 20px;
+    color: white;
+}
+h3 { /* Header 3 */
+  background-color: #158cba ;
+  font-size: 14px;
+    color: white;
+}
+tr:nth-child(even){background-color: #f2f2f2;}
+
+tr:hover {background-color: #ddd;}
+
+th {
+  background-color: #84c1d8ff;
+  color: white;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, rows.print=5)
+```
+```{r pathsLoads , echo=FALSE,warning=FALSE,message=FALSE }
+
+library(tidyverse)
+library(ComplexHeatmap)
+library(msigdbr)
+library(cowplot)
+library(openxlsx)
+library(htmlwidgets)
+library(gridExtra)
+library(rmarkdown)
+library(kableExtra)
+library(formattable)
+library(knitr)
+library(DT)
+library(ggrepel)
+library(ggnewscale)# for labels to point
+library(circlize)
+library(circlepackeR) 
+library(igraph)
+library(ggraph)
+library(data.tree)
+
+odir <- "/home/bioinfo/BulkAnalysis_plusNetwork2/exam_INTER_conditions/static/"
+analyse<-"analysis/AnalysisGSEA/"
+
+hsl_color<-data.frame("ECs"=270,"FAPs"=56,"M1"=26,"M2"=327,"Neutro"=164,"sCs"=202)
+```
+#  `r str_replace_all(params$title,'_',' ') `
+
+--------
+
+
+Only pathways in upper letter are enriched in `r params$t ` `r params$d `.  
+
+
+```{r DynamicPathways, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+#data_nested_2=read.table( file=paste0( odir,analyse,d,'_',t,"/",d,'_',t, "_table_REACTOME_Hierachie.txt"),na.strings="")
+data_nested_2=read.table( file=paste0( odir,analyse,params$d,'_',params$t,"/",params$d,'_',params$t, "_table_REACTOME_Hierachie.txt"))
+data_nested_2[is.na(data_nested_2)] <- ""
+data_nested_2$pathString <- paste("roots", data_nested_2$level1, data_nested_2$level2, data_nested_2$level3, data_nested_2$level4,data_nested_2$level5,data_nested_2$level6,data_nested_2$level7, data_nested_2$level8, data_nested_2$level9, data_nested_2$level10,data_nested_2$level11,data_nested_2$level12, sep = "/")
+data_Node <-as.Node(data_nested_2)
+
+      if (t ==""){
+        p <- circlepackeR(data_Node, size = "value",color_min = paste0("hsl(56,80%,80%)"), color_max = paste0("hsl(341,30%,30%)"), width = 1800, height = 1000)
+        
+      }else{
+      p <- circlepackeR(data_Node, size = "value",color_min = paste0("hsl(",hsl_color[[t]],",80%,80%)"), color_max = paste0("hsl(",hsl_color[[t]],",30%,30%)"), width = 1500, height = 1000)
+      }
+p
+```
+
+## Table Hierarchieof Pathway Enrichied in Gene DE 
+
+--------
+
+Only pathways in upper bold letter are enriched in `r params$t ` `r params$d `.  
+
+
+```{r Heatmap, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
+
+data_nested_2=read.table( file=paste0( odir,analyse,params$d,'_',params$t,"/",params$d,'_',params$t, "_table_REACTOME_Hierachie.txt"))
+pathwayCheck<-c("IN REACTOME HIERARCHIE","NOT IN REACTOME HIERARCHIE")
+rowsupp<-c()
+data_nested_2[is.na(data_nested_2)] <- ""
+for(l in rownames(data_nested_2)){
+  pathTF=F
+  for (c in 13:1){
+    if (data_nested_2[l,c]!= ""){
+      if (data_nested_2[l,c] == toupper(data_nested_2[l,c])){
+        if (pathTF == F){
+          if (data_nested_2[l,c] %in% pathwayCheck){
+            rowsupp<-c(rowsupp,l)
+            data_nested_2[l,c]<-paste0('<b>',data_nested_2[l,c],'</b>')
+            break
+          }
+        }
+      data_nested_2[l,c]<-paste0('<b>',data_nested_2[l,c],'</b>')
+      }
+    pathTF=T
+    pathwayCheck<-c(pathwayCheck,data_nested_2[l,c])
+    }
+  }
+}
+data_nested_3<-data_nested_2[-as.numeric(rowsupp),-14]
+data_nested_3<-data_nested_3 %>% arrange(level1,level2,level3,level4,level5,level6,level7,level8,level9,level10,level11,level12,level13)
+write.table(data_nested_3, file=paste0( odir,analyse,d,"_",t,"/",d,'_',t, "_table_REACTOME_Hierachie_.txt"))
+    
+DT::datatable(data_nested_3, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:13 ))),selection = 'none',escape = F)
+```

@@ -1,0 +1,6 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" NA
+"2" "IN REACTOME HIERARCHIE" "immune system" "cytokine signaling in immune system" "INTERFERON SIGNALING" "INTERFERON GAMMA SIGNALING" "" "" "" "" "" "" "" "" 83
+"3" "IN REACTOME HIERARCHIE" "immune system" "cytokine signaling in immune system" "INTERFERON SIGNALING" "INTERFERON ALPHA BETA SIGNALING" "" "" "" "" "" "" "" "" 57
+"4" "IN REACTOME HIERARCHIE" "immune system" "cytokine signaling in immune system" "INTERFERON SIGNALING" "" "" "" "" "" "" "" "" "" 171
+"5" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" NA

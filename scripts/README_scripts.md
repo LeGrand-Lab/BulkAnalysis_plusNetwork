@@ -1,4 +1,7 @@
-## what these local scripts do :
+## What these local scripts do :
+
+Raw data are the output of nf-core RNA-seq pipeline not avaible here.
+
 ###  `prepareData` folder:
 
 They are all R scripts, in order of execution:
@@ -11,7 +14,7 @@ and a rds object containing raw counts matrix.
 yields "data/biotype_bulk.csv".
 
 - `get_protcod_TPMandCounts.R` : connects matrices to biotype csv file  
-to obtain matrices containing only protein coding genes, and also figures as 
+to obtain matrices containing only protein coding (protcod) genes, and also figures as 
 pdf files : 
 	* `data/protcod_counts.rds`
 	* `data/protcod_TPM.rds`
@@ -34,19 +37,31 @@ and day, suitable for specificity index calculation (Tau) .
 .txt 'annot_{age}{day}.txt' files suitable for Natmi Ligand-Receptor network generation.
 
 ##  Current folder:
+### Calcul specifity genes on each conditions Age.TypeCell.DayPostInjuries
 
 - `calc_Tau_Specificity.R` and `calc_Tau_figures.R` are related, the first takes 
 TPM matrices for Tau tissue specificity index calculation. The second performs 
 related plots, all outputs saved into `Tau/` folder.
+Genes with Tau:
+- Tau >= 0.8 ~ "specific",
+- Tau >= 0.5 & Tau < 0.8 ~ "intermediate",
+- Tau < 0.5 ~ "housekeeping"
+The type of cell with max logTPM registred in whichMAX column,  and if if several tissues exhibit max logTPM, they are all registered separated by commas as single string.
+In `Tau/specificOnly` files xlsx with for each Age.DayPostInjury only gènes specific for each celltype.
 
-- `dynamics_intra_Spec.R` : 
-ONLY FOR TISSUE SPECIFIC GENES, analyzes gene expression dynamics  existing 'intra condition', i.e. separately
+
+### Dynamic strategies -> look at the difference in expression between 2 days (Days(n+1)-Days(n)), the differential expression between condition Young Old
+
+**ONLY FOR TISSUE SPECIFIC GENES**, 
+- `dynamics_intra_Spec.R` : analyzes gene expression dynamics existing 'intra condition', i.e. separately
 for 'young' and 'old' age groups. Uses pairwise DESeq2 approach. Results saved into folder `dynamicsIntra_Spec/`.
 
 - `dynamics_intra_doGO.R` :  Takes results from previous script, and performs enrichment
 by means of gprofiler2. Preferred terms are Reactome (REACT) and GO. Results saved into
 `dynamicsIntra_Spec/Gprofiler2_res/`.
 
+
+**FOR ALL GENES**
 - `dynamics_intra_edgeR_vrs.R`:  for both specific and housekeeping, i.e.  no previous filtering on counts matrix, analyzes global intra group expression dynamics with edgeR following same contrasts as done previously with DESeq2. `dynamics_intra_edgergoKegg.R` performs GO and KEGG enrichment, plots by `dynamics_intra_edgerkeggplots.R` . 
 All results saved into `dynintra_edger_extended/`. Too extensive for being interpretable (due to the higher sensitivity of EdgeR compared to DESeq2). 
 
@@ -62,6 +77,7 @@ Results saved into `exam_INTER_conditions/dynamic/` as csv files named `{CELLTYP
 	
 	 Are dedicated to pathways terms enrichment (and GSEA when needed: the case of M1 and M2 cell types). Working directory is `exam_INTER_conditions/dynamic/`. First they produce `{CELLTYPE}_INTERagetime_sy.csv` this means, **gene symbols** (note `_sy` suffix) are added to DE csv results. Rds objects generated via gprofiler2 and fgsea, as well as customized pdf figures are saved into working directory. Note that `exam_INTER_conditions/dynamic/go_gsea_csv/` is the path to csv files keeping **top** functional terms (and top gsea pathways) which are directly used for pdf customized figures. 
 
+### Static strategie 
  - `exam_Inter_cond_sta.R` : performs classic DE test (Old vs Young) time point by time point (like a "snapshot" of  expression differences at each time point). Results saved into `exam_INTER_conditions/static/`. 
 
 

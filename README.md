@@ -26,6 +26,7 @@ william.jarassier@univ-lyon1.fr
 M2 intern Bio-informatics
 Université Claude Bernard Lyon 1
 Institut Neuromyogène INMG
+
 [PaulineMoulle](https://github.com/PaulineMoulle)
 Bioinformatique Engineer
 Institut Neuromyogène INMG

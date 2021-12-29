@@ -1,0 +1,111 @@
+GetPlot<-function(Dynamic6Condconcat,cutoff){
+  listPlot<-c()
+  listTable<-c()
+  listValue<-c()
+  tableDynamique2<-sort(table(Dynamic6Condconcat),decreasing = T)
+  tibbleDynamique2<-as.tibble(Dynamic6Condconcat) %>% mutate(pathway =names(Dynamic6Condconcat) )
+  for ( name in names(tableDynamique2)){
+    if (tableDynamique2[name] > cutoff){
+    edgeslabel<-unlist(str_split(name, pattern = "\\."))
+    nodelist<-data.frame()
+    edgelist<-data.frame()
+    for (type in Typecellv){
+      for (node1 in 1:length(daysv[[type]])){
+        for (sens in c("up","down")){
+          Namenode1=paste0(daysv[[type]][node1],"_",type,"_",sens)
+          nodelist<-rbind(nodelist,c(Namenode1,Namenode1,type,"white",0,sens))
+        }}
+      for (sens in c("up","down")){
+        for (node1 in 1:(length(daysv[[type]])-1)){
+          Namenode1=NA
+          alone=TRUE
+          if(paste0(daysv[[type]][node1],"_",type,"_",sens) %in% edgeslabel){
+            Namenode1=paste0(daysv[[type]][node1],"_",type,"_",sens)
+            if(length(daysv[[type]])>1){
+              for (node2 in (node1+1):length(daysv[[type]])){
+                if(paste0(daysv[[type]][node2],"_",type,"_up") %in% edgeslabel & alone == T){
+                  Namenode2=paste0(daysv[[type]][node2],"_",type,"_up")
+                  edgelist<-rbind(edgelist,c(Namenode1,Namenode2,type,tablecolor[daysv[[type]][node1],type],tableDynamique2[name],"up"))
+                  l=rownames(nodelist)[nodelist[ colnames(nodelist)[1]] ==Namenode1]
+                  nodelist[l,4]=tablecolor[daysv[[type]][node1],type]
+                  nodelist[l,5]=tableDynamique2[name]
+                  l=rownames(nodelist)[nodelist[ colnames(nodelist)[1]] ==Namenode2]
+                  nodelist[l,4]=tablecolor[daysv[[type]][node2],type]
+                  nodelist[l,5]=tableDynamique2[name]
+                  alone=FALSE
+                } else{ if (paste0(daysv[[type]][node2],"_",type,"_down") %in% edgeslabel & alone ==T){
+                  Namenode2=paste0(daysv[[type]][node2],"_",type,"_down")
+                  edgelist<-rbind(edgelist,c(Namenode1,Namenode2,type,tablecolor[daysv[[type]][node1],type],tableDynamique2[name],"down"))
+                  l=rownames(nodelist)[nodelist[ colnames(nodelist)[1]] ==Namenode1]
+                  nodelist[l,4]=tablecolor[daysv[[type]][node1],type]
+                  nodelist[l,5]=tableDynamique2[name]
+                  l=rownames(nodelist)[nodelist[ colnames(nodelist)[1]] ==Namenode2]
+                  nodelist[l,4]=tablecolor[daysv[[type]][node2],type]
+                  nodelist[l,5]=tableDynamique2[name]
+                  alone=FALSE}}
+              }
+              if (alone == T){l=rownames(nodelist)[nodelist[ colnames(nodelist)[1]] ==Namenode1]
+              nodelist[l,4]=tablecolor[daysv[[type]][node1],type]
+              nodelist[l,5]=tableDynamique2[name]}
+            }
+            else{ if(is.na(Namenode1) == F){l=rownames(nodelist)[nodelist[ colnames(nodelist)[1]] ==Namenode1]
+            nodelist[l,4]=tablecolor[daysv[[type]][node1],type]
+            nodelist[l,5]=tableDynamique2[name]}}
+          }
+        }
+      }
+    }
+    colnames(nodelist)<-c("node1","node2","typeCell","colCell","Number","sens")
+    colnames(edgelist)<-c("node1","node2","typeCell","colCell","Number","sens")
+    graph<-rbind(nodelist,edgelist)
+    graph<- graph %>% mutate(colorSens=ifelse(colCell != "white",ifelse(sens == "up","#cc0000","#3d85c6ff"),"white"))
+    graph
+    order<- nodelist %>% arrange(node1) %>% dplyr::select(node1) %>% unlist()
+    listPlot<-c(listPlot,paste0(odir, analyse, name,'_',tableDynamique2[name] ,'_Plot.svg'))
+    listTable<-c(listTable,name)
+    listValue<-c(listValue,tableDynamique2[name])
+    svg(file=paste0(odir, analyse, name,'_',tableDynamique2[name] ,'_Plot.svg'))
+    arcplot(as.matrix(graph[1:2]),
+                               show.nodes = T,
+                               ordering = order,
+                               cex.nodes =log(as.numeric(graph$Number)),
+                               col.arcs =graph$colCell ,
+                               col.nodes =graph$colCell,
+                               lwd.arcs = log(as.numeric(graph$Number)),
+                               col.labels=graph$colorSens,
+                               las=2,
+                               padj=0)
+          dev.off()
+    }
+  }
+  return(list(listPlot,listTable,listValue))
+  
+  
+  Dynamic6Condconcat=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,6)
+listPlotTable<-GetPlot(Dynamic6Condconcat,1)
+knitr::include_graphics(listPlotTable[[1]][1])
+as.tibble(Dynamic6Condconcat) %>% mutate(pathway = str_replace(names(Dynamic6Condconcat), "REACTOME_", "")) %>% mutate(NumberPathay = listPlotTable[[3]][1]) %>% filter(value == listPlotTable[[2]][1]) %>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][1]) := pathway) %>%paged_table()
+knitr::include_graphics(listPlotTable[[1]][2])
+as.tibble(Dynamic6Condconcat) %>% mutate(pathway = str_replace(names(Dynamic6Condconcat), "REACTOME_", "")) %>% mutate(NumberPathay = listPlotTable[[3]][2]) %>% filter(value == listPlotTable[[2]][2])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][2]) := pathway)  %>% paged_table()
+knitr::include_graphics(listPlotTable[[1]][3])
+as.tibble(Dynamic6Condconcat) %>% mutate(pathway = str_replace(names(Dynamic6Condconcat), "REACTOME_", "")) %>% filter(value == listPlotTable[[2]][3])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][3]) := pathway)  %>% paged_table()
+
+Dynamic5Condconcat=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,5)
+listPlotTable<-GetPlot(Dynamic5Condconcat, 3)
+knitr::include_graphics(listPlotTable[[1]][1])
+as.tibble(Dynamic5Condconcat) %>% mutate(pathway = str_replace(names(Dynamic5Condconcat), "REACTOME_", "")) %>% filter(value == listPlotTable[[2]][1])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][1]) := pathway)  %>% paged_table()
+knitr::include_graphics(listPlotTable[[1]][2])
+as.tibble(Dynamic5Condconcat) %>% mutate(pathway = str_replace(names(Dynamic5Condconcat), "REACTOME_", "")) %>% filter(value == listPlotTable[[2]][2])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][2]) := pathway)  %>% paged_table()
+class(knitr::include_graphics(listPlotTable[[1]][3]))
+as.tibble(Dynamic5Condconcat) %>% mutate(pathway = str_replace(names(Dynamic5Condconcat), "REACTOME_", "")) %>% filter(value == listPlotTable[[2]][3])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][3]) := pathway)  %>% paged_table()
+
+Dynamic4Condconcat=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,4)
+listPlotTable<-GetPlot(Dynamic4Condconcat, 3)
+knitr::include_graphics(listPlotTable[[1]][1])
+as.tibble(Dynamic4Condconcat) %>% mutate(pathway = str_replace(names(Dynamic4Condconcat), "REACTOME_", ""))  %>% filter(value == listPlotTable[[2]][1])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][1]) := pathway) %>%paged_table()
+knitr::include_graphics(listPlotTable[[1]][2])
+as.tibble(Dynamic4Condconcat) %>% mutate( pathway = str_replace(names(Dynamic4Condconcat), "REACTOME_", ""))  %>% filter(value == listPlotTable[[2]][2])%>% select(pathway) %>% rename( !!paste0("pathways_",listPlotTable[[3]][2]) := pathway)  %>% paged_table()
+
+
+
+}

@@ -6,7 +6,6 @@
 ##
 library(dplyr)
 library(tidyverse)
-library(ggplot2)
 library(cowplot)
 library(forcats)
 library(RColorBrewer)
@@ -25,14 +24,16 @@ register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 # devtools::install_github("vqv/ggbipplot")
 # install.packages("glmpca")
 
-setwd("~/BulkAnalysis_plusNetwork/")
+library(wesanderson)
+
+setwd("~/BulkAnalysis_plusNetwork2/")
 odir = "exam_INTER_conditions/static/"
 
 shot_sf = "shot_dataframe_softfilter.csv"  # soft filters are : padj 0.5 and lfc 0.1 
-shot_fi = "shot_dataframe_finalfilter.csv" # final filter applied padj0.05 lfc>= 1.2
+shot_fi = "shot_dataframe_finalfilter.csv" # final filter applied padj <0.05 abs(lfc) >= 1.2
 
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
-volcanoneeded <- FALSE
+volcanoneeded <- TRUE
 prefil_cou <- "data/prefiltered_counts.rds"
 metadata.rds <- "data/metadata.rds"
 fmat <- readRDS(prefil_cou)
@@ -62,7 +63,7 @@ sortie_full <- data.frame("baseMean"= double(), "log2FoldChange"= double(),
                           "lfcSE"= double(),  "stat" = double(), 
                           "pvalue" = double(), "padj" = double(),
                           "id" = character(), "day" = character(), "type"=character())
-
+out_softfilt<-data.frame()
 for (k in time.type){
   time <- str_split(k, "\\.")[[1]][1]
   type <- str_split(k, "\\.")[[1]][2]
@@ -70,6 +71,14 @@ for (k in time.type){
   # do subsets as needed:
   ds.sub.o <- ds.o[,ds.o$type == type & ds.o$time == time]
   ds.sub <- DESeq(ds.sub.o, test="Wald", full=~age)
+  
+  countNormalised<-counts(ds.sub , normalize =T)
+  YoungCountsNormalised<-data.frame( GeneID=rownames(countNormalised),countNormalized=rowMeans(countNormalised[,str_detect(colnames(countNormalised),"Young")]))
+  OldCountsNormalised<-data.frame( GeneID=rownames(countNormalised),countNormalized=rowMeans(countNormalised[,str_detect(colnames(countNormalised),"Old")]))
+  
+  write.table(YoungCountsNormalised,paste0("data/meanCountNormalised_Young_",k,".txt"))
+  write.table(OldCountsNormalised,paste0("data/meanCountNormalised_Old_",k,".txt"))
+  
   deres <- lfcShrink(ds.sub, coef="age_Old_vs_Young", type="apeglm",
                      parallel=T)
   deres$id <- rownames(deres)
@@ -83,7 +92,7 @@ for (k in time.type){
 # complete tables with gene_symbols:
 sortie_full$symbol <- genes_df[match(sortie_full$id, genes_df$Geneid),]$symbol
 # save these results
-saveRDS(sortie_full, paste0(odir, "shot_rds_full.rds")) 
+saveRDS(sortie_full, paste0(odir, "rds/shot_rds_full.rds")) 
 #write.table(sortie_full, paste0(odir, "shot_dataframe_full.csv"), sep="\t", col.names=T, row.names = F) 
 out_softfilt <- sortie_full %>% filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
 
@@ -105,8 +114,8 @@ if (volcanoneeded){
   out_softfilt <- read.table(paste0(odir, shot_sf),sep="\t", header=T)
   # set aesthetics data:
   out_softfilt <- out_softfilt %>% mutate(DEsignificant=case_when(
-    padj < 1e-10 & abs(log2FoldChange) >= 1.2 ~ "FDR < 1e-10" ,
-    padj <= 0.05 & padj > 1e-10 & abs(log2FoldChange) >= 1.2 ~ "FDR <= 0.05 ",
+    padj < 1e-10 & abs(log2FoldChange) >= 1.2 ~ "padj < 1e-10" ,
+    padj <= 0.05 & padj > 1e-10 & abs(log2FoldChange) >= 1.2 ~ "padj <= 0.05 ",
     padj > 0.05 | abs(log2FoldChange) < 1.2 ~ "Not Sig"
   ))
   out_softfilt$symbol <- genes_df[match(out_softfilt$id, genes_df$Geneid),]$symbol
@@ -122,11 +131,11 @@ if (volcanoneeded){
                      DEgene.count.type$UP,")")
   names(nbDE.vec) <- factor(DEgene.count.type$type)
   
-    col_vir <- viridis_pal(begin=0,end=1)(10)  # nice scale, to pick from
+  col_vir <- viridis_pal(begin=0,end=1)(10)  # nice scale, to pick from
   
   # print stuff:
   pdf(paste0(odir,"volcano_snapshot.pdf"), width=14, height=10)
-  ggplot(out_softfilt, aes(x=log2FoldChange, y = -log10(padj+1e-20))) +
+  ggplot(out_softfilt, aes(x=log2FoldChange, y = -log10(padj+1e-20),color=DEsignificant)) +
     geom_point(aes(color=DEsignificant),size=.3) +
     scale_color_manual(values=c(col_vir[7], col_vir[3],"gray")) +
     facet_grid(vars(day),vars(type),
@@ -138,7 +147,7 @@ if (volcanoneeded){
     geom_text_repel(
       data= subset(out_softfilt, padj < 0.0005 & 
                      abs(log2FoldChange) > 1.2),
-      aes(label=symbol, color=DEsignificant),
+      aes(label=symbol, fill=DEsignificant),
       size=2,
       segment.size = .1,
       force=2, force_pull = 2,
@@ -150,7 +159,36 @@ if (volcanoneeded){
        labels only for genes padj < 0.0005")
   dev.off()
 }
-
+out_softfilt <- out_softfilt %>% mutate(BaseMeanPower=case_when(
+  baseMean <= 100 ~ "<=100" ,
+  baseMean <= 1000 & baseMean >100  ~ "<1000",
+  baseMean > 1000  ~ ">1000"
+))
+volcanoFacetBaseMean<-ggplot(out_softfilt, aes(x=log2FoldChange, y = -log10(padj+1e-20))) +
+  geom_point(aes(color=BaseMeanPower),size=.3) +
+  scale_color_manual(values=wes_palette(n=3, name="GrandBudapest1"))+
+  #scale_color_manual(values=c("#999999","#E69F00","#56B4E9")) +
+  facet_grid(vars(day),vars(type),
+             labeller=labeller(type=nbDE.vec)) + 
+  theme_calc() +
+  theme(panel.grid.major=element_blank()) +
+  geom_vline(xintercept = c(1.2,-1.2),color=col_vir[5],
+             linetype="dashed", size=.2) +
+  geom_text_repel(
+    data= subset(out_softfilt, padj < 0.0005 & 
+                   abs(log2FoldChange) > 1.2),
+    aes(label=symbol, color=BaseMeanPower),
+    size=2,
+    segment.size = .1,
+    force=2, force_pull = 2,
+    max.overlaps=15
+  ) +
+  labs(title="Old vs Young across time&type",
+       caption="vertical lines: ABS(log2FoldChange)=1.2 \n 
+       (DOWN | UP) regulated genes \n
+       labels only for genes padj < 0.0005")
+volcanoFacetBaseMean
+save_plot(paste0(odir,"volcano_baseMeanInfo.png"), volcanoFacetBaseMean, base_height = 8,base_width = 14)
 
 # ============================================================================
 # END

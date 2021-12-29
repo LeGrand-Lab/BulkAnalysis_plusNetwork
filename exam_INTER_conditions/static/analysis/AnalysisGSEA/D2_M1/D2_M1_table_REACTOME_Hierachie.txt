@@ -1,0 +1,8 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" NA
+"2" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by receptor tyrosine kinases" "signaling by met" "MET RECEPTOR ACTIVATION" "" "" "" "" "" "" "" "" 5
+"3" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "complement cascade" "INITIAL TRIGGERING OF COMPLEMENT" "" "" "" "" "" "" "" "" 12
+"4" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "complement cascade" "ACTIVATION OF C3 AND C5" "" "" "" "" "" "" "" "" 6
+"5" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by receptor tyrosine kinases" "SIGNALING BY MST1" "" "" "" "" "" "" "" "" "" 5
+"6" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by tgfb family members" "SIGNALING BY BMP" "" "" "" "" "" "" "" "" "" 21
+"7" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" NA
