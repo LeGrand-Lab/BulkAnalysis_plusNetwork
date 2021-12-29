@@ -24,7 +24,7 @@ genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
 consensusfile <- "conseTau_ensemblid.rds"
 needconsensus <- T
 ###  CALCULATE
-# we want, for type&day,´ to obtain sample specific genes, 
+# we want, for type&day,?? to obtain sample specific genes, 
 # and done separately by age (old separated from young)
 # import TPM matrices by day by age
 # do Tau by cell type but also by celltype&day
@@ -120,7 +120,8 @@ for (age in ages){
 
 # END formal Tau calc
 ## ============================ Consensus ====================================
-
+cat("read how 'consensus' is determined and why, in folder 'exam_INTER_conditions/static/readmedocs' :",
+       "\n","file recap_explain.md, section **Tau classification and consensus** ")
 if (needconsensus){ 
   print("building consensus")
   consensus_tau <- list()
@@ -128,11 +129,11 @@ if (needconsensus){
   for (day in daysv){
     ty <- read.table(paste0("Tau/TauSpecificity_Young",day, ".txt"), sep="\t", header=T)
     to <- read.table(paste0("Tau/TauSpecificity_Old",day, ".txt"), sep="\t", header=T)
-    # remember = Tau is calculated on meanTPM (mean over replicates' TPMs)
+    #remember = Tau is calculated on meanTPM (mean over replicates' TPMs)
     #  therefore, its value is also influenced by changes in expression due to age
-    # for example, a hypothetical gene1 : [FAPS, sCs, ECs, M1], their meanTPMs
+    #??for example, a hypothetical gene1 : [FAPS, sCs, ECs, M1], their meanTPMs
     # being :   Old =  [100,100,100,100]  ; Young = [100,2000,100,100]
-    # check documentation for justification of following code: 
+    # check static/readmedocs for justification of following code: 
     ty$age = "Young"
     to$age = "Old"
     rownames(ty) = ty$id
