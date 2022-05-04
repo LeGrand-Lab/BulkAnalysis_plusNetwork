@@ -12,8 +12,7 @@ output:
     toc_float: true
 params:
   title : NA
-  d : NA
-  t : NA
+  prefix_name : NA
   GSEAsigni : NA
    
 ---
@@ -76,22 +75,22 @@ library(igraph)
 library(ggraph)
 library(data.tree)
 
-odir <- "/home/bioinfo/BulkAnalysis_plusNetwork2/exam_INTER_conditions/static/"
-analyse<-"analysis/AnalysisGSEA/"
+odir <- "/home/bioinfo/BulkAnalysis_plusNetwork/exam_INTER_conditions/static/"
+HierarchieData= "GSEA/HierarchieData/"
 
-hsl_color<-data.frame("ECs"=270,"FAPs"=56,"M1"=26,"M2"=327,"Neutro"=164,"sCs"=202)
+hsl_color<-data.frame("ECs"=164,"FAPs"=208,"MuSCs"=270,"Neutrophils"=56,"Inflammatory-Mac"=36,"Resolving-Mac"=0)
 ```
 #  `r str_replace_all(params$title,'_',' ') `
 
 --------
 
 
-Only pathways in upper letter are enriched in `r params$t ` `r params$d `.  
+Only pathways in upper letter are enriched in `r params$prefix_name `.  
 
 
 ```{r DynamicPathways, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
-#data_nested_2=read.table( file=paste0( odir,analyse,d,'_',t,"/",d,'_',t, "_table_REACTOME_Hierachie.txt"),na.strings="")
-data_nested_2=read.table( file=paste0( odir,analyse,params$d,'_',params$t,"/",params$d,'_',params$t, "_table_REACTOME_Hierachie.txt"))
+#data_nested_2=read.table( file=paste0( odir,HierarchieData,d,'_',t,"/",d,'_',t, "_table_REACTOME_Hierachie.txt"),na.strings="")
+data_nested_2=read.table( file=paste0( odir,HierarchieData,params$prefix_name,"/",params$prefix_name, "_table_REACTOME_Hierachie.txt"))
 data_nested_2[is.na(data_nested_2)] <- ""
 data_nested_2$pathString <- paste("roots", data_nested_2$level1, data_nested_2$level2, data_nested_2$level3, data_nested_2$level4,data_nested_2$level5,data_nested_2$level6,data_nested_2$level7, data_nested_2$level8, data_nested_2$level9, data_nested_2$level10,data_nested_2$level11,data_nested_2$level12, sep = "/")
 data_Node <-as.Node(data_nested_2)
@@ -109,12 +108,12 @@ p
 
 --------
 
-Only pathways in upper bold letter are enriched in `r params$t ` `r params$d `.  
+Only pathways in upper bold letter are enriched in `r params$prefix_name `.  
 
 
 ```{r Heatmap, echo=FALSE,warning=FALSE,message=FALSE, fig.show='asis'}
 
-data_nested_2=read.table( file=paste0( odir,analyse,params$d,'_',params$t,"/",params$d,'_',params$t, "_table_REACTOME_Hierachie.txt"))
+data_nested_2=read.table( file=paste0( odir,HierarchieData,params$prefix_name,"/",params$prefix_name, "_table_REACTOME_Hierachie.txt"))
 pathwayCheck<-c("IN REACTOME HIERARCHIE","NOT IN REACTOME HIERARCHIE")
 rowsupp<-c()
 data_nested_2[is.na(data_nested_2)] <- ""
@@ -139,7 +138,7 @@ for(l in rownames(data_nested_2)){
 }
 data_nested_3<-data_nested_2[-as.numeric(rowsupp),-14]
 data_nested_3<-data_nested_3 %>% arrange(level1,level2,level3,level4,level5,level6,level7,level8,level9,level10,level11,level12,level13)
-write.table(data_nested_3, file=paste0( odir,analyse,d,"_",t,"/",d,'_',t, "_table_REACTOME_Hierachie_.txt"))
+#write.table(data_nested_3, file=paste0( odir,analyse,d,"_",t,"/",d,'_',t, "_table_REACTOME_Hierachie_.txt"))
     
 DT::datatable(data_nested_3, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:13 ))),selection = 'none',escape = F)
 ```

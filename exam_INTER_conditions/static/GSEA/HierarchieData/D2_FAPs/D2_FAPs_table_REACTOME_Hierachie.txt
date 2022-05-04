@@ -1,0 +1,77 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"2" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "" "" "" "" "" "" "" "" "" "" 518
+"3" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "" "" "" "" "" "" "" "" "" 379
+"4" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "" "" "" "" "" "" "" "" "" "" 276
+"5" "IN REACTOME HIERARCHIE" "DNA REPAIR" "DNA DOUBLE STRAND BREAK REPAIR" "HOMOLOGY DIRECTED REPAIR" "" "" "" "" "" "" "" "" "" 125
+"6" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "TELOMERE MAINTENANCE" "" "" "" "" "" "" "" "" "" 96
+"7" "IN REACTOME HIERARCHIE" "DEVELOPMENTAL BIOLOGY" "" "" "" "" "" "" "" "" "" "" "" 781
+"8" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by gpcr" "gpcr ligand binding" "CLASS A 1 RHODOPSIN LIKE RECEPTORS" "" "" "" "" "" "" "" "" 146
+"9" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC PROPHASE" "" "" "" "" "" "" "" "" 120
+"10" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by rho gtpases miro gtpases and rhobtb3" "signaling by rho gtpases" "RHO GTPASE EFFECTORS" "RHO GTPASES ACTIVATE PKNS" "ACTIVATED PKN1 STIMULATES TRANSCRIPTION OF AR ANDROGEN RECEPTOR REGULATED GENES KLK2 AND KLK3" "" "" "" "" "" "" 46
+"11" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by gpcr" "gpcr ligand binding" "CLASS A 1 RHODOPSIN LIKE RECEPTORS" "PEPTIDE LIGAND BINDING RECEPTORS" "" "" "" "" "" "" "" 88
+"12" "IN REACTOME HIERARCHIE" "metabolism" "BIOLOGICAL OXIDATIONS" "" "" "" "" "" "" "" "" "" "" 127
+"13" "IN REACTOME HIERARCHIE" "metabolism" "metabolism of lipids" "fatty acid metabolism" "arachidonic acid metabolism" "SYNTHESIS OF 16 20 HYDROXYEICOSATETRAENOIC ACIDS HETE" "" "" "" "" "" "" "" 4
+"14" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "" "" "" "" "" "" "" "" 201
+"15" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "RUNX1 REGULATES TRANSCRIPTION OF GENES INVOLVED IN DIFFERENTIATION OF HSCS" "" "" "" "" "" "" "" 106
+"16" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "RUNX1 REGULATES GENES INVOLVED IN MEGAKARYOCYTE DIFFERENTIATION AND PLATELET FUNCTION" "" "" "" "" "" "" "" 76
+"17" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by rho gtpases miro gtpases and rhobtb3" "signaling by rho gtpases" "RHO GTPASE EFFECTORS" "" "" "" "" "" "" "" "" 273
+"18" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by rho gtpases miro gtpases and rhobtb3" "signaling by rho gtpases" "RHO GTPASE EFFECTORS" "RHO GTPASES ACTIVATE PKNS" "" "" "" "" "" "" "" 72
+"19" "IN REACTOME HIERARCHIE" "DNA REPAIR" "BASE EXCISION REPAIR" "BASE EXCISION REPAIR AP SITE FORMATION" "depurination" "RECOGNITION AND ASSOCIATION OF DNA GLYCOSYLASE WITH SITE CONTAINING AN AFFECTED PURINE" "" "" "" "" "" "" "" 40
+"20" "IN REACTOME HIERARCHIE" "DNA REPAIR" "DNA DOUBLE STRAND BREAK REPAIR" "HOMOLOGY DIRECTED REPAIR" "hdr through homologous recombination hrr or single strand annealing ssa" "PROCESSING OF DNA DOUBLE STRAND BREAK ENDS" "" "" "" "" "" "" "" 86
+"21" "IN REACTOME HIERARCHIE" "DNA REPAIR" "BASE EXCISION REPAIR" "" "" "" "" "" "" "" "" "" "" 74
+"22" "IN REACTOME HIERARCHIE" "metabolism" "metabolism of lipids" "metabolism of steroids" "metabolism of steroid hormones" "GLUCOCORTICOID BIOSYNTHESIS" "" "" "" "" "" "" "" 4
+"23" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "DNA DAMAGE TELOMERE STRESS INDUCED SENESCENCE" "" "" "" "" "" "" "" "" 63
+"24" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC PROPHASE" "CONDENSATION OF PROPHASE CHROMOSOMES" "" "" "" "" "" "" "" 54
+"25" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY WNT" "" "" "" "" "" "" "" "" "" "" 284
+"26" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "G2 M CHECKPOINTS" "G2 M DNA DAMAGE CHECKPOINT" "" "" "" "" "" "" "" "" 84
+"27" "IN REACTOME HIERARCHIE" "DNA REPAIR" "BASE EXCISION REPAIR" "BASE EXCISION REPAIR AP SITE FORMATION" "" "" "" "" "" "" "" "" "" 47
+"28" "IN REACTOME HIERARCHIE" "programmed cell death" "apoptosis" "APOPTOTIC EXECUTION PHASE" "" "" "" "" "" "" "" "" "" 43
+"29" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY NOTCH" "" "" "" "" "" "" "" "" "" "" 210
+"30" "IN REACTOME HIERARCHIE" "metabolism of proteins" "post translational protein modification" "DEUBIQUITINATION" "UCH PROTEINASES" "" "" "" "" "" "" "" "" 97
+"31" "IN REACTOME HIERARCHIE" "metabolism of proteins" "post translational protein modification" "DEUBIQUITINATION" "UB SPECIFIC PROCESSING PROTEASES" "" "" "" "" "" "" "" "" 180
+"32" "IN REACTOME HIERARCHIE" "DNA REPAIR" "" "" "" "" "" "" "" "" "" "" "" 311
+"33" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "NEGATIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "SIRT1 NEGATIVELY REGULATES RRNA EXPRESSION" "" "" "" "" "" "" "" "" 49
+"34" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "SENESCENCE ASSOCIATED SECRETORY PHENOTYPE SASP" "" "" "" "" "" "" "" "" 88
+"35" "IN REACTOME HIERARCHIE" "gene expression transcription" "RNA POLYMERASE I TRANSCRIPTION" "" "" "" "" "" "" "" "" "" "" 90
+"36" "IN REACTOME HIERARCHIE" "gene expression transcription" "RNA POLYMERASE I TRANSCRIPTION" "rna polymerase i promoter clearance" "RNA POLYMERASE I PROMOTER ESCAPE" "" "" "" "" "" "" "" "" 70
+"37" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "OXIDATIVE STRESS INDUCED SENESCENCE" "" "" "" "" "" "" "" "" 104
+"38" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "NUCLEAR RECEPTOR TRANSCRIPTION PATHWAY" "" "" "" "" "" "" "" "" 44
+"39" "IN REACTOME HIERARCHIE" "metabolism of proteins" "post translational protein modification" "DEUBIQUITINATION" "METALLOPROTEASE DUBS" "" "" "" "" "" "" "" "" 32
+"40" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "TELOMERE MAINTENANCE" "INHIBITION OF DNA RECOMBINATION AT TELOMERE" "" "" "" "" "" "" "" "" 52
+"41" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY WNT" "TCF DEPENDENT SIGNALING IN RESPONSE TO WNT" "FORMATION OF THE BETA CATENIN TCF TRANSACTIVATING COMPLEX" "" "" "" "" "" "" "" "" 72
+"42" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "esr mediated signaling" "ESTROGEN DEPENDENT GENE EXPRESSION" "" "" "" "" "" "" "" "" 123
+"43" "IN REACTOME HIERARCHIE" "metabolism of proteins" "post translational protein modification" "PROTEIN UBIQUITINATION" "E3 UBIQUITIN LIGASES UBIQUITINATE TARGET PROTEINS" "" "" "" "" "" "" "" "" 57
+"44" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY WNT" "TCF DEPENDENT SIGNALING IN RESPONSE TO WNT" "" "" "" "" "" "" "" "" "" 197
+"45" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "nucleosome assembly" "DEPOSITION OF NEW CENPA CONTAINING NUCLEOSOMES AT THE CENTROMERE" "" "" "" "" "" "" "" "" 58
+"46" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "POSITIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "B WICH COMPLEX POSITIVELY REGULATES RRNA EXPRESSION" "" "" "" "" "" "" "" "" 70
+"47" "IN REACTOME HIERARCHIE" "programmed cell death" "apoptosis" "APOPTOTIC EXECUTION PHASE" "APOPTOSIS INDUCED DNA FRAGMENTATION" "" "" "" "" "" "" "" "" 13
+"48" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "G2 M CHECKPOINTS" "" "" "" "" "" "" "" "" "" 156
+"49" "IN REACTOME HIERARCHIE" "metabolism of proteins" "post translational protein modification" "PROTEIN UBIQUITINATION" "" "" "" "" "" "" "" "" "" 77
+"50" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY NOTCH" "PRE NOTCH EXPRESSION AND PROCESSING" "" "" "" "" "" "" "" "" "" 88
+"51" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "NEGATIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "" "" "" "" "" "" "" "" "" 88
+"52" "IN REACTOME HIERARCHIE" "DNA REPAIR" "DNA DOUBLE STRAND BREAK REPAIR" "DNA DOUBLE STRAND BREAK RESPONSE" "" "" "" "" "" "" "" "" "" 66
+"53" "IN REACTOME HIERARCHIE" "metabolism of proteins" "post translational protein modification" "DEUBIQUITINATION" "" "" "" "" "" "" "" "" "" 253
+"54" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "" "" "" "" "" "" "" "" "" 171
+"55" "IN REACTOME HIERARCHIE" "gene expression transcription" "GENE SILENCING BY RNA" "TRANSCRIPTIONAL REGULATION BY SMALL RNAS" "" "" "" "" "" "" "" "" "" 86
+"56" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "RMTS METHYLATE HISTONE ARGININES" "" "" "" "" "" "" "" "" "" 64
+"57" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "PRC2 METHYLATES HISTONES AND DNA" "" "" "" "" "" "" "" "" "" 54
+"58" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "POSITIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "" "" "" "" "" "" "" "" "" 85
+"59" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "" "" "" "" "" "" "" "" "" "" 242
+"60" "IN REACTOME HIERARCHIE" "DNA REPAIR" "DNA DOUBLE STRAND BREAK REPAIR" "NONHOMOLOGOUS END JOINING NHEJ" "" "" "" "" "" "" "" "" "" 58
+"61" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HDMS DEMETHYLATE HISTONES" "" "" "" "" "" "" "" "" "" 42
+"62" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HDACS DEACETYLATE HISTONES" "" "" "" "" "" "" "" "" "" 75
+"63" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HATS ACETYLATE HISTONES" "" "" "" "" "" "" "" "" "" 121
+"64" "IN REACTOME HIERARCHIE" "gene expression transcription" "GENE SILENCING BY RNA" "" "" "" "" "" "" "" "" "" "" 109
+"65" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "" "" "" "" "" "" "" "" "" "" 127
+"66" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "" "" "" "" "" "" "" "" "" "" 123
+"67" "IN REACTOME HIERARCHIE" "REPRODUCTION" "" "" "" "" "" "" "" "" "" "" "" 104
+"68" "IN REACTOME HIERARCHIE" "DEVELOPMENTAL BIOLOGY" "TRANSCRIPTIONAL REGULATION OF GRANULOPOIESIS" "" "" "" "" "" "" "" "" "" "" 66
+"69" "IN REACTOME HIERARCHIE" "DNA REPAIR" "DNA DOUBLE STRAND BREAK REPAIR" "" "" "" "" "" "" "" "" "" "" 153
+"70" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"71" "NOT IN REACTOME HIERARCHIE" "PHASE I FUNCTIONALIZATION OF COMPOUNDS" "" "" "" "" "" "" "" "" "" "" "" 61
+"72" "NOT IN REACTOME HIERARCHIE" "ERCC6 CSB AND EHMT2 G9A POSITIVELY REGULATE RRNA EXPRESSION" "" "" "" "" "" "" "" "" "" "" "" 57
+"73" "NOT IN REACTOME HIERARCHIE" "DNA METHYLATION" "" "" "" "" "" "" "" "" "" "" "" 46
+"74" "NOT IN REACTOME HIERARCHIE" "CELLULAR RESPONSES TO EXTERNAL STIMULI" "" "" "" "" "" "" "" "" "" "" "" 623
+"75" "IN REACTOME HIERARCHIE" "CELL CYCLE" "" "" "" "" "" "" "" "" "" "" "" 644
+"76" "NOT IN REACTOME HIERARCHIE" "AMYLOID FIBER FORMATION" "" "" "" "" "" "" "" "" "" "" "" 75

@@ -1,0 +1,95 @@
+---
+title: "Ageing impact in gene expression on skeletal muscle repair"
+subtitle: "Bioinformatic analysis : differential expression genes part"
+author: "Team Le Grand"
+date: "`r format(Sys.time(),'%d %B,%Y')`"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+    df_print : paged
+    fig_width: 10
+    fig_height: 8
+
+   
+---
+
+<style type="text/css">
+
+
+h1.title {
+  background-color: #158cba;
+  font-size: 34px;
+  color: white;
+}
+h1 { /* Header 1 */
+  background-color: #158cba;
+  font-size: 23px;
+    color: white;
+}
+h2 { /* Header 2 */
+  background-color: #158cba ;
+  font-size: 20px;
+    color: white;
+}
+h3 { /* Header 3 */
+  background-color: #158cba ;
+  font-size: 14px;
+    color: white;
+}
+tr:nth-child(even){background-color: #f2f2f2;}
+
+tr:hover {background-color: #ddd;}
+
+th {
+  background-color: #84c1d8ff;
+  color: white;
+}
+
+.btn {
+    border-width: 0 0px 0px 0px;
+    font-weight: normal;
+    text-transform: ;
+}
+.btn-default {
+    color: #2ecc71;
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+
+</style>
+
+[linksAnalysisDEG](/home/bioinfo/BulkAnalysis_plusNetwork/reports/GeneDEsigniOnMoreOneTimePoint.html)
+
+```{r pathsLoads , echo=FALSE,warning=FALSE,message=FALSE }
+library(tidyverse)
+library(ComplexHeatmap)
+library(msigdbr)
+library(cowplot)
+library(treemap)
+library(networkD3)
+library(dplyr)
+library(ggplot2)
+library(hrbrthemes)
+library(webshot)
+library(htmlwidgets)
+library(gridExtra)
+library(kableExtra)
+library(RColorBrewer)
+library(facetious)
+library(formattable)
+library(grid)
+library(PantaRhei)
+library(DT)
+library(reshape2)
+odir <- "~/BulkAnalysis_plusNetwork/exam_INTER_conditions/static/"
+pathcombinaisontableUPDOWN<-paste0(odir,"TableDEG/TableDynamicUpDownDEG")
+
+dataFrameTotalUPDOWN<-readRDS(paste0(pathcombinaisontableUPDOWN,'.rds'))
+
+countNbConditionGeneDE<-dataFrameTotalUPDOWN  %>% dplyr::count(symbol,sort = T)
+tablefilter<-dataFrameTotalUPDOWN  %>% mutate(n= countNbConditionGeneDE[match(dataFrameTotalUPDOWN$symbol,countNbConditionGeneDE$symbol),]$n ) %>% arrange(desc(n),symbol,desc(nbDayDE),CombiDaysUpDown) %>% select(n,symbol,nbDayDE,CombiDaysUpDown,CombiDayDEG,NbUpDown,id,day,type,padj,log2FoldChange,meanCountNormalizedYoung,meanCountNormalizedOld) 
+```
+
+```{r tableResolvingUPDOWN, echo=FALSE, warning=FALSE}
+DT::datatable(tablefilter, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2,3,4)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 5:11 ))),selection = 'none',escape = F,rownames=F)
+```

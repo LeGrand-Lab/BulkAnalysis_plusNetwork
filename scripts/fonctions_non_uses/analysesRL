@@ -1,0 +1,12 @@
+    LRrowkeep<- tableDiff %>% filter(Sending.cluster==t|Target.cluster==t) %>% mutate(DayTypeLigand==paste0(day,Sending.cluster)) %>% mutate(DayTypeReceptor==paste0(day,Target.cluster))
+      #filter(Ligand.expressing.cells.Young!=1&Receptor.expressing.cells.Young!=1&Ligand.expressing.cells.Old!=1&Receptor.expressing.cells.Old!=1) %>%
+      mutate(Ligand.DEG=ifelse(Ligand.symbol %in% GeneSigni$symbol,"DEG","noDEG")) %>%
+      mutate(Receptor.DEG=NA) %>%
+      subset(select=c(day,Sending.cluster,Ligand.symbol,Ligand.DEG,Target.cluster,Receptor.symbol,Receptor.DEG,Ligand.expressing.cells.Young:Log2.transformed.fold.change.of.edge.specificity.weight)) 
+    RLsigni<-rbind(RLsigni,LRrowkeep)
+    LRrowkeep<- tableDiff %>% filter(Target.cluster==t) %>%
+      filter( Receptor.symbol %in% GeneSigni$symbol) %>%
+      #filter(Ligand.expressing.cells.Young!=1&Receptor.expressing.cells.Young!=1&Ligand.expressing.cells.Old!=1&Receptor.expressing.cells.Old!=1) %>%
+      mutate(Receptor.DEG=ifelse(Receptor.symbol %in% GeneSigni$symbol,"DEG","noDEG")) %>%
+      subset(select=c(day,Sending.cluster,Ligand.symbol,Ligand.DEG,Target.cluster,Receptor.symbol,Receptor.DEG,Ligand.expressing.cells.Young:Log2.transformed.fold.change.of.edge.specificity.weight)) 
+    RLsigni<-rbind(RLsigni,LRrowkeep)

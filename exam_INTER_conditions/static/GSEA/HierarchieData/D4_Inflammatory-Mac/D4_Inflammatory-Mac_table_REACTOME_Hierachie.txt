@@ -1,0 +1,5 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"2" "IN REACTOME HIERARCHIE" "cell cycle" "cell cycle mitotic" "M PHASE" "" "" "" "" "" "" "" "" "" 377
+"3" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "antimicrobial peptides" "DEFENSINS" "" "" "" "" "" "" "" "" 5
+"4" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf

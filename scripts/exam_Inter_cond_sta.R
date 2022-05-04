@@ -1,14 +1,15 @@
 ## 
-# Detect Differential Expression at each time-point, by cellType
+# Detect Differential Expression between Young and Old at each day-point, by cellType
 # output: all results into 'exam_INTER_conditions/static/'
 # --
-# Joha GL
+# Joha GL + MoulleP
 ##
 library(dplyr)
 library(tidyverse)
 library(cowplot)
 library(forcats)
 library(RColorBrewer)
+display.brewer.all(colorblindFriendly = T)
 library(pheatmap)
 library(DESeq2)
 library(ggsci) # publishing palettes
@@ -17,135 +18,190 @@ library(reshape2)
 library(ggthemes)
 library(scales) # 'viridis_pal' et autres pal
 library(ggrepel) # for labels to points
+library(grid)
+#remotes::install_github('coolbutuseless/facetious')
+library(patchwork)
+library(facetious)
 library("apeglm") # BiocManager::install("apeglm")
 library("BiocParallel")
 library("ashr") # install.packages("ashr")
+library(wesanderson)
 register(MulticoreParam(4)) # TODO:  set n of cores depending of available
 # devtools::install_github("vqv/ggbipplot")
 # install.packages("glmpca")
 
-library(wesanderson)
+##################################
+#### Path files to load or created
+##################################
 
-setwd("~/BulkAnalysis_plusNetwork2/")
-odir = "exam_INTER_conditions/static/"
+#Directories
+# Working directory
+setwd("~/BulkAnalysis_plusNetwork/")
+# Raw data directory
+inData<- "data/"
+# Save count normalided in data directory
+NormData <- "data/CountNormalised/"
+# Directory of static DEG analysis
+odir <- "exam_INTER_conditions/"
+staticD = paste0(odir,"static/")
 
-shot_sf = "shot_dataframe_softfilter.csv"  # soft filters are : padj 0.5 and lfc 0.1 
-shot_fi = "shot_dataframe_finalfilter.csv" # final filter applied padj <0.05 abs(lfc) >= 1.2
+#Created directories
+listDirectorie<-c(inData,NormData,odir,staticD)
+for ( directories in listDirectorie){
+  if (dir.exists(directories) == F) {
+    dir.create(directories)
+  }
+}
+listInterCondtionDirectories<-c(staticD)
+for ( sd in c("TableDEG/","PlotsDEG/","analysis/") ){
+  for (d in listInterCondtionDirectories ){
+    if (dir.exists(paste0(d,sd)) == F) {
+      dir.create(paste0(d,sd))
+    }
+  }
+}
 
+#Loads 
+# Correspondance geneID and symbol
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
+#Counting matrix after first filtering
+prefil_cou <- paste0(inData,"prefiltered_counts.rds")
+#Infos about samples
+metadata.rds <- paste0(inData,"metadata.rds")
+
+#Created
+## static|dynamic,DEG_table,[Young_|Old_|][static|dynamic]_[full|solftfilter|hardfilter].rds")
+## full -> all deseq2 analysis
+## solt filter -> padj < 0.5 and abs( lfc ) > 0.1
+## final filter -> padj < .05 and abs ( lfc ) >= 1.2
+##Volvanoplot full table, text hard filter
+# Name : [Young_|Old_|]volcano_static|dynamic
+
+DEG_table = "TableDEG/DEG_table_"
 volcanoneeded <- TRUE
-prefil_cou <- "data/prefiltered_counts.rds"
-metadata.rds <- "data/metadata.rds"
+orderTypecell=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
+
+colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#f0e442ff","#ff9900ff","#cc0000ff")
+names(colorsType)=orderTypecell
+colorsTime = c(brewer.pal(9,"BuPu")[3],brewer.pal(9,"BuPu")[5],brewer.pal(9,"BuPu")[7],brewer.pal(9,"BuPu")[9])
+
+
+## Load files
 fmat <- readRDS(prefil_cou)
 metadata <- readRDS(metadata.rds)
-metadata <- metadata %>% mutate(timetype=paste0(time,".",type)) 
-keep <- apply(fmat, 1, function(row) ifelse(count(row >=5)>= 3, TRUE, FALSE) )
+metadata <- metadata %>% mutate(day=time) %>% mutate(daytype=paste0(day,".",type)) 
+#keep genes with expression > 5 on at least 3 samples
+keep <- apply(fmat, 1, function(row) ifelse(length( which( row >= 5)) >= 3, TRUE, FALSE) )
 fmat <- fmat[keep,]
+
 
 #####
 # DE analysis
-# static snapshots old vs young
+# static old vs young
 # by cell-type by day
 #####
 
 ##  with 'subset' s   on same original object:
 #  ===========================================================================
-ds.o <- DESeqDataSetFromMatrix(countData = fmat,
+deseqdataset.static <- DESeqDataSetFromMatrix(countData = fmat,
                                colData = metadata,
                                design= ~ age)
 # set "Young" as reference
-colData(ds.o)$age <- factor(colData(ds.o)$age,
+colData(deseqdataset.static)$age <- factor(colData(deseqdataset.static)$age,
                             levels=c("Young", "Old"))
-
-time.type <- sort(unique(colData(ds.o)$timetype))
+#initialization result DEG analyse to concatenated results
+day.type <- sort(unique(colData(deseqdataset.static)$daytype))
 
 sortie_full <- data.frame("baseMean"= double(), "log2FoldChange"= double(), 
                           "lfcSE"= double(),  "stat" = double(), 
                           "pvalue" = double(), "padj" = double(),
                           "id" = character(), "day" = character(), "type"=character())
 out_softfilt<-data.frame()
-for (k in time.type){
-  time <- str_split(k, "\\.")[[1]][1]
-  type <- str_split(k, "\\.")[[1]][2]
-  print(paste(time,type))
-  # do subsets as needed:
-  ds.sub.o <- ds.o[,ds.o$type == type & ds.o$time == time]
-  ds.sub <- DESeq(ds.sub.o, test="Wald", full=~age)
-  
-  countNormalised<-counts(ds.sub , normalize =T)
-  YoungCountsNormalised<-data.frame( GeneID=rownames(countNormalised),countNormalized=rowMeans(countNormalised[,str_detect(colnames(countNormalised),"Young")]))
-  OldCountsNormalised<-data.frame( GeneID=rownames(countNormalised),countNormalized=rowMeans(countNormalised[,str_detect(colnames(countNormalised),"Old")]))
-  
-  write.table(YoungCountsNormalised,paste0("data/meanCountNormalised_Young_",k,".txt"))
-  write.table(OldCountsNormalised,paste0("data/meanCountNormalised_Old_",k,".txt"))
-  
-  deres <- lfcShrink(ds.sub, coef="age_Old_vs_Young", type="apeglm",
-                     parallel=T)
-  deres$id <- rownames(deres)
-  deres$day = time
-  deres$type = type
-  # pile full output
-  sortie_full <- rbind(sortie_full, as_tibble(deres))
-  deres_f <- as_tibble(deres) %>% filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
-  out_softfilt <- rbind(out_softfilt,deres_f)
-}
-# complete tables with gene_symbols:
-sortie_full$symbol <- genes_df[match(sortie_full$id, genes_df$Geneid),]$symbol
-# save these results
-saveRDS(sortie_full, paste0(odir, "rds/shot_rds_full.rds")) 
-#write.table(sortie_full, paste0(odir, "shot_dataframe_full.csv"), sep="\t", col.names=T, row.names = F) 
-out_softfilt <- sortie_full %>% filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
 
-write.table(out_softfilt, paste0(odir, shot_sf), 
-            sep="\t", col.names=T, row.names = F) 
-# save significant extract (~1000 genes):
-significant_df = out_softfilt %>% filter(padj <= 0.05 & abs(log2FoldChange) >= 1.2)
-write.table(significant_df, paste0(odir,shot_fi), sep="\t", col.names=T, row.names = F)
-####  downstream
-# how many UP
-upsortie <- out_softfilt %>% filter(log2FoldChange > 0.05)
-(dim(upsortie))
-View(upsortie)
-# how many DOWN
-dosortie <- out_softfilt %>% filter(log2FoldChange < 0)
+
+Firstday<-str_split(day.type[1], "\\.")[[1]][1]
+# Initialization Total table normalized Young and Old count
+  #mean replicat sample 
+  countNormalisedtable<-data_frame(geneID = character(),age=character(),celltype=character(),day=character(),meancountnormalised=character())
+  #keep replicats
+  countNormalised1<-data.frame("gene"=rownames(fmat))
+for (k in day.type){
+  day <- str_split(k, "\\.")[[1]][1]
+  type <- str_split(k, "\\.")[[1]][2]
+  print(paste(day,type))
+  # do subsets as needed + deseq analysis
+    deseqdataset.static.daytype <- deseqdataset.static[,deseqdataset.static$type == type & deseqdataset.static$day == day]
+    deseq.static.daytype <- DESeq(deseqdataset.static.daytype, test="Wald", full=~age)
+  
+  # Get countNormalised 
+    countNormalised<-counts(deseq.static.daytype , normalize =T)
+    countNormalised1<-cbind(countNormalised1,countNormalised)
+    
+    #mean replicats
+    countNormalisedtable_tempo= data.frame(geneID=c(rownames(countNormalised),rownames(countNormalised)),
+                                           age=c(rep("Young", dim(countNormalised)[1]),rep("Old", dim(countNormalised)[1])),
+                                           celltype=rep(type, dim(countNormalised)[1]),
+                                           day=rep(day, dim(countNormalised)[1]),
+                                           meancountnormalised=c(rowMeans(countNormalised[,str_detect(colnames(countNormalised),"Young")]),rowMeans(countNormalised[,str_detect(colnames(countNormalised),"Old")])))
+    
+    countNormalisedtable<- rbind(countNormalisedtable,countNormalisedtable_tempo)
+
+  # Add Shrink log2 fold changes
+    deres <- lfcShrink(deseq.static.daytype, coef="age_Old_vs_Young", type="apeglm",
+                       parallel=T)
+    deres$id <- rownames(deres)
+    deres$day = day
+    deres$type = type
+  # solft filters
+    sortie_full <- rbind(sortie_full, as_tibble(deres))
+    
+    deres_f <- as_tibble(deres) %>% dplyr::filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
+    out_softfilt <- rbind(out_softfilt,deres_f)
+}
+# Finalization Get countNormalised 
+countNormalisedtable$symbol<-genes_df[match(countNormalisedtable$geneID,genes_df$Geneid),]$symbol
+countNormalised1$symbol<-genes_df[match(rownames(countNormalised1),genes_df$Geneid),]$symbol
+write.table(countNormalisedtable,paste0(NormData,"MeanCountNormalised.txt"),row.names = F, sep = '\t')
+write.table(countNormalised1,paste0(NormData,"CountNormalised.txt"),row.names = F, sep = '\t')
+
+
+# complete tables with gene_symbols & save table
+sortie_full$symbol <- genes_df[match(sortie_full$id, genes_df$Geneid),]$symbol
+sortie_full<- sortie_full %>% dplyr::filter(baseMean!=0) 
+saveRDS(sortie_full, paste0(staticD, DEG_table, "static_full.rds")) 
+write.table(sortie_full, paste0(staticD,DEG_table, "static_full.csv"), sep="\t", col.names=T, row.names = F) 
+out_softfilt <- sortie_full %>% dplyr::filter(padj <= 0.5 & abs(log2FoldChange) >= 0.1)
+write.table(out_softfilt, paste0(staticD, DEG_table, "static_softfilter.csv"), sep="\t", col.names=T, row.names = F) 
+out_hardfilt = out_softfilt %>% dplyr::filter(padj <= 0.05 & abs(log2FoldChange) >= 1.2)
+write.table(out_hardfilt, paste0(staticD, DEG_table, "static_hardfilter.csv"), sep="\t", col.names=T, row.names = F)
+
+
 
 # ** VOLCANOES ** :
 if (volcanoneeded){
-  out_softfilt <- read.table(paste0(odir, shot_sf),sep="\t", header=T)
-  # set aesthetics data:
-  out_softfilt <- out_softfilt %>% mutate(DEsignificant=case_when(
-    padj < 1e-10 & abs(log2FoldChange) >= 1.2 ~ "padj < 1e-10" ,
-    padj <= 0.05 & padj > 1e-10 & abs(log2FoldChange) >= 1.2 ~ "padj <= 0.05 ",
-    padj > 0.05 | abs(log2FoldChange) < 1.2 ~ "Not Sig"
-  ))
-  out_softfilt$symbol <- genes_df[match(out_softfilt$id, genes_df$Geneid),]$symbol
-  # n number of UP or DOWN regulated genes
-  DEgenUP.type <- out_softfilt %>% 
-    filter(padj <= 0.05 & log2FoldChange > 1.2) %>%
-    group_by(type) %>% tally(n="UP")
-  DEgenDOWN.type <- out_softfilt %>% 
-    filter(padj <= 0.05 & log2FoldChange < -1.2) %>%
-    group_by(type) %>% tally(n="DOWN")
-  DEgene.count.type <- merge(DEgenDOWN.type, DEgenUP.type, by="type")
-  nbDE.vec <- paste0(DEgene.count.type$type," (",DEgene.count.type$DOWN,"|",
-                     DEgene.count.type$UP,")")
-  names(nbDE.vec) <- factor(DEgene.count.type$type)
+ 
+  sortie_full <- read.table(paste0(staticD, DEG_table, "static_full.csv") ,sep="\t", header=T)
+  names(colorsTime) = sort(unique(sortie_full$day))
+  sortie_full <- sortie_full %>% mutate (type = factor( sortie_full$type , levels =orderTypecell ))
   
-  col_vir <- viridis_pal(begin=0,end=1)(10)  # nice scale, to pick from
-  
-  # print stuff:
-  pdf(paste0(odir,"volcano_snapshot.pdf"), width=14, height=10)
-  ggplot(out_softfilt, aes(x=log2FoldChange, y = -log10(padj+1e-20),color=DEsignificant)) +
+ # set aesthetics data:
+    sortie_full <- sortie_full %>% mutate(DEsignificant=case_when(
+    padj <= 0.05 & log2FoldChange >= 1.2 ~ "Signi UP" ,
+    padj <= 0.05 & log2FoldChange <= -1.2 ~ "Signi DOWN",
+    TRUE  ~ "Not Signi"
+    ))
+
+  g <-ggplot(sortie_full, aes(x=log2FoldChange, y = -log10(padj+1e-20),color=DEsignificant)) +
     geom_point(aes(color=DEsignificant),size=.3) +
-    scale_color_manual(values=c(col_vir[7], col_vir[3],"gray")) +
-    facet_grid(vars(day),vars(type),
-               labeller=labeller(type=nbDE.vec)) + 
+    scale_color_manual(values=c("lightgrey",brewer.pal(10, "RdBu")[9],brewer.pal(10, "RdBu")[2] )) +
+    geom_vline(xintercept = c(1.2,-1.2), data=,color= "black",
+               linetype="dashed", size=.2) +
+    facet_grid_blank(vars(day),vars(type), drop = FALSE) + 
     theme_calc() +
     theme(panel.grid.major=element_blank()) +
-    geom_vline(xintercept = c(1.2,-1.2),color=col_vir[5],
-               linetype="dashed", size=.2) +
+    
     geom_text_repel(
-      data= subset(out_softfilt, padj < 0.0005 & 
+      data= subset(sortie_full, padj < 0.0005 & 
                      abs(log2FoldChange) > 1.2),
       aes(label=symbol, fill=DEsignificant),
       size=2,
@@ -153,64 +209,32 @@ if (volcanoneeded){
       force=2, force_pull = 2,
       max.overlaps=15
     ) +
-    labs(title="Old vs Young across time&type",
-         caption="vertical lines: ABS(log2FoldChange)=1.2 \n 
-       (DOWN | UP) regulated genes \n
-       labels only for genes padj < 0.0005")
+    labs(title="Old vs Young across day&type", subtitle = "Signi = Differential gene padj < 0.05, -1.2<log2FoldChange>1.2",
+         caption="vertical lines: ABS(log2FoldChange)=1.2 
+          labels only for genes padj < 0.0005")+
+    theme(axis.title = element_text(size=5, face = "bold"),axis.text=element_text(size=3),legend.title=element_text(size=6, face = "bold"),legend.text=element_text(size=4),title=element_text(size=7, face = "bold"),
+          legend.spacing= unit(0.1,"points"),legend.spacing.y=unit(0.01,"points"),strip.text.x = element_text(size = 6, face = "bold", color="white"),strip.text.y = element_text(size=6, face = "bold", color="white"),legend.key.size = unit(3, "mm"),panel.spacing = unit(0.5,"mm"),panel.grid =element_line(color="white"))
+  
+  #Add color in strip background
+  g2 <- ggplot_gtable(ggplot_build(g))
+  stripRowName <- which(grepl('strip-', g2$layout$name))
+  k <- 1
+  fills <- c(colorsType,colorsTime)
+  for (i in stripRowName) {
+    j <- which(grepl('rect', g2$grobs[[i]]$grobs[[1]]$childrenOrder))
+    g2$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+    k <- k+1
+  }
+  png(paste0(staticD,"PlotsDEG/volcano_static.png"),units = "in", width=10, height= 5.5, res = 300, family = "Arial")
+  grid::grid.draw(g2)
   dev.off()
+  tiff(paste0(staticD,"PlotsDEG/volcano_static.tiff"),units = "in", width=10, height= 4, res = 300, family = "Arial")
+  grid::grid.draw(g2)
+  dev.off()
+  pdf(paste0(staticD,"PlotsDEG/volcano_static.pdf"), width=14, height=10)
+  grid::grid.draw(g2)
+  dev.off()
+  
 }
-out_softfilt <- out_softfilt %>% mutate(BaseMeanPower=case_when(
-  baseMean <= 100 ~ "<=100" ,
-  baseMean <= 1000 & baseMean >100  ~ "<1000",
-  baseMean > 1000  ~ ">1000"
-))
-volcanoFacetBaseMean<-ggplot(out_softfilt, aes(x=log2FoldChange, y = -log10(padj+1e-20))) +
-  geom_point(aes(color=BaseMeanPower),size=.3) +
-  scale_color_manual(values=wes_palette(n=3, name="GrandBudapest1"))+
-  #scale_color_manual(values=c("#999999","#E69F00","#56B4E9")) +
-  facet_grid(vars(day),vars(type),
-             labeller=labeller(type=nbDE.vec)) + 
-  theme_calc() +
-  theme(panel.grid.major=element_blank()) +
-  geom_vline(xintercept = c(1.2,-1.2),color=col_vir[5],
-             linetype="dashed", size=.2) +
-  geom_text_repel(
-    data= subset(out_softfilt, padj < 0.0005 & 
-                   abs(log2FoldChange) > 1.2),
-    aes(label=symbol, color=BaseMeanPower),
-    size=2,
-    segment.size = .1,
-    force=2, force_pull = 2,
-    max.overlaps=15
-  ) +
-  labs(title="Old vs Young across time&type",
-       caption="vertical lines: ABS(log2FoldChange)=1.2 \n 
-       (DOWN | UP) regulated genes \n
-       labels only for genes padj < 0.0005")
-volcanoFacetBaseMean
-save_plot(paste0(odir,"volcano_baseMeanInfo.png"), volcanoFacetBaseMean, base_height = 8,base_width = 14)
 
-# ============================================================================
-# END
-#
-# final notes:
-# using 'apeglm' for LFC shrinkage. If used in published research, please cite:
-#   Zhu, A., Ibrahim, J.G., Love, M.I. (2018) Heavy-tailed prior distributions for
-# sequence count data: removing the noise and preserving large differences.
-# Bioinformatics. https://doi.org/10.1093/bioinformatics/bty895
 
-# using 'ashr' for LFC shrinkage. If used in published research, please cite:
-#   Stephens, M. (2016) False discovery rates: a new deal. Biostatistics, 18:2.
-# https://doi.org/10.1093/biostatistics/kxw041
-
-# latest : http://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#if-i-have-multiple-groups-should-i-run-all-together-or-split-into-pairs-of-groups
-# ** cool paper: Temporal Dynamic Methods for Bulk RNA-Seq Time Series Data
-# !yeah ==> https://www.biorxiv.org/content/10.1101/2020.02.01.930602v1.full
-# ! yeah : https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-1403-0
-
-#rownames(genes_df) <- genes_df$Geneid
-#symvec <- c()
-#for (i in sortie_full$id){
-#  symvec <- c(symvec, genes_df[i,]$symbol)
-#}
-#sortie_full$symbol <- symvec

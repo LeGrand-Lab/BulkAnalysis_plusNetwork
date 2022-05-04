@@ -1,0 +1,20 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"2" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "" "" "" "" "" "" "" "" "" "" 516
+"3" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "S PHASE" "" "" "" "" "" "" "" "" "" 159
+"4" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC METAPHASE AND ANAPHASE" "" "" "" "" "" "" "" "" 225
+"5" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "" "" "" "" "" "" "" "" "" "" 276
+"6" "IN REACTOME HIERARCHIE" "DNA REPAIR" "" "" "" "" "" "" "" "" "" "" "" 311
+"7" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "" "" "" "" "" "" "" "" "" "" 120
+"8" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC METAPHASE AND ANAPHASE" "mitotic anaphase" "SEPARATION OF SISTER CHROMATIDS" "" "" "" "" "" "" 182
+"9" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "" "" "" "" "" "" "" "" "" 380
+"10" "IN REACTOME HIERARCHIE" "DNA REPLICATION" "" "" "" "" "" "" "" "" "" "" "" 125
+"11" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "MITOTIC G1 PHASE AND G1 S TRANSITION" "" "" "" "" "" "" "" "" "" 143
+"12" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "" "" "" "" "" "" "" "" 197
+"13" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "G2 M CHECKPOINTS" "" "" "" "" "" "" "" "" "" 156
+"14" "IN REACTOME HIERARCHIE" "metabolism" "metabolism of lipids" "biosynthesis of specialized proresolving mediators spms" "SYNTHESIS OF LIPOXINS LX" "" "" "" "" "" "" "" "" 6
+"15" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "esr mediated signaling" "ESTROGEN DEPENDENT GENE EXPRESSION" "" "" "" "" "" "" "" "" 121
+"16" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "" "" "" "" "" "" "" "" "" "" 244
+"17" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HATS ACETYLATE HISTONES" "" "" "" "" "" "" "" "" "" 120
+"18" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"19" "IN REACTOME HIERARCHIE" "CELL CYCLE" "" "" "" "" "" "" "" "" "" "" "" 638

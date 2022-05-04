@@ -15,7 +15,7 @@ library(heatmap3)
 #  because from one day to the next the change was not important
 # that is why I take only old vs young in staticsnapshot comparisons
 
-mywdir <- "~/BulkAnalysis_plusNetwork2/AgeingMice_shinyApp/"
+mywdir <- "~/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/"
 setwd(mywdir)
 source("ui.R") #TODO:  set good ui
 grdir <- "graphobjs_copy/"

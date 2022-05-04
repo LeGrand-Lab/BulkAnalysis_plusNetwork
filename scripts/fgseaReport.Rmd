@@ -1,5 +1,6 @@
 ---
-title: "Exploration enrichment pathways with differentially expressed (DE) genes between old versus young "
+title: "Ageing impact in gene expression on skeletal muscle repair"
+subtitle: "Bioinformatic analysis : Exploration enrichment pathways"
 author: "Team Le Grand"
 date: "`r format(Sys.time(),'%d %B,%Y')`"
 output:
@@ -48,6 +49,32 @@ th {
 
 </style>
 
+# I. Introduction
+## I.1 Data origine (Mus musculus - tibialis anterior muscle)
+<p>In order to explore cell expression during muscle regeneration in young(2-3 months) and old(18-22 months) cells, RNAseq experiments were performed using cells sorted and FACs at four time points: </p>
+
+  - D0 muscles without injury
+  - D2, 2 days after cardiotoxin-induced injury
+  - D4, 4 days after injury
+  - D7, 7 days after injury
+
+The cell types sampled were as follows:
+
+  - D0 , Endothelial Cells ECs, FibroAdipogenic Progenitors - FAPs, Muscle Stem Cells MuSCs.
+  - D2 , ECs, FAPs, MuSCs., Neutrophile Cells, Inflammatory Macrophages - Inflammatory-Mac and Resolving Macrophages - Resolving-Mac .
+  - D4, ECs, FAPs, MuSCs, Inflammatory-Mac, Resolving-Mac
+  - D7, ECs, FAPs, MuSCs, Resolving-Mac
+
+## I.2 Pretreatment RNA-seq data with pipeline nfcore/rnaseq (v.1.4.2)
+
+<p>The RNA-seq data is aligned to the GRCm38 genome with STAR and counted with FeatureCount .</p>
+
+<p>Only transcripts associated with coding proteins are kept. </p>
+
+<p>Differentially expressed genes (DEG) processed with DESeq2_1.30.1 old vs young (reference expression is young one), for each cell type at each time Day_TypeCell_Old vs Day_TypeCell_Young </p>
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, rows.print=5)
 ```
@@ -67,6 +94,7 @@ library(rmarkdown)
 library(shiny)
 library(prettydoc)
 library(ggnewscale)
+library(scales)
 library(htmlwidgets)
 library(circlepackeR) 
 library(igraph)
@@ -82,113 +110,94 @@ library(oce)
 library(ggraph)
 library(plyr)
 library(spaceNtime)
+library(RColorBrewer)
+library(patchwork)
+library(facetious)
 
-home<-"/home/bioinfo/BulkAnalysis_plusNetwork2/"
-analyse<-"analysis/AnalysisGSEA/"
-odir <- "/home/bioinfo/BulkAnalysis_plusNetwork2/exam_INTER_conditions/static/"
-gseardsFull = "GSEA/rds/"
-gseacsvFull= "GSEA/csv/"
-tablesneeded <- T
-mat4heatmapneeded <- T
+#### Path files to load or created
+##################################
 
+#Directories
+setwd("~/BulkAnalysis_plusNetwork/")
+dir<-"/home/bioinfo/BulkAnalysis_plusNetwork/"
+odir <- paste0(dir,"/exam_INTER_conditions/static/")
+
+plots<-"GSEA/PlotsGSEA/"
+tableGSEA<-"GSEA/TableGSEA/"
+NormData <- "data/CountNormalised/"
+HierarchieData= "GSEA/HierarchieData/"
 
 #Loads
-gseaoutfull2padj = "fgsea_padj_full.rds" 
-gseaout_filtered_full2padj = "fgsea_padj_filtered.rds" 
+gseaoutfull2padjfile = paste0(odir,tableGSEA,"GSEA_table_static_full.rds" )
+fullGSEAconcatfile<-paste0(odir,tableGSEA,"GSEA_table_static_full.csv" )
+gseaout_filtered_full2padjfile = paste0(odir,tableGSEA,"GSEA_table_static_softfilter.rds" )
+countnormalisedfile=paste0(NormData,"CountNormalised.txt")
+meancountnormalisedfile=paste0(NormData,"MeanCountNormalised.txt")
+DEGtableTotalUPDOWNfile<-paste0(odir,"TableDEG/TableDynamicUpDownDEG.rds")
+DEGtablefile<-paste0(odir,"TableDEG/DEG_table_static_full.rds")
+
 
 #Created
-GSEAconcatPath<-paste0(odir,gseardsFull,"GSEAconcat.rds")
-GSEAconcatsigniPath<-paste0(odir,gseardsFull,"GSEAconcatSigni.rds")
-CountNormalizedYoungPath<-paste0(odir,"csv/YoungCountNormalized")
-CountNormalizedOldPath<-paste0(odir,"csv/OldCountNormalized")
+#Completed result GSEA with pattern associated to pathway 
+TableGSEADynamics<-"TableGSEAsigniDynamics"
+plotpaways<-paste0(plots,"Pathways/")
+plotpathwaysHierarchie<-paste0(plots,"PathwaysHierarchie/")
+listHierarchieREACTOME<-paste0(odir,HierarchieData,"ListReactomeHiearachieUseFunction.txt")
+tablePathwayHierarchieFull<-paste0(odir,HierarchieData,"TableReactomeHiearachieUseFunction.txt")
+tablePathwayHierarchieTotalPathwayEnrichie<-paste0(odir,HierarchieData,"TableReactomeHiearachieTotalPathwayEnrichie.txt")
+
+# Report
+#Existing
+reportDEGanalysis<-paste0(dir,"reports/GeneDEsigniOnMoreOneTimePoint.html")
+reportDEGtable<-paste0(dir,"reports/tableDEGsignificantUpDown.html")
+reportsuppPathway<-"reports/reportPathwaysEnrichedStatics/"
+reportsuppHierarchie<-"reports/reportPathwaysHierarchie/"
 
 ##################################
 #### Load files
 ##################################
+#rerun code to created y=table and plot
 
-fullrds <- readRDS(paste0(odir,gseardsFull, gseaoutfull2padj))
-pathsFiltered = readRDS( paste0(odir, gseardsFull,  gseaout_filtered_full2padj) )
+fullGSEA = readRDS(gseaoutfull2padjfile)
+fullGSEAconcat<-read.csv(fullGSEAconcatfile,sep = " " )
+filteredGSEA =readRDS(gseaout_filtered_full2padjfile) 
+countnormalised=read.table(countnormalisedfile,header = T)
+meancountnormalised=read.table(meancountnormalisedfile,header = T)
+DEGtableTotalUPDOWN<-readRDS(DEGtableTotalUPDOWNfile)
+DEGtable<-readRDS(DEGtablefile)
 
+GSEAsigni<-fullGSEAconcat %>% filter(padj<=0.05) %>% mutate(sens=ifelse(NES >0,"Up","Down"))
 
+#Extract patway and gene associated , same use for fgsea analysis
 thegmt <- msigdbr(species = "Mus musculus", 
                   category = 'C2', 
                   subcategory=c('CP:REACTOME'))
 msigdbr_list = split(x = thegmt$gene_symbol, f = thegmt$gs_name)
 
-fullDEsta = readRDS(paste0(odir, "rds/shot_rds_full.rds"))
-
-genes_df <- read.table(paste0(home,"data/genesinfo.csv"), sep="\t", header=T)
+genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
 
 daysv<-list()
-daysv<-lapply( unique(fullDEsta$type), function(t) unique(fullDEsta[fullDEsta$type == t,]$day) )
-names(daysv)<-unique(fullDEsta$type)
-Typecellv<-unique(fullDEsta$type)
-days<-unique(fullDEsta$day)
+daysv<-lapply( unique(fullGSEAconcat$type), function(t) unique(fullGSEAconcat[fullGSEAconcat$type == t,]$day) )
+names(daysv)<-unique(fullGSEAconcat$type)
+Typecellv<-unique(fullGSEAconcat$type)
 
-if (file.exists(GSEAconcatsigniPath) == F ){
+days<-unique(fullGSEAconcat$day)
 
-XX_full = readRDS(paste0(odir,gseardsFull, gseaoutfull2padj))
-GSEAconcat<-tibble() # table concat to explore combinaison pathway signi
-for ( t in Typecellv ){
-  for (d in daysv[[t]]){
-    GSEAconcat<-rbind(GSEAconcat, XX_full[[d]][[t]] %>% mutate(day=d) %>% mutate(type=t))
-  }
-}
+####################
+####Function colors
+####################
 
-GSEAsigni<- GSEAconcat %>% filter(padj<=0.05) %>% arrange(day,type) %>% mutate(sens=ifelse(NES < 0,"down", "up"))
+orderTypecell=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
+colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#f0e442ff","#ff9900ff","#cc0000ff")
+hsl_color<-data.frame("ECs"=164,"FAPs"=208,"MuSCs"=270,"Neutrophils"=56,"Inflammatory-Mac"=36,"Resolving-Mac"=0)
+names(colorsType)=orderTypecell
+colorsTime = c(brewer.pal(9,"BuPu")[3],brewer.pal(9,"BuPu")[5],brewer.pal(9,"BuPu")[7],brewer.pal(9,"BuPu")[9])
+names(colorsTime)<-days
+colorsAge = c("#ffc35d","#019190")
+names(colorsAge) = c("Young","Old")
+orderDayAge=lapply(days, function(d) c(paste(d,"Young"),paste(d,"Old"))) %>% unlist()
 
-saveRDS(GSEAconcat,GSEAconcatPath)
-saveRDS(GSEAsigni,GSEAconcatsigniPath)
-
-}else{
-  GSEAconcat=readRDS(GSEAconcatPath)
-  GSEAsigni=readRDS(GSEAconcatsigniPath)
-}
-if ( file.exists(CountNormalizedOldPath) == F){
-concatMeanCountNormalized<-function(age){
-  tempoTable<-read.table(paste0('data/meanCountNormalised_',age,'_D0.ECs.txt'))
-  nbligne=length(tempoTable$GeneID)
-  GeneID=tempoTable$GeneID
-  age.meanCountNormalizedtable<-data_frame(tempoTable,type = rep("ECs",nbligne),days = rep("D0",nbligne))
-  for ( t in Typecellv){
-    for (day in daysv[[t]]){
-    tempoTable<-read.table(paste0('data/meanCountNormalised_',age,'_',day,'.',t,'.txt'))
-    nbligne=length(tempoTable$GeneID)
-    if(GeneID == tempoTable$GeneID){
-      tempo<-data_frame(tempoTable,type = rep(t,nbligne),days = rep(day,nbligne))
-      age.meanCountNormalizedtable<-rbind(age.meanCountNormalizedtable,tempo)
-    }
-    }
-  }
-  age.meanCountNormalizedtable <- age.meanCountNormalizedtable %>% mutate( symbol = genes_df[match(age.meanCountNormalizedtable$GeneID, genes_df$Geneid),]$symbol)
-  age.meanCountNormalizedtable <- age.meanCountNormalizedtable %>% unite( 'GeneDayType' , symbol:days:type ,sep = '_',remove = F)
-  return(age.meanCountNormalizedtable)
-}
-
-CountNormalizedYoung<-concatMeanCountNormalized('Young')
-CountNormalizedOld<-concatMeanCountNormalized('Old')
-write.table(CountNormalizedYoung,CountNormalizedYoungPath)
-write.table(CountNormalizedOld,CountNormalizedOldPath)
-}else{
-  CountNormalizedYoung=read.table(CountNormalizedYoungPath)
-  CountNormalizedOld=read.table(CountNormalizedOldPath)
-}
-
-#############
-####Functions
-############
-
-#color
-darker.col = function(color, how.much = 30){
-  colorRampPalette(c("white",color,"black"))(9)[how.much]
-}
-tablecolor<-data.frame("ECs"=darker.col("#0072B2", c(4:7,5)),"FAPs"=darker.col("#F0E442", c(3:6,7)),"M1"=darker.col("#D55E00", c(3:6,6)),"M2"=darker.col("#CC79A7", c(3:6,6)),"Neutro"=darker.col("#009E73", c(3:6,6)),"sCs"=darker.col("#56B4E9",c(2:5,6)))
-rownames(tablecolor)<-c("D0","D2","D4","D7","Police")
-hsl_color<-data.frame("ECs"=270,"FAPs"=56,"M1"=26,"M2"=327,"Neutro"=164,"sCs"=202)
-
-
-
-## NewTable with NbCondSigni, CondSigni: Day1_Type1_Sens1.Day_Type2_Sens2 ..., DayTypeSens,NbPathWithDynamique,color
+## NewTable with NbCondSigni, CondSigni: Day1_Type1_Sens1.Day_Type2_Sens2 ..., DayTypeSens,NbPathWithDynamique,color, links to report paway
 DynamicPathwayAcrossCond <- function(RepartitionPathway,GSEAsigni,n){
   PathwaySigniCond<-RepartitionPathway %>% filter(Freq==n)
   PathwaySigniCondtable<- lapply(PathwaySigniCond$Var1 , function(x) dplyr::filter(GSEAsigni, pathway == x))
@@ -203,79 +212,84 @@ DynamicPathwayAcrossCond <- function(RepartitionPathway,GSEAsigni,n){
   Dynamique<-lapply(unique(Dynamiquetable$pathway), function(x) unique(Dynamiquetable %>% filter(pathway==x) %>% select(CondSigni) %>% unlist())) %>% unlist()
   names(Dynamique)<-unique(Dynamiquetable$pathway)
   tableDynamique<-table(Dynamique)
-  Dynamiquetable <- Dynamiquetable %>% mutate(NbPathWithDynamique=as.numeric(as.character(tableDynamique[match(Dynamiquetable$CondSigni,names(tableDynamique))]))) %>% mutate(color=as.character(tablecolor["D4",match(Dynamiquetable$type,colnames(tablecolor))])) %>% arrange(desc(NbPathWithDynamique))
+  Dynamiquetable <- Dynamiquetable %>% mutate(NbPathWithDynamique=as.numeric(as.character(tableDynamique[match(Dynamiquetable$CondSigni,names(tableDynamique))]))) %>% mutate(color=lapply(Dynamiquetable$type, function(t) colorsType[[t]]) %>% unlist()) %>% arrange(NbPathWithDynamique,decreasing =T)
   Dynamiquetable <- Dynamiquetable %>% mutate( DayType = paste0(day,'_',type))
-  Dynamiquetable <-  Dynamiquetable %>% mutate( link=paste0("<a href='","../exam_INTER_conditions/static/",analyse,"PathwayEnrichedIn",n,"DayTypeCell/",pathway,"_meanCountNormalizedGene.html","'>FigureSupp</a>"))
-
-  Dynamiquetable <-  Dynamiquetable %>% mutate( NamePathway= str_replace(str_replace_all(pathway,"_"," "), "REACTOME",""))
-
+  Dynamiquetable <-  Dynamiquetable %>% mutate( link=paste0("<a href='../",reportsuppPathway,"PathwayEnrichedIn",n,"DayTypeCell_",pathway,"_meanCountNormalizedGene.html","'>FigureSupp</a>"))
+  Dynamiquetable <-  Dynamiquetable %>% mutate( NamePathway= str_replace(str_replace_all(pathway,"_"," "), "REACTOME","")) %>% mutate( NES = round(Dynamiquetable$NES, digits = 4)) %>% mutate( padj = formatC(Dynamiquetable$padj,format = "e", digits = 4))
+  
   return(Dynamiquetable)
 }
 
-
 #Plot of Pathway in function NES
 GetPlot<-function(Dynamic6table,GSEAsigni, nbCond , vertical){
-  col<- Dynamic6table %>% arrange(type) %>% select(color) %>% unlist() %>% as.character() %>% unique()
   Dynamic6table <-Dynamic6table %>% mutate( CondSigni = as.factor(CondSigni)) %>% mutate(CondSigni = fct_reorder(CondSigni, as.numeric(NbPathWithDynamique), .desc = T) )
+  Dynamic6table<-Dynamic6table %>% mutate(type = factor(Dynamic6table$type,orderTypecell ))
+  col<- Dynamic6table %>% arrange(type) %>% select(color) %>% unlist() %>% as.character() %>% unique()
   
   typebytime<-ggplot(Dynamic6table, aes(x=day,y=as.numeric(NES),fill=type,color=type,group=paste0(pathway,'_',type))) +
-    geom_point(aes(size=as.numeric(NbPathWithDynamique),alpha=0.7),show.legend = c(size=T,alpha=F))+
+    geom_point(aes(size=as.numeric(NbPathWithDynamique),alpha=0.7),show.legend = c(size=T,alpha=F,col=F,fill=F))+
     scale_size_binned(name="Number path",limits=c(1,MaxNbPaathWithSameDyn))+
     ylab("NES")+
     geom_line()+
     geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5,slope=F)+
-    scale_color_manual(values=col)+
+    scale_color_manual(name="Cell type",values=col)+
     ggtitle( paste0("Pathways with ",nbCond," conditions enriched")) +
     facet_wrap(~CondSigni+NbPathWithDynamique ,dir = "v", ncol=vertical,labeller = labeller(NbPathWithDynamique = label_facet(Dynamic6table$NbPathWithDynamique,"Number pathways: ")))+
-    theme_linedraw()+ theme(strip.text  = element_text(size = 11 , face = "bold"),strip.background = element_rect(fill="grey"),panel.grid.major.x = element_line(color = "gray60", size = 0.8),axis.title= element_text(face="bold"),axis.text = element_text(face="bold",size=14))
+    theme_linedraw()+ theme(strip.text  = element_text(size = 11 , face = "bold"),strip.background = element_rect(fill="grey"),panel.grid.major.x = element_line(color = "gray60", size = 0.8),axis.title= element_text(size=14,face="bold"),axis.text = element_text(face="bold",size=12),legend.position="bottom",legend.title = element_text(size=14,face="bold"),legend.text = element_text(size=12,face="bold"))
   print(typebytime)
-  save_plot(paste0(odir, analyse, 'Pathway_enriched_in__',nbCond ,'conditions_Plot2.svg'),typebytime, base_height = 10,
+  save_plot(paste0(odir, plots, 'Pathway_enriched_in__',nbCond ,'conditions_Plot2.svg'),typebytime, base_height = 10,
             base_width = 14)
 }
 
 
-
 ```
-# Genes Set Enrichment Analysis (GSEA) results
+
+## I.3 Differential Expression Genes Analysis
+
+Report [linksReportDEGanalysis](`r reportDEGanalysis`)
+
+Report [linksTableDEG](`r reportDEGtable`)
+
+# II Genes Set Enrichment Analysis (GSEA) results
 
 --------
 
-GSEA on all genes. This analysis is done by day and cell type on list of genes ranked by padj decreasing. The data base use is genes set from Molecular Signatures DataBase (MSigDB) species : 
+GSEA on all genes. This analysis is done by day and cell type on list of genes ranked by logfoldchange sign * padj decreasing. The data base use is genes set from Molecular Signatures DataBase (MSigDB) species : 
 
   - species  = Mus musculus 
-  - category C2 = online pathway databases and the biomedical literature curated ([more details](https://www.gsea-msigdb.org/gsea/msigdb/collection_details.jsp#C2)
+  - category C2 = online pathway databases and the biomedical literature curated ([more details](https://www.gsea-msigdb.org/gsea/msigdb/collection_details.jsp#C2) )
   - subcategory = Canonical pathways ,Reactome database
 Composed by 1604 pathways. 
 
 
-## Descriptives statistics
+## II.1 Descriptives statistics
 
 --------
 
-How many pathways are significatives (padj<0.05)
+How many pathways are significants (padj<0.05)
 
 ```{r caclcStat1, echo=FALSE,warning=FALSE,message=FALSE }
 ################################################# 
 # Extract stats significant pathways enrichied
 #################################################
+
 NumberPathwaysSigni = array(NA, dim=c(length(days),length(Typecellv)))
 rownames(NumberPathwaysSigni) =  days
 colnames(NumberPathwaysSigni) = Typecellv
 NumberPathwaysUniqueOnOneDay<-c()
 NumberPathwaysUniqueOnOneTypeCell<-c()
 for (t in Typecellv){
-  link=paste0("[", GSEAsigni %>% filter(type==t) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](../exam_INTER_conditions/static/",analyse,'_',t,"/",'_',t,"_Hierarchical_Figsupp.html)")
+  link=paste0("[", GSEAsigni %>% filter(type==t) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](",dir,reportsuppHierarchie,"/",t,"_Hierarchical_Figsupp.html)")
   NumberPathwaysUniqueOnOneTypeCell<-c(NumberPathwaysUniqueOnOneTypeCell,link)
   for (d in daysv[[t]]){
-    link=paste0("[",dim(GSEAsigni %>% filter(day==d & type==t))[1],"](../exam_INTER_conditions/static/",analyse,d,'_',t,"/",d,'_',t,"_Hierarchical_Figsupp.html)")
+    link=paste0("[",dim(GSEAsigni %>% filter(day==d & type==t))[1],"](",dir,reportsuppHierarchie,"/",d,'_',t,"_Hierarchical_Figsupp.html)")
     if ( dim(GSEAsigni %>% filter(day==d & type==t))[1] == 0){
       NumberPathwaysSigni[d, t] <-0
       }
     else{NumberPathwaysSigni[d, t] <- link}
     if (t == Typecellv[1]){
-      link=paste0("[",GSEAsigni %>% filter(day==d) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](../exam_INTER_conditions/static/",analyse,d,'_',"/",d,'_',"_Hierarchical_Figsupp.html)")
+      link=paste0("[",GSEAsigni %>% filter(day==d) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](",dir,reportsuppHierarchie,"/",d,'_',"_Hierarchical_Figsupp.html)")
        NumberPathwaysUniqueOnOneDay<-c(NumberPathwaysUniqueOnOneDay,link)
-
     }
   }
 }
@@ -298,35 +312,61 @@ TotalUniquePathway=length(unique(GSEAsigni$pathway))
 # Visualization of path significative
 #
 # ====================== Calculate =============================
+NumberPathwaysSigni = array(NA, dim=c(length(days),length(Typecellv)))
+rownames(NumberPathwaysSigni) =  days
+colnames(NumberPathwaysSigni) = Typecellv
 
-ViolinDay<-c()
-ViolinCell<-c()
-ViolinValue<-c()
+NumberPathwaysUniqueOnOneDay<-c()
+NumberPathwaysUniqueOnOneTypeCell<-c()
 for (d in days){
-  for (typeCell in Typecellv){
-  #keep table with signi gene
-  tempoGSEAsigni<- GSEAsigni %>% dplyr::filter(day==d&type==typeCell)
-  for (l in 1:length(tempoGSEAsigni)){
-      ViolinDay<-c(ViolinDay,d)
-      ViolinCell<-c(ViolinCell,typeCell)
-      ViolinValue<-c(ViolinValue,tempoGSEAsigni[l,]$NES)
+  NumberPathwaysUniqueOnOneDay<-c(NumberPathwaysUniqueOnOneDay,GSEAsigni %>% filter(day==d) %>% select(pathway) %>% unique() %>% unlist() %>% length())
+  for (t in Typecellv){
+    NumberPathwaysSigni[d, t] <- dim(GSEAsigni %>% filter(day==d & type==t))[1]
+    if (d == days[1]){
+      NumberPathwaysUniqueOnOneTypeCell<-c(NumberPathwaysUniqueOnOneTypeCell, GSEAsigni %>% filter(type==t) %>% select(pathway) %>% unique() %>% unlist() %>% length())
     }
   }
 }
-Violindata<-data.frame(ViolinDay=ViolinDay,
-                       ViolinCell=ViolinCell,
-                       ViolinValue=ViolinValue)
 
-PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=ViolinCell ,y=ViolinValue, fill=ViolinCell)) + # fill=name allow to automatically dedicate a color for each group
-  geom_jitter(shape=16, position=position_jitter(0.4), aes(color=ViolinCell,alpha=0.001), show.legend=F)+geom_violin(scale="count",aes(alpha=0.001),show.legend = c("alpha"=F))+
-  scale_fill_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))+scale_color_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))+
-  coord_flip() + scale_x_discrete(limits=rev) +facet_grid(cols=vars(ViolinDay), switch = "both") +
-  theme(panel.grid.major=element_blank(),axis.text.x = element_text(angle = 45)) +ylab("NES of pathways padj <0.05")+xlab("Type Cell") +
-  theme_minimal()
+names(NumberPathwaysUniqueOnOneDay)<-days
+names(NumberPathwaysUniqueOnOneTypeCell)<-Typecellv
+Violindata<-data.frame(ViolinDT=paste0(GSEAsigni$day,"_",GSEAsigni$type),
+                       ViolinDay=factor(GSEAsigni$day,levels= unique(GSEAsigni$day)),
+                       CellType=factor(GSEAsigni$type, levels= orderTypecell),
+                       ViolinValue=GSEAsigni$NES,
+                       nbPathwaySignificant = lapply(1:length(GSEAsigni$NES), function(i) NumberPathwaysSigni[GSEAsigni[i,]$day,GSEAsigni[i,]$type] ) %>% unlist(),
+                       a=rep("a",length(GSEAsigni$NES)))
+
+
+PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=a ,y=ViolinValue, fill=nbPathwaySignificant)) +# fill=name allow to automatically dedicate a color for each group
+  geom_jitter( shape=16, size=3, position=position_jitter(0.4), aes(color=nbPathwaySignificant,alpha=0.5), show.legend=F)+
+  geom_violin(scale="count",aes(alpha=0.01),show.legend = c("alpha"=F))+
+  scale_fill_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+scale_color_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+
+  coord_flip()+
+  scale_x_discrete(limits=rev)  +   facet_grid_blank(vars(CellType),vars(ViolinDay), drop = FALSE) +
+  geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5)+
+  ylab("NES")+xlab("Type Cell") +
+  theme(axis.title = element_text(size=12, face = "bold"),axis.text.x=element_text(size=7,colour = "black", face="bold"),axis.text.y=element_text(colour = "white"),legend.title=element_text( size=12, face = "bold"),legend.text=element_text(size=5),title=element_text(size=14, face = "bold"),
+        legend.spacing= unit(0.1,"points"),legend.position = "bottom",legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"),panel.grid =element_line(color="white"),strip.text.x = element_text(color = "white", face= "bold",size=14),strip.text.y = element_text(color = "black",size=12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())+labs(fill = "Count pathway enrichied padj<0.05")+
+  ggtitle("Distribution of significant pathway enriched  Old vs Young \n according to NES")
 PlotDEGonlyOneDayVioline
+#Add color in background grid
+g5 <- ggplot_gtable(ggplot_build(PlotDEGonlyOneDayVioline))
+stripRowName <- which(grepl('strip', g5$layout$name))
+k <- 1
+fills <- c(colorsTime,colorsType)
+for (i in stripRowName) {
+  j <- which(grepl('rect', g5$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g5$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- k+1
+}
+grid::grid.draw(g5)
 ```
 
-### Inspected Hierarchical Classement of pathway in REACTOME
+## II.2 Inspected Hierarchical Classement of pathway in REACTOME
 
 --------
 
@@ -336,7 +376,7 @@ In this representation only pathway with upper letter are enriched in at least o
 -----------
 
 ```{r HierarchicalTotalPlot, echo=FALSE,warning=FALSE,message=FALSE }
-data_nested_2=read.table( file=paste0( odir,analyse,"ALL_table_REACTOME_Hierachie.txt"))
+data_nested_2=read.table( file=paste0( odir,HierarchieData,"ALL/ALL_table_REACTOME_Hierachie.txt"))
 data_nested_2[is.na(data_nested_2)] <- ""
 data_nested_2$pathString <- paste("roots", data_nested_2$level1, data_nested_2$level2, data_nested_2$level3, data_nested_2$level4,data_nested_2$level5,data_nested_2$level6,data_nested_2$level7, data_nested_2$level8, data_nested_2$level9, data_nested_2$level10,data_nested_2$level11,data_nested_2$level12, sep = "/")
 data_Node <-as.Node(data_nested_2)
@@ -351,14 +391,14 @@ p
 
 ```{r HierarchicalTotaltable, echo=FALSE,warning=FALSE,message=FALSE }
 
-tableHierarchie<-read.table(paste0(odir,analyse,"ALL_table_REACTOME_Hierachie_print.txt") )
+tableHierarchie<-read.table(paste0(odir,HierarchieData,"ALL_table_REACTOME_Hierachie_print.txt") )
  DT::datatable(tableHierarchie, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:12 ))),selection = 'none',escape = F)
 ```
 
 
 --------
 
-## Inspected the repartition of enrichied pathways across days and type cell 
+## II.3 Inspected the repartition of enrichied pathways across days and type cell 
 
 ------------
 
@@ -375,6 +415,9 @@ Number pathway `r kbl(RepartitionPathwaySummary,row.names = F)%>%kable_paper("st
 
 
 ```{r CalTableDynamic, echo=FALSE,warning=FALSE,message=FALSE,  paged.print=TRUE, fig.show='asis', fig.fullwidth=TRUE}
+RepartitionPathwaySummary<-table(table(GSEAsigni$pathway))
+## dataframe : Var1 = pathways Freq = Number condition which the pathway is found
+RepartitionPathway<-as.data.frame(table(GSEAsigni$pathway)) 
 
 Dynamic8table=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,8)
 Dynamic7table=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,7)
@@ -384,11 +427,12 @@ Dynamic4table=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,4)
 Dynamic3table=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,3)
 Dynamic2table=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,2)
 Dynamic1table=DynamicPathwayAcrossCond(RepartitionPathway,GSEAsigni,1)
+
 MaxNbPaathWithSameDyn<-max(Dynamic8table$NbPathWithDynamique,Dynamic7table$NbPathWithDynamique,Dynamic6table$NbPathWithDynamique,Dynamic5table$NbPathWithDynamique,Dynamic4table$NbPathWithDynamique,Dynamic3table$NbPathWithDynamique,Dynamic2table$NbPathWithDynamique,Dynamic1table$NbPathWithDynamique )
 
 ```
 
-### Pathways founds enriched in 8 conditions
+### II.3.1 Pathways founds enriched in 8 conditions
 
 -------
 
@@ -398,7 +442,7 @@ listPlotTable <- Dynamic8table %>% select(CondSigni,NamePathway,link,DayTypeSens
 DT::datatable(listPlotTable, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:7 ))),selection = 'none',escape = F)
 ```
 
-### Pathways founds enriched in 7 conditions
+### II.3.2 Pathways founds enriched in 7 conditions
 
 ----------
 
@@ -409,7 +453,7 @@ DT::datatable(listPlotTable, filter = 'top', extensions = c('RowGroup','Select',
 ```
 
 
-### Pathways founds enriched in 6 conditions
+### II.3.3 Pathways founds enriched in 6 conditions
 
 -------
 
@@ -419,7 +463,7 @@ listPlotTable <- Dynamic6table %>% select(CondSigni,NamePathway,link,DayTypeSens
 DT::datatable(listPlotTable, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:7 ))),selection = 'none',escape = F)
 ```
 
-### Pathways founds enriched in 5 conditions
+### II.3.4 Pathways founds enriched in 5 conditions
 
 ------
 
@@ -429,7 +473,7 @@ listPlotTable <- Dynamic5table %>% select(CondSigni,NamePathway,link,DayTypeSens
 DT::datatable(listPlotTable, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:7 ))),selection = 'none',escape = F)
 ```
 
-### Pathways founds enriched in 4 conditions
+### II.3.5 Pathways founds enriched in 4 conditions
 
 --------
 
@@ -451,7 +495,7 @@ DT::datatable(listPlotTable, filter = 'top', extensions = c('RowGroup','Select',
 
 ``` 
 
-### Pathways founds enriched in 2 conditions
+### II.3.6 Pathways founds enriched in 2 conditions
 
 ---------
 
@@ -461,7 +505,7 @@ listPlotTable <- Dynamic2table %>% select(CondSigni,NamePathway,link,DayTypeSens
 DT::datatable(listPlotTable, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 3:7 ))),selection = 'none',escape = F)
 ``` 
 
-### Pathways founds enrichired in 1 condition
+### II.3.7 Pathways founds enrichired in 1 condition
 
 -----
 

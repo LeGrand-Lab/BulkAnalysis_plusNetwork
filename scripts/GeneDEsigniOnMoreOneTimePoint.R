@@ -1,10 +1,9 @@
 ########################################
+#Get statistic on DEG
 #Found genes DE on one, or more days
 #Observe the dynamic of expression for Old in comparison to Young across days on one Type cell -> sankeyNetwork
 #Export Table with gene ID and a code express Dynamic D0upD2down
-#Repeat this operation  
 ######################################
-
 library(tidyverse)
 library(ComplexHeatmap)
 library(msigdbr)
@@ -18,330 +17,260 @@ library(webshot)
 library(htmlwidgets)
 library(gridExtra)
 library(kableExtra)
-setwd("~/BulkAnalysis_plusNetwork2/")
+library(RColorBrewer)
+library(facetious)
+
+setwd("~/BulkAnalysis_plusNetwork/")
+
+#Directories
 odir <- "exam_INTER_conditions/static/"
-resdir <-'analysis/DEGOnOneorMoreDays/'
+DEG_table = "TableDEG/DEG_table_"
+plot<-'PlotsDEG/'
+NormData <- "data/CountNormalised/"
 
-analyse<-"analysis/DynamiqueDEGbytypeCell/"
-pathcombinaisontable<-paste0(odir,analyse,"ListOfDynamicDEofGenes.xlsx")
-pathcombinaisontableUPDOWN<-paste0(odir,analyse,"ListOfDynamicUpDownDEofGenes.xlsx")
+#To created
+analyse<-paste0(odir,plot,"DynamiqueDEGbytypeCell/")
+if (dir.exists(analyse) == F) {
+  dir.create(analyse)
+}
+pathcombinaisontable<-paste0(odir,"TableDEG/TableDynamicDEG")
+pathcombinaisontableUPDOWN<-paste0(odir,"TableDEG/TableDynamicUpDownDEG")
 
-fullDEsta = readRDS(paste0(odir, "rds/shot_rds_full.rds"))
+#Loading
+#DEG table
+fullDEsta = readRDS(paste0(odir,DEG_table, "static_full.rds"))
+#Gene ID vs symbol
+genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
 
+#Get day and type cell
+daysv<-list()
+daysv<-lapply( unique(fullDEsta$type), function(t) unique(fullDEsta[fullDEsta$type == t,]$day) )
+names(daysv)<-unique(fullDEsta$type)
+Typecellv<-unique(fullDEsta$type)
+days<-unique(fullDEsta$day)
+vectTypeCell <-unique(fullDEsta$type)
 
-cellcolors = list("ECs"="#0072B2","FAPs"="#F0E442","M1" = "#D55E00","M2" =  "#CC79A7","Neutro" =  "#009E73","sCs" = "#56B4E9" )
+#Plot order + color day and type cell
+orderTypecell=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
+colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#f0e442ff","#ff9900ff","#cc0000ff")
+names(colorsType)=orderTypecell
+colorsTime = c(brewer.pal(9,"BuPu")[3],brewer.pal(9,"BuPu")[5],brewer.pal(9,"BuPu")[7],brewer.pal(9,"BuPu")[9])
+names(colorsTime)<-days
+
+#Vectcorlor in function group chosen
+colorNbUpDown<-c("plum","plum4",
+                 "mediumpurple1","mediumpurple4",
+                 "violetred1","violetred4",
+                 "LightCyan","Aquamarine","skyblue2","royalblue3",
+                 "LightPink","indianred1","firebrick1","red3" )
+#color for sankeyNetwork
+colorNbUpDown2<-c("#D8BFD8","#DA70D6",
+                  "#9370DB","#663399",
+                  "#FF69B4","#C71585",
+                  "#E0FFFF","#7FFFD4","#6495ED","#00008B",
+                  "#FFB6C1","#F08080","#DC143C","#8B0000" )
+names(colorNbUpDown)<-c("1_UP.1_DOWN" ,"2_UP.2_DOWN",
+                        "1_UP.2_DOWN", "1_UP.3_DOWN" ,
+                        "2_UP.1_DOWN","3_UP.1_DOWN",
+                        "1_DOWN","2_DOWN","3_DOWN" ,"4_DOWN",
+                        "1_UP.","2_UP.","3_UP.","4_UP.")
+colorNbconnection<-c("white","#FABDA6","#D3DDDC","#C7B19C","#446455")
+names(colorNbconnection)<-c("0","1","2","3","4")
+
+colorCombiDayDEG<-c("#fef6be","#e2f4df","#dbeaf5","#d8d9ea",
+                    "#d6efa6","#c2d9ed","#ffcce4","#a0dbb5","#d5b7d7","#8895c2",
+                    "#008349","#065fa3","#d42857","#7e2175","#67081d")
+names(colorCombiDayDEG)<-c("D0","D2","D4","D7"
+                           ,"D0.D2","D0.D4","D0.D7","D2.D4","D2.D7","D4.D7",
+                           "D0.D2.D4","D0.D2.D7","D0.D4.D7","D2.D4.D7","D0.D2.D4.D7")
 
 signiDEgene <- fullDEsta %>% filter(padj<=0.05)
-vectTypeCell <- c("Neutro","M2","M1","ECs","FAPs","sCs")
-vectDay1<-c("D0","D2","D4","D7")
-vectDay2<-c("D2","D4","D7")
 
 ###  CALCULATE
 # Distribution general of genes DE log2foldchange
+signiDEgene<-signiDEgene %>% mutate(day.type=paste0(day,'_',type))
+nbGeneSignificant<-table(signiDEgene$day.type)
+#dataframe for violin plot
+Violindata<-data.frame(ViolinDT=paste0(signiDEgene$day,"_",signiDEgene$type),
+                       ViolinDay=factor(signiDEgene$day,levels= unique(signiDEgene$day)),
+                       CellType=factor(signiDEgene$type, levels= orderTypecell),
+                       ViolinValue=signiDEgene$log2FoldChange,
+                       nbGeneSignificant = lapply(signiDEgene$day.type, function(dt) nbGeneSignificant[[dt]]) %>% unlist(),
+                       a=rep("a",length(signiDEgene$day.type)))
 
-dataFrameTotal=data.frame(signiDEgene,nbDayDE=rep(0,length(signiDEgene$baseMean)),Dynamic=rep(0,length(signiDEgene$baseMean)))
-daystable<-c()
-celltypetable<-c()
-weightNode<-c()
-ViolinDay<-c()
-ViolinCell<-c()
-ViolinName<-c()
-ViolinValue<-c()
-for ( typeCell in vectTypeCell ) {
-  #keep table with signi gene
-  tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
-  #keep only uniqueID sort by days
-  uniqueIdByDay = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x) %>% dplyr::select(id) %>% unlist() %>% as.character())
-  names(uniqueIdByDay) = unique(tempoSigniDEgene$day)
-  #found all combinaison where one same gene is on 1 or 2 or 3 or 4 days 
-  allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
-  #keep only gene DE one only one DAY
-  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 1]
-  
-  #prepare vector to plot
-  Node_Target<-names(comb_size(Sup2Combi))
-  num_combi<-1
-  for ( name in Node_Target){
-    #Make table
-    particulName<-str_extract_all(name,boundary("character"))
-    if ( length(particulName[[1]]) <4 ){ vectDay = vectDay2} else { vectDay = vectDay1 }
-    for (i in 1:(length(particulName[[1]]))){
-      if ( particulName[[1]][[i]] == "1" ){
-        dayDE<-vectDay[i]
-        daystable<-c(daystable,vectDay[i])
-        celltypetable<-c(celltypetable, typeCell)
-        weightNode<-c(weightNode,unname(comb_size(Sup2Combi)[num_combi]))
-      }
-    }
-    for (idG in extract_comb(Sup2Combi,name) ){
-      dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$nbDayDE<-1
-      dataFrameTotal[dataFrameTotal$id == idG  & dataFrameTotal$type == typeCell ,]$Dynamic<-dayDE
-      ViolinDay<-c(ViolinDay,dayDE)
-      ViolinCell<-c(ViolinCell,typeCell)
-      ViolinName<-c(ViolinName,unname(comb_size(Sup2Combi)[num_combi]))
-      ViolinValue<-c(ViolinValue,dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell & dataFrameTotal$day == dayDE ,]$log2FoldChange)
-      if (length(dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell & dataFrameTotal$day == dayDE ,]$log2FoldChange) > 1){
-        print(dayDE)
-        print(typeCell)
-        print(unname(comb_size(Sup2Combi)[num_combi]))
-        print(dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$log2FoldChange)
-        print(idG)
-      }
-      
-    }
-    num_combi=num_combi+ 1
-  }
-}
-
-Violindata<-data.frame(ViolinDay=ViolinDay,
-                       ViolinCell=ViolinCell,
-                       ViolinName=ViolinName,
-                       ViolinValue=ViolinValue)
-PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=ViolinCell ,y=ViolinValue, fill=ViolinCell)) + # fill=name allow to automatically dedicate a color for each group
-  geom_jitter(shape=16, position=position_jitter(0.4), aes(color=ViolinCell,alpha=0.001), show.legend=F)+geom_violin(scale="count",aes(alpha=0.001),show.legend = c("alpha"=F))+
-  scale_fill_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))+scale_color_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))+
-  coord_flip() + scale_x_discrete(limits=rev) +facet_grid(cols=vars(ViolinDay), switch = "both") +
-  theme(panel.grid.major=element_blank(),axis.text.x = element_text(angle = 45)) +ylab("log2FoldChange of Gene padj <0.05")+xlab("Type Cell") +
-  theme_minimal()
+PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=a ,y=ViolinValue, fill=nbGeneSignificant)) +# fill=name allow to automatically dedicate a color for each group
+  geom_jitter( shape=16, size=1, position=position_jitter(0.4), aes(color=nbGeneSignificant,alpha=0.001), show.legend=F)+
+  geom_violin(scale="count",aes(alpha=0.001),show.legend = c("alpha"=F))+
+  scale_fill_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+scale_color_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+
+  coord_flip()+
+  scale_x_discrete(limits=rev)  +   facet_grid_blank(vars(CellType),vars(ViolinDay), drop = FALSE) +
+  geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5)+
+  ylab("log2FoldChange")+xlab("Type Cell") +
+  theme(axis.title = element_text(size=5, face = "bold"),axis.text.x=element_text(size=3,colour = "black", face="bold"),axis.text.y=element_text(colour = "white"),legend.title=element_text( size=6, face = "bold"),legend.text=element_text(size=4),title=element_text(size=7, face = "bold"),
+        legend.spacing= unit(0.1,"points"),legend.position = "bottom",legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"),panel.grid =element_line(color="white"),strip.text.x = element_text(color = "white", face= "bold",size=7),strip.text.y = element_text(color = "black", face= "bold",size=7),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())+labs(fill = "Count DEG padj<0.05")+
+  ggtitle("Distribution of significatif differentially expressed genes Old vs Young \n according to log2Foldchange")
 PlotDEGonlyOneDayVioline
-
-save_plot(paste0(odir,analyse,"PlotDEGsigniDayTypeVioline.png"),PlotDEGonlyOneDayVioline,base_width = 10, base_height = 7)
-
-###  CALCULATE
-# Found the distribution of genes significatifs on Days Conditions by type cell
-# Visualization for genes DE on only 1 days 
-#
-# ====================== Calculate =============================
-dataFrameTotal=data.frame(signiDEgene,nbDayDE=rep(0,length(signiDEgene$baseMean)),Dynamic=rep(0,length(signiDEgene$baseMean)))
-daystable<-c()
-celltypetable<-c()
-weightNode<-c()
-ViolinDay<-c()
-ViolinCell<-c()
-ViolinName<-c()
-ViolinValue<-c()
-for ( typeCell in vectTypeCell ) {
-  #keep table with signi gene
-  tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
-  #keep only uniqueID sort by days
-  uniqueIdByDay = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x) %>% dplyr::select(id) %>% unlist() %>% as.character())
-  names(uniqueIdByDay) = unique(tempoSigniDEgene$day)
-  #found all combinaison where one same gene is on 1 or 2 or 3 or 4 days 
-  allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
-  #keep only gene DE one only one DAY
-  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) == 1]
-  
-  #prepare vector to plot
-  Node_Target<-names(comb_size(Sup2Combi))
-  num_combi<-1
-  for ( name in Node_Target){
-    #Make table
-    particulName<-str_extract_all(name,boundary("character"))
-    if ( length(particulName[[1]]) <4 ){ vectDay = vectDay2} else { vectDay = vectDay1 }
-    for (i in 1:(length(particulName[[1]]))){
-      if ( particulName[[1]][[i]] == "1" ){
-        dayDE<-vectDay[i]
-        daystable<-c(daystable,vectDay[i])
-        celltypetable<-c(celltypetable, typeCell)
-        weightNode<-c(weightNode,unname(comb_size(Sup2Combi)[num_combi]))
-      }
-    }
-    for (idG in extract_comb(Sup2Combi,name) ){
-      dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$nbDayDE<-1
-      dataFrameTotal[dataFrameTotal$id == idG  & dataFrameTotal$type == typeCell ,]$Dynamic<-dayDE
-      ViolinDay<-c(ViolinDay,dayDE)
-      ViolinCell<-c(ViolinCell,typeCell)
-      ViolinName<-c(ViolinName,unname(comb_size(Sup2Combi)[num_combi]))
-      ViolinValue<-c(ViolinValue,dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$log2FoldChange)
-      if (length(dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$log2FoldChange) > 1){
-        print(dayDE)
-        print(typeCell)
-        print(unname(comb_size(Sup2Combi)[num_combi]))
-        print(dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$log2FoldChange)
-      }
-
-    }
-    num_combi=num_combi+ 1
-  }
+#Add color in background grid
+g5 <- ggplot_gtable(ggplot_build(PlotDEGonlyOneDayVioline))
+stripRowName <- which(grepl('strip', g5$layout$name))
+k <- 1
+fills <- c(colorsTime,colorsType)
+for (i in stripRowName) {
+  j <- which(grepl('rect', g5$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g5$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- k+1
 }
-GeneDEuniqueCond <- data.frame(
-  Days=daystable,
-  CellType=celltypetable,
-  nbGene=weightNode
-)
-#cellcolors = factor( c("#0072B2","#F0E442", "#D55E00","#CC79A7","#009E73", "#56B4E9"), levels=c("ECs","FAPs","M1" ,"M2","Neutro" ,"sCs") )
-PlotDEGonlyOneDay<-ggplot(GeneDEuniqueCond, aes(Days,CellType,size=nbGene,color=CellType))+geom_point()+ scale_color_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))  +
-  scale_y_discrete(limits=rev)+   theme_ipsum()
-PlotDEGonlyOneDay
-save_plot(paste0(odir,analyse,"PlotDEGOnlyOneD.png"),PlotDEGonlyOneDay,base_width = 4, base_height = 7)
-
-Violindata<-data.frame(ViolinDay=ViolinDay,
-                       ViolinCell=ViolinCell,
-                       ViolinName=ViolinName,
-                       ViolinValue=ViolinValue)
-PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=ViolinCell ,y=ViolinValue, fill=ViolinCell)) + # fill=name allow to automatically dedicate a color for each group
-  geom_jitter(shape=16, position=position_jitter(0.4), aes(color=ViolinCell,alpha=0.001), show.legend=F)+geom_violin(scale="count",aes(alpha=0.001),show.legend = c("alpha"=F))+
-  scale_fill_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))+scale_color_manual(values =c("#0072B2","#F0E442" ,"#D55E00","#CC79A7","#009E73","#56B4E9"))+
-  coord_flip() + scale_x_discrete(limits=rev) +facet_grid(cols=vars(ViolinDay), switch = "both") +
-  theme(panel.grid.major=element_blank(),axis.text.x = element_text(angle = 45)) +ylab("log2FoldChange of Gene padj <0.05")+xlab("Type Cell") +
-  theme_minimal()
-PlotDEGonlyOneDayVioline
-
-save_plot(paste0(odir,analyse,"PlotDEGOnlyOneD.png"),PlotDEGonlyOneDay,base_width = 4, base_height = 7)
-save_plot(paste0(odir,analyse,"PlotDEGonlyOneDayVioline.png"),PlotDEGonlyOneDay,base_width = 4, base_height = 7)
-
-
-#### Same with UP & DOWN info
-dataFrameTotalUPDOWN=data.frame(signiDEgene,nbDayDE=rep(0,length(signiDEgene$baseMean)),Dynamic=rep(0,length(signiDEgene$baseMean)))
-daystable<-c()
-celltypetable<-c()
-weightNode<-c()
-UPDOWN<-c()
-for ( typeCell in vectTypeCell ) {
-  tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
-  uniqueIdByDayUP = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x)  %>% filter(log2FoldChange > 0) %>% dplyr::select(id) %>% unlist() %>% as.character())
-  names(uniqueIdByDayUP) = unique(paste0(tempoSigniDEgene$day,"_UP"))
-  uniqueIdByDayDOWN = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x)  %>% filter(log2FoldChange < 0) %>% dplyr::select(id) %>% unlist() %>% as.character())
-  names(uniqueIdByDayDOWN) = unique(paste0(tempoSigniDEgene$day,"_DOWN"))
-  uniqueIdByDay<-c(uniqueIdByDayUP,uniqueIdByDayDOWN)
-  #UpSetR::upset(UpSetR::fromList(uniqueIdByDay))
-  allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
-  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) == 1]
-  Node_Target<-names(comb_size(Sup2Combi))
-  num_combi<-1 #for refind number gene on this combinaison
-  for ( name in Node_Target){
-    particulName<-str_extract_all(name,boundary("character"))
-    nbDay=length(particulName[[1]])/2
-    if ( nbDay<4 ){ vectDay = vectDay2} else { vectDay = vectDay1 }
-    for (i in 1:nbDay){
-      if ( particulName[[1]][[i]] == "1" ){
-        dayDE<-paste0(vectDay[i],"_UP")
-        daystable<-c(daystable,paste0(vectDay[i],"_UP"))
-        celltypetable<-c(celltypetable, typeCell)
-        UPDOWN<-c(UPDOWN,"UP")
-        weightNode<-c(weightNode,unname(comb_size(Sup2Combi)[num_combi]))
-      }else { if (particulName[[1]][[i+nbDay]] == "1"){
-        dayDE<-paste0(vectDay[i],"_DOWN")
-        daystable<-c(daystable,paste0(vectDay[i],"_DOWN"))
-        celltypetable<-c(celltypetable, typeCell)
-        weightNode<-c(weightNode,unname(comb_size(Sup2Combi)[num_combi]))
-        UPDOWN<-c(UPDOWN,"DOWN")
-      }}
-    } 
-    num_combi=num_combi+ 1
-    for (idG in extract_comb(Sup2Combi,name) ){
-      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG & dataFrameTotalUPDOWN$type == typeCell ,]$nbDayDE<-1
-      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG  & dataFrameTotalUPDOWN$type == typeCell ,]$Dynamic<-dayDE
-    }
-  }
-}
-
-GeneDEuniqueCondUPDOWN <- data.frame(
-  Days=daystable,
-  CellType=celltypetable,
-  nbGene=weightNode,
-  DiffSens=UPDOWN
-)
-#cellcolors = factor( c("#0072B2","#F0E442", "#D55E00","#CC79A7","#009E73", "#56B4E9"), levels=c("ECs","FAPs","M1" ,"M2","Neutro" ,"sCs") )
-PlotDEGonlyOneDayUPDOWN<-ggplot(GeneDEuniqueCondUPDOWN, aes(Days,CellType,size=nbGene,color=DiffSens))+geom_point()+ scale_color_manual(values =c('red','blue'))  +
-  scale_y_discrete(limits=rev)+   theme_ipsum()
-PlotDEGonlyOneDayUPDOWN
-save_plot(paste0(odir,analyse,"PlotDEGOnlyOneDayUPDOWN.png"),PlotDEGonlyOneDayUPDOWN,base_width = 4, base_height = 7)
+grid::grid.draw(g5)
+png(paste0(odir,plot,"PlotDEGsigniDayTypeVioline.png"),units = "in", width=5, height= 7, res = 300, family = "Arial")
+grid::grid.draw(g5)
+dev.off()
+#save_plot(paste0(odir,analyse,"PlotDEGsigniDayTypeVioline.png"),PlotDEGonlyOneDayVioline,base_width = 10, base_height = 7)
 
 ###  CALCULATE
 # Found the distribution of genes significatifs on Days Conditions by type cell
 # Visualization with sankeyNetwork for genes DE on more 1 days
 #
 # ====================== Calculate =============================
+#Observe combination of significative DEG of all type cell in one sankey plot
+#initialization variables for PantaRhei::sankey diagram 
 sourceNode<-c()
 targetNode<-c()
 valueEdge<-c()
 Nbconnection<-c()
-for ( typeCell in vectTypeCell ) {
+CombiDayDEG<-c()
+for ( typeCell in Typecellv ) {
   tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
+  #Get list DEG by day
   uniqueIdByDay = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x) %>% dplyr::select(id) %>% unlist() %>% as.character())
   names(uniqueIdByDay) = unique(tempoSigniDEgene$day)
-  #UpSetR::upset(UpSetR::fromList(uniqueIdByDay))
+  
+  #Get all combination DEG 
   allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
-  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 2]
+  #Extract pattern combination
+  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 1]
   Node_Target<-names(comb_size(Sup2Combi))
+  
   num_combi<-1
+  
+  #For one combination
+  #Extract the number of day DEG
+  #Found the name of combonation with day
   for ( name in Node_Target){
-    particulName<-str_extract_all(name,boundary("character"))
-    Nbconnection<-c(Nbconnection,rep(str_count(name,"1"),str_count(name,"1")-1))
-    dayDE<-c()
-    if ( length(particulName[[1]]) <4 ){ vectDay = vectDay2} else { vectDay = vectDay1 }
-    for (i in 1:(length(particulName[[1]])-1)){
-      if ( particulName[[1]][[i]] == "1" ){
-        dayDE<-c(dayDE,vectDay[i])
-        if ( particulName[[1]][[i+1]] == "1" ){
-          sourceNode<-c(sourceNode,paste0(vectDay[i],"_",typeCell))
-          targetNode<-c(targetNode,paste0(vectDay[i+1],"_",typeCell))
+    particulName<-str_extract_all(name,boundary("character"))[[1]]
+    names(particulName)<-1:length(particulName)
+    
+    Nodes<-lapply(1:length(particulName), function(i) if(particulName[i] == "1"){daysv[[typeCell]][i]} ) %>% unlist()
+    if (str_count(name,"1")==1){CombiDayDEG<-c(CombiDayDEG,rep(str_c(Nodes, collapse = "."),4))} else {CombiDayDEG<-c(CombiDayDEG,rep(CombiDayDEG<-c(str_c(Nodes, collapse = ".")),str_count(name,"1")-1))}
+    if (str_count(name,"1")==1){Nbconnection<-c(Nbconnection,rep(1,4))} else {Nbconnection<-c(Nbconnection,rep(str_count(name,"1"),str_count(name,"1")-1))}
+    if (length(Nodes) == 1){
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell,"_only1"))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell,"_only1"))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell,"_only2"))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell,"_only2"))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell,"_only3"))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell,"_only3"))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+    }else{
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell))
+      if(length(Nodes)-1 > 1){
+        for (i in 2:(length(Nodes)-1)){
+          sourceNode<-c(sourceNode,paste0(Nodes[i],"_",typeCell))
+          targetNode<-c(targetNode,paste0(Nodes[i],"_",typeCell))
           valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
-          dayDE<-c(dayDE,vectDay[i+1])
-        }
-        else {
-          if (i+2 <= length(particulName[[1]]) && particulName[[1]][[i+2]] == "1"){
-            sourceNode<-c(sourceNode,paste0(vectDay[i],"_",typeCell))
-            targetNode<-c(targetNode,paste0(vectDay[i+2],"_",typeCell))
-            valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
-            dayDE<-c(dayDE,vectDay[i+2])
-          }
-          else {
-            if(i+3 <= length(particulName[[1]]) && particulName[[1]][[i+3]] == "1"){
-              sourceNode<-c(sourceNode,paste0(vectDay[i],"_",typeCell))
-              targetNode<-c(targetNode,paste0(vectDay[i+3],"_",typeCell))
-              valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
-              dayDE<-c(dayDE,vectDay[i+3])
-            }
-          }
-        }
-      }
+        }}
+      targetNode<-c(targetNode,paste0(Nodes[length(Nodes)],"_",typeCell))
+      valueEdge <-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
     }
     num_combi=num_combi+ 1
-    for (idG in extract_comb(Sup2Combi,name) ){
-      dataFrameTotal[dataFrameTotal$id == idG & dataFrameTotal$type == typeCell ,]$nbDayDE<-str_count(name,"1")
-      dataFrameTotal[dataFrameTotal$id == idG  & dataFrameTotal$type == typeCell ,]$Dynamic<-str_c(unique(dayDE),collapse = ".")
-    }
-  }
-} 
+  } 
+}  
 
 # Make a connection data frame
-sourceNode<-c(sourceNode,"D0_M2","D0_M1")
-targetNode<-c(targetNode,"D2_M2","D2_M1")
-valueEdge<-c(valueEdge,0,0)
-Nbconnection<-c(Nbconnection,0,0)
+# Total links
 links <- data.frame(
-  source=sourceNode,
-  target=targetNode,
-  value=valueEdge
+  from=str_replace_all(sourceNode,"-",""),
+  to=str_replace_all(targetNode,"-",""),
+  Nbconnection=Nbconnection,
+  CombiDayDEG=CombiDayDEG,
+  substance= CombiDayDEG,
+  quantity=sqrt(valueEdge)
 )
+links<-links %>% arrange(substance)
 # From these flows we need to create a node data frame: it lists every entities involved in the flow
 nodes <- data.frame(
-  name=c(as.character(links$source), as.character(links$target)) %>% 
-    unique()
+  ID=c(as.character(links$from), as.character(links$to)) %>% 
+    unique() %>% str_replace_all("-","")
 )
-nodes$group <- as.factor(c(as.character(links$source), as.character(links$target)) %>% 
+nodes$label <- as.factor(c(as.character(links$from), as.character(links$to)) %>% 
                            unique())
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-links$IDsource <- match(links$source, nodes$name)-1 
-links$IDtarget <- match(links$target, nodes$name)-1
-links$group <- as.factor(Nbconnection)
+nodes<-nodes  %>% mutate(day=sapply(strsplit(nodes$ID,"_"), `[`, 1)) %>% mutate(type=factor(sapply(strsplit(nodes$ID,"_"), `[`, 2),levels=str_replace_all(orderTypecell,"-",""),)) %>% mutate(loops=sapply(strsplit(nodes$ID,"_"), `[`, 3))
+nbDay<-length(unique(nodes$day))
+nbtype<-length(unique(nodes$type))
+print(nbDay)
+nodes<-nodes  %>% arrange(loops,type,day)
+print(nodes)
+nodes<- nodes %>% mutate(label=lapply(1:length(nodes$day) ,function(i) ifelse( is.na(nodes[i,]$loops) == T,nodes[i,]$ID,"" )) %>% unlist()) 
+nodes<- nodes %>%  mutate(ID=lapply( 1:length(nodes$day) ,function(i) ifelse( is.na(nodes[i,]$loops) == F,paste0(".",nodes[i,]$ID), nodes[i,]$ID)) %>% unlist())
+poslabel=c("left","above","below","right")
+nodes$label_pos<-c(rep("none",54),poslabel,poslabel,poslabel,"left","left","right","left","above","right")
+xpos4<-c(-7,-2,3,8)
+xpos3<-c(-2,3,8)
+xpos2<-c(-2,3)
+xpos1<-c(-2)
+nodes$x<-c(rep(xpos4+2,3),xpos1+2,xpos2+2,xpos3+2,rep(xpos4,3),xpos1,xpos2,xpos3,rep(xpos4-2,3),xpos1-2,xpos2-2,xpos3-2,rep(xpos4,3),xpos1,xpos2,xpos3)
+nodes<-nodes  %>% arrange(loops,day,type)
+print(nodes)
+yposD2<-c(9,4,-2,-5,-8,-11)+1
+yposD4<-c(9,3,-3,-8,-11)
+yposD7<-c(9,4,-2,-13)+2
+yposD0<-c(9,4,-2)+3
+nodes$y<-c(yposD0+0.5,yposD2-0.5,yposD4-0.5,yposD7+0.5,yposD0+1,yposD2-1,yposD4-1,yposD7+1,yposD0+0.5,yposD2-0.5,yposD4-0.5,yposD7+0.5,yposD0,yposD2,yposD4,yposD7)
+nodes$dir<-c(rep("up",3),rep("down",11),rep("up",4),rep("left",18),rep("down",3),rep("up",11),rep("down",4),rep("right",18))
+palettes<-data.frame(substance=names(colorCombiDayDEG),
+                     color=colorCombiDayDEG)
 
-# prepare color scale: I give one specific color for each node.
-my_color <- 'd3.scaleOrdinal() .domain(["2","3","4","0","D0_ECs", "D2_ECs","D4_ECs","D7_ECs", "D0_FAPs", "D2_FAPs", "D4_FAPs","D7_FAPs","D0_sCs", "D2_sCs","D4_sCs","D7_sCs","D0_M1", "D2_M1","D4_M1","D0_M2" ,"D2_M2", "D4_M2","D7_M2"]) .range(["#D3DDDC","#C7B19C","#446455","white","#0072B2", "#0072B2" , "#0072B2", "#0072B2", "#F0E442", "#F0E442", "#F0E442", "#F0E442","#56B4E9","#56B4E9","#56B4E9","#56B4E9","#D55E00","#D55E00","#D55E00", "#CC79A7", "#CC79A7", "#CC79A7","#CC79A7"])'
+dblue<-"#67001F"
+# node style
+ns <- list(type="arrow",gp=gpar(fill=dblue, col="white", lwd=3),
+           length=0.5,
+           label_gp=gpar(col=dblue, fontsize=6,fontface="bold"),
+           mag_pos="label", mag_fmt="%.0f", mag_gp=gpar(fontsize=1,col="white"))
 
-# Make the Network. I call my colour scale with the colourScale argument
-p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget", 
-                   Value = "value", NodeID = "name", colourScale=my_color, LinkGroup="group", NodeGroup="group", sinksRight = FALSE,
-                   nodePadding=50, nodeWidth = 5,fontSize=10,iterations = 55,margin = list("right"=250), height = 650, width = 850)
-p
+palettesNbconnection<-data.frame(substance=names(colorNbconnection),
+                                 color=colorNbconnection)
+my_title_Nbconnection <- paste0("Total gene DEG group by type cell and number DEG on D0,D2,D4 and D7  \n Amount of gene (square root) depending on the combination of days on a cell type , padj<0.005 ")
+attr(my_title_Nbconnection, "gp") <- grid::gpar(fontsize=6, fontface="bold", col="black")
+links$substance<-as.character(links$Nbconnection)
 
-my_hist<-ggplot(links,aes(value,fill = group))+geom_bar()+scale_fill_manual(values = c("white","#D3DDDC","#C7B19C","#446455"), name ="Number of Condtion DayPostInjury which Genes are DE" )
-legend<-cowplot::get_legend(my_hist)
-grid.arrange(legend)
-saveWidget(p, file=paste0(odir, analyse,"sankeyColor3.html"))
-webshot(paste0(odir,analyse, "sankeyColor3.html"), paste0(odir,analyse,"sankeyCollor3.png"), delay = 0.2)
+palettesCombiDayDEG<-data.frame(substance=names(colorCombiDayDEG),
+                                color=colorCombiDayDEG)
+my_title_CombiDayDEG <- paste0("Total gene DEG group by type cell and CombiDayDEG  \n Amount of gene (square root) depending on the combination of days on a cell type , padj<0.005 ")
+attr(my_title_CombiDayDEG, "gp") <- grid::gpar(fontsize=6, fontface="bold", col="black")
+
+pdf(paste0(analyse,"Distribution_DEG_bytypecell.pdf"), width=10, height=7) # Set up PDF device
+print(nodes)
+links$substance<-as.character(links$Nbconnection)
+PantaRhei::sankey(nodes, links, palettesNbconnection,
+                  max_width=0.05, rmin=0.5,
+                  node_style=ns,
+                  page_margin=c(0, 0.05, 0, 0.05),
+                  title=my_title_Nbconnection, legend=gpar(fontsize=4, col="blue", ncols=1))
+links$substance<-links$CombiDayDEG
+PantaRhei::sankey(nodes, links, palettesCombiDayDEG,
+                  max_width=0.05, rmin=0.5,
+                  node_style=ns,
+                  page_margin=c(0, 0.05, 0, 0.05),
+                  title=my_title_CombiDayDEG, legend=gpar(fontsize=4, col="blue", ncols=1))
+
+dev.off()
 
 ###  CALCULATE
 # Found the distribution of genes significatifs on Days Conditions by type cell
@@ -349,7 +278,9 @@ webshot(paste0(odir,analyse, "sankeyColor3.html"), paste0(odir,analyse,"sankeyCo
 #
 # ====================== Calculate =============================
 #1 Extract significative genes
+
 #Fill dataFrameTotalUPDOWN
+dataFrameTotalUPDOWN=data.frame(signiDEgene,nbDayDE=rep(0,length(signiDEgene$baseMean)),CombiDayDEG=rep(0,length(signiDEgene$baseMean)),NbUpDown=rep(0,length(signiDEgene$baseMean)),CombiDaysUpDown=rep(0,length(signiDEgene$baseMean)))
 for ( typeCell in vectTypeCell ) {
   tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
   uniqueIdByDayUP = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x)  %>% filter(log2FoldChange > 0) %>% dplyr::select(id) %>% unlist() %>% as.character())
@@ -358,260 +289,345 @@ for ( typeCell in vectTypeCell ) {
   names(uniqueIdByDayDOWN) = unique(paste0(tempoSigniDEgene$day,"_DOWN"))
   uniqueIdByDay<-c(uniqueIdByDayUP,uniqueIdByDayDOWN)
   allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
-  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 2]
+  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 1]
   Node_Target<-names(comb_size(Sup2Combi))
   CombNameAssocName<-set_name(Sup2Combi)
   nbDay=length(CombNameAssocName)/2
   for ( name in Node_Target){
-    particulName<-str_extract_all(name,boundary("character"))
-    dayDE<-c()
-    if ( nbDay <4 ){ vectDay = vectDay2} else { vectDay = vectDay1 }
-    if (particulName[[1]][1] == "1"){
-      dayDE<-c(dayDE,paste0(vectDay[1],"_UP"))
-    }else {if (particulName[[1]][1+nbDay] == "1" ){
-      dayDE<-c(dayDE,paste0(vectDay[1],"_DOWN"))}}
-    if (nbDay != 2){
-      for(i in 2:(nbDay-1)){
-        if (particulName[[1]][i] == "1"){
-          dayDE<-c(dayDE,paste0(vectDay[i],"_UP"))
-        }else {if (particulName[[1]][i+nbDay] == "1" ){
-          dayDE<-c(dayDE,paste0(vectDay[i],"_DOWN"))}
-        }}}
-    else{i=1}
-    if (particulName[[1]][nbDay] == "1"){
-      dayDE<-c(dayDE,paste0(vectDay[nbDay],"_UP"))
-    }else {if (particulName[[1]][i+nbDay+1] == "1" ){
-      dayDE<-c(dayDE,paste0(vectDay[nbDay],"_DOWN"))}}
+    particulName<-str_extract_all(name,boundary("character")) %>% unlist()
+    names(particulName)<-1:length(particulName)
+    #extract day DEG UP
+    tempoName1<-lapply(1:(length(particulName)/2), function(i) if(particulName[[i]] == "1"){paste0(daysv[[typeCell]][i],"_UP")} ) %>% unlist()
+    #extract day DEG DOWN
+    tempoName2<-lapply(((length(particulName)/2)+1):length(particulName), function(i) if(particulName[[i]] == "1"){paste0(daysv[[typeCell]][i-(length(particulName)/2)],"_DOWN")} ) %>% unlist()
+    #Extract day UNDIFF
+    tempoName3<-lapply(1:(length(particulName)/2), function(i) if(particulName[[i]] == "0" && particulName[[i+(length(particulName)/2)]] == "0"){paste0(daysv[[typeCell]][i],"_UNDIFF")} ) %>% unlist()
+    
+    #Extract only day DEG
+    tempoName1bis<-lapply(1:(length(particulName)/2), function(i) if(particulName[[i]] == "1"){daysv[[typeCell]][i]} ) %>% unlist()
+    tempoName2bis<-lapply(((length(particulName)/2)+1):length(particulName), function(i) if(particulName[[i]] == "1"){daysv[[typeCell]][i-(length(particulName)/2)]} ) %>% unlist()
+    tempoName<-str_c(sort(c(tempoName1bis,tempoName2bis)),collapse = ".")
+    
+    
+    Nbconnection<-length(c(tempoName1,tempoName2))
+    CombiDayDEG<-tempoName
+    NbUpDown<-paste0(ifelse(length(tempoName1)==0,"",paste0(length(tempoName1),"_UP.")),ifelse(length(tempoName2)==0,"",paste0(length(tempoName2),"_DOWN")))
+    CombiDaysUpDown<-str_c(sort(c(tempoName1,tempoName2)),collapse = ".")
     for (idG in extract_comb(Sup2Combi,name) ){
-      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG & dataFrameTotalUPDOWN$type == typeCell ,]$nbDayDE<-str_count(name,"1")
-      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG  & dataFrameTotalUPDOWN$type == typeCell ,]$Dynamic<-str_c(unique(dayDE),collapse = ".")
+      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG & dataFrameTotalUPDOWN$type == typeCell ,]$nbDayDE<-Nbconnection
+      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG  & dataFrameTotalUPDOWN$type == typeCell ,]$CombiDayDEG<-CombiDayDEG
+      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG  & dataFrameTotalUPDOWN$type == typeCell ,]$NbUpDown<-NbUpDown
+      dataFrameTotalUPDOWN[dataFrameTotalUPDOWN$id == idG  & dataFrameTotalUPDOWN$type == typeCell ,]$CombiDaysUpDown<-CombiDaysUpDown
+      
       }
   }
 }
-#Prepare vector for plot + plot
-dynamique <- function(tableSigni,vectTypeCell,outputprefix,oneTypeCell){
+
+#tableSankeyplot function to extrat table nodes sources and target with value , for a sankey plot
+#plot gathered gene with the same pattern (for one type cell, witch days are DEG and in witch sens) and links days in function of sens of log2foldchange
+#so if gene is UP, it is more exessed in OLD condition than Young
+#signiDEgene = table with all DEG padj<0.05
+#vectTypeCell = type cell selected, vector possible
+#minCombi = founds genes with at least 1 or 2 days DEG
+#NODIFF = Nodes inclus days UNDIFF
+
+tableSankeyplot<- function(signiDEgene,vectTypeCell,minCombi,NODIFF){
   sourceNode<-c()
   targetNode<-c()
   valueEdge<-c()
-  groupetypeCell<-c()
+  NbUpDown<-c()
   Nbconnection<-c()
+  CombiDayDEG<-c()
+  
   for ( typeCell in vectTypeCell ) {
-    tempoSigniDEgene<- tableSigni %>% filter(type==typeCell)
+    print(typeCell)
+    #prepare list gene_SENS DEG by day
+    tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
     uniqueIdByDayUP = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x)  %>% filter(log2FoldChange > 0) %>% dplyr::select(id) %>% unlist() %>% as.character())
     names(uniqueIdByDayUP) = unique(paste0(tempoSigniDEgene$day,"_UP"))
     uniqueIdByDayDOWN = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x)  %>% filter(log2FoldChange < 0) %>% dplyr::select(id) %>% unlist() %>% as.character())
     names(uniqueIdByDayDOWN) = unique(paste0(tempoSigniDEgene$day,"_DOWN"))
     uniqueIdByDay<-c(uniqueIdByDayUP,uniqueIdByDayDOWN)
+    
+    #Get combinaison
     allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
-    Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 2]
+    Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= minCombi]
+    
+    #Get name combinaison
     Node_Target<-names(comb_size(Sup2Combi))
-    CombNameAssocName<-set_name(Sup2Combi)
-    nbDay=length(CombNameAssocName)/2
-    names(CombNameAssocName)<-seq(1,length(set_size(Sup2Combi)))
+    if(length(Node_Target) < minCombi){next}
     num_combi<-1
+    
+    #For one combination
+    #Extract the number of day DEG
+    #Found the name of combination with day+sens(UP,DOWN)
+    #Extract Day + sens (UP, DOWN,UNDIFF)
     for ( name in Node_Target){
-      particulName<-str_extract_all(name,boundary("character"))
-      groupetypeCell<-c(groupetypeCell,rep(typeCell,nbDay-1))
-      Nbconnection<-c(Nbconnection,rep(str_count(name,"1"),nbDay-1))
-      if ( nbDay <4 ){ vectDay = vectDay2} else { vectDay = vectDay1 }
-      if (particulName[[1]][1] == "1"){
-        sourceNode<-c(sourceNode,paste0(vectDay[1],"_UP"))
-      }else {if (particulName[[1]][1+nbDay] == "1" ){
-        sourceNode<-c(sourceNode,paste0(vectDay[1],"_DOWN"))}
-      else { 
-        sourceNode<-c(sourceNode,paste0(vectDay[1],"_NODIFF"))
-        }}
-      if (nbDay != 2){
-      for(i in 2:(nbDay-1)){
-        namespl<-str_split(CombNameAssocName[i],'_')
-        if (particulName[[1]][i] == "1"){
-          sourceNode<-c(sourceNode,paste0(vectDay[i],"_UP"))
-          targetNode<-c(targetNode,paste0(vectDay[i],"_UP"))
-          valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
-        }else {if (particulName[[1]][i+nbDay] == "1" ){
-          sourceNode<-c(sourceNode,paste0(vectDay[i],"_DOWN"))
-          targetNode<-c(targetNode,paste0(vectDay[i],"_DOWN"))
-          valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))}
-        else { 
-          sourceNode<-c(sourceNode,paste0(vectDay[i],"_NODIFF"))
-          targetNode<-c(targetNode,paste0(vectDay[i],"_NODIFF"))
-          valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))}
-        }}}
-      else{i=1}
-      if (particulName[[1]][nbDay] == "1"){
-        targetNode<-c(targetNode,paste0(vectDay[nbDay],"_UP"))
-        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
-      }else {if (particulName[[1]][i+nbDay+1] == "1" ){
-        targetNode<-c(targetNode,paste0(vectDay[nbDay],"_DOWN"))
-        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))}
-      else { 
-        targetNode<-c(targetNode,paste0(vectDay[nbDay],"_NODIFF"))
-        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))}
+      print(name)
+      particulName<-str_extract_all(name,boundary("character"))[[1]]
+      names(particulName)<-1:length(particulName)
+      #extract day DEG UP
+      tempoName1<-lapply(1:(length(particulName)/2), function(i) if(particulName[[i]] == "1"){paste0(daysv[[typeCell]][i],"_UP")} ) %>% unlist()
+      #extract day DEG DOWN
+      tempoName2<-lapply(((length(particulName)/2)+1):length(particulName), function(i) if(particulName[[i]] == "1"){paste0(daysv[[typeCell]][i-(length(particulName)/2)],"_DOWN")} ) %>% unlist()
+      #Extract day UNDIFF
+      tempoName3<-lapply(1:(length(particulName)/2), function(i) if(particulName[[i]] == "0" && particulName[[i+(length(particulName)/2)]] == "0"){paste0(daysv[[typeCell]][i],"_UNDIFF")} ) %>% unlist()
+      
+      #Extract only day DEG
+      tempoName1bis<-lapply(1:(length(particulName)/2), function(i) if(particulName[[i]] == "1"){daysv[[typeCell]][i]} ) %>% unlist()
+      tempoName2bis<-lapply(((length(particulName)/2)+1):length(particulName), function(i) if(particulName[[i]] == "1"){daysv[[typeCell]][i-(length(particulName)/2)]} ) %>% unlist()
+      tempoName<-str_c(sort(c(tempoName1bis,tempoName2bis)),collapse = ".")
+      
+      if (NODIFF == T ){
+        Nodes<-sort(c(tempoName1,tempoName2,tempoName3))
+        CombiDayDEG<-c(CombiDayDEG,rep(tempoName,length(Nodes)-1))
+        Nbconnection<-c(Nbconnection,rep(length(c(tempoName1,tempoName2)),length(Nodes)-1))
+        NbUpDown<-c(NbUpDown,rep(paste0(ifelse(length(tempoName1)==0,"",paste0(length(tempoName1),"_UP.")),ifelse(length(tempoName2)==0,"",paste0(length(tempoName2),"_DOWN"))),length(Nodes)-1))
+        
+      }else{    
+        Nodes<-sort(c(tempoName1,tempoName2))
+        if (length(Nodes)==1){Nbconnection<-c(Nbconnection,rep(length(c(tempoName1,tempoName2)),4))} else {Nbconnection<-c(Nbconnection,rep(length(c(tempoName1,tempoName2)),length(Nodes)-1))}
+        if (length(Nodes)==1){CombiDayDEG<-c(CombiDayDEG,rep(tempoName,4))} else {CombiDayDEG<-c(CombiDayDEG,rep(tempoName,length(Nodes)-1))}
+        if (length(Nodes)==1){NbUpDown<-c(NbUpDown,rep(paste0(ifelse(length(tempoName1)==0,"",paste0(length(tempoName1),"_UP.")),ifelse(length(tempoName2)==0,"",paste0(length(tempoName2),"_DOWN"))),4))} else {NbUpDown<-c(NbUpDown,rep(paste0(ifelse(length(tempoName1)==0,"",paste0(length(tempoName1),"_UP.")),ifelse(length(tempoName2)==0,"",paste0(length(tempoName2),"_DOWN"))),length(Nodes)-1))}
+        
       }
+      
+      #Fill source node, target node (day consecutive) + nb gene with this combination
+      if (length(Nodes) == 1){
+        sourceNode<-c(sourceNode,Nodes[1])
+        targetNode<-c(targetNode,paste0(Nodes[1],"_only1"))
+        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+        sourceNode<-c(sourceNode,paste0(Nodes[1],"_only1"))
+        targetNode<-c(targetNode,paste0(Nodes[1],"_only2"))
+        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+        sourceNode<-c(sourceNode,paste0(Nodes[1],"_only2"))
+        targetNode<-c(targetNode,paste0(Nodes[1],"_only3"))
+        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+        sourceNode<-c(sourceNode,paste0(Nodes[1],"_only3"))
+        targetNode<-c(targetNode,Nodes[1])
+        valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      }else{
+        sourceNode<-c(sourceNode,Nodes[1])
+        if(length(Nodes)-1 > 1){
+          for (i in 2:(length(Nodes)-1)){
+            sourceNode<-c(sourceNode,Nodes[i])
+            targetNode<-c(targetNode,Nodes[i])
+            valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+          }}
+        targetNode<-c(targetNode,Nodes[length(Nodes)])
+        valueEdge <-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      }
+      
       num_combi=num_combi+ 1
     }
-}
-  # Make a connection data frame
-  if (oneTypeCell == TRUE){
-    links <- data.frame(
-      source=sourceNode,
-      target=targetNode,
-      value=valueEdge,
-      group=Nbconnection
-    )
-    links<-  aggregate(links$value,by=list("source"=links$source,"target"=links$target,"group"=links$group),FUN=sum)
-    # From these flows we need to create a node data frame: it lists every entities involved in the flow
-    nodes <- data.frame(
-      name=c(as.character(links$source), as.character(links$target)) %>% 
-        unique()
-    )
-    nodes$group <- as.factor(c(as.character(links$source), as.character(links$target)) %>% 
-                               unique())
-    # With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-    links$IDsource <- match(links$source, nodes$name)-1 
-    links$IDtarget <- match(links$target, nodes$name)-1
-    links$group <- as.factor(links$group)
-    # prepare color scale: I give one specific color for each node.
-    my_color <- 'd3.scaleOrdinal() .domain(["2","3","4","0",
-    "D0_UP", "D2_UP","D4_UP","D7_UP", "D0_DOWN", "D2_DOWN", "D4_DOWN","D7_DOWN","D0_NODIFF", "D2_NODIFF","D4_NODIFF","D7_NODIFF",]) .range(
-    ["#D3DDDC","#C7B19C","#446455","white","red","red","red","red","blue","blue","blue","blue","pink","pink","pink","pink"])'
     
-  }else{
+  }
+  
   links <- data.frame(
-    source=sourceNode,
-    target=targetNode,
-    value=valueEdge,
-    group=groupetypeCell
+    from=str_replace_all(sourceNode,"-",""),
+    to=str_replace_all(targetNode,"-",""),
+    NbUpDown= NbUpDown,
+    Nbconnection=Nbconnection,
+    CombiDayDEG=CombiDayDEG,
+    quantity=valueEdge
   )
-  links<-  aggregate(links$value,by=list("source"=links$source,"target"=links$target,"group"=links$group),FUN=sum)
+  
+  
+  return(links)
+}
+
+# sankeyPantaRhei , made a sankey plot, where you can choice coordinate of nodes, label nodes,group color links by group (NbUpDown,Nbconnection,CombiDayDEG)
+#links1 = output of tableSankeyplot with at least nodes from, nodes to, value of the flow, and group
+#dblue= color of nodes
+#group=
+#NbUpDown: group links by pattern number of UP and number od DOWN
+#Nbconnection: group by number of day DEG
+#CombiDayDEG: group by pattern of days DEG
+#colorvect= vector color with names unique(links1$group)
+#outputprefix= start of plot title
+#sqrt= T/F, value in square root
+#NODIFF= T/F , nodes UNDIFF?
+sankeyPantaRhei<-function(links1,dblue,group,colorvect,outputprefix,sqrt,NODIFF){
+  if ( sqrt == T){
+    links1$quantity<-sqrt(links1$quantity)
+    titlesqrt<-"(sqrt)"}else{titlesqrt<-""
+    }
+  print(links1)
+  links <- data.frame(
+    from=links1$from,
+    to=links1$to,
+    substance= as.factor(links1 %>% dplyr::select(group) %>% unlist()),
+    #substance= as.factor(links1$CombiDayDEG),
+    quantity=links1$quantity
+  )
+  print(links)
+  links<-links %>% arrange(substance)
   # From these flows we need to create a node data frame: it lists every entities involved in the flow
   nodes <- data.frame(
-    name=c(as.character(links$source), as.character(links$target)) %>% 
-      unique()
+    ID=c(as.character(links$from), as.character(links$to)) %>% 
+      unique() %>% str_replace_all("-","")
   )
-  nodes$group <- as.factor(c(as.character(links$source), as.character(links$target)) %>% 
+  nodes$label <- as.factor(c(as.character(links$from), as.character(links$to)) %>% 
                              unique())
-  # With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-  links$IDsource <- match(links$source, nodes$name)-1 
-  links$IDtarget <- match(links$target, nodes$name)-1
-  links$group <- as.factor(links$group)
-  # prepare color scale: I give one specific color for each node.
-  
-  my_color <- 'd3.scaleOrdinal() .domain([
-  "D0_UP", "D2_UP","D4_UP","D7_UP", "D0_DOWN", "D2_DOWN", "D4_DOWN","D7_DOWN","D0_NODIFF", "D2_NODIFF","D4_NODIFF","D7_NODIFF",
-  "ECs", "FAPs","sCs","M1", "M2"]) 
-  .range(["red","red","red","red","blue","blue","blue","blue","pink","pink","pink","pink","#0072B2","#F0E442","#56B4E9","#D55E00","#CC79A7"])'
-  # 
-  # Make the Network. I call my colour scale with the colourScale argument
-  
+  nodes<-nodes  %>% mutate(day=sapply(strsplit(nodes$ID,"_"), `[`, 1)) %>% mutate(sens=sapply(strsplit(nodes$ID,"_"), `[`, 2)) %>% mutate(loops=sapply(strsplit(nodes$ID,"_"), `[`, 3))
+  nbDay<-length(unique(nodes$day))
+  print(nbDay)
+  nodes<-nodes  %>% arrange(loops,sens,day)
+  print(nodes)
+  if("only1" %in% nodes$loops){only=T}else{only=F}
+  if(length(nodes %>% filter(sens== "UNDIFF") %>% dplyr::select(sens) %>% unlist()) >=1){
+    replabel=3
+    titleNODIFF="UNDIFF"}else{
+      NODIFF = F
+      replabel=2
+      titleNODIFF=""}
+  if (nbDay == 4){
+    poslabel=c("left","above","below","right")
+    xpos<-c(-7,-2,3,8)
+    ypos<-c(-2,-3,-4,-5)
+  } else if(nbDay == 3){
+    poslabel=c("left","above","right")
+    xpos<-c(-7,-2,3)
+    ypos<-c(-2,-3,-4)
+  } else{
+    poslabel=c("left","right")
+    xpos<-c(-7,3)
+    ypos<-c(-2,-3)
   }
   
-  p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget", 
-                     Value = "x", NodeID = "name", colourScale=my_color, LinkGroup="group", NodeGroup="group", sinksRight = FALSE,
-                     nodePadding=50, nodeWidth = 5,fontSize=10,iterations = 55,margin = list("right"=250), height = 650, width = 850)
-  p
-  saveWidget(p, file=paste0(odir, analyse,outputprefix,"sankeyColorUPDOWN.html"))
-  webshot(paste0(odir,analyse,outputprefix, "sankeyColorUPDOWN.html"), paste0(odir,analyse,outputprefix,"sankeyCollorUPDOWN.png"), delay = 0.2)
-  return(p)
+  nodes<- nodes %>% mutate(label=lapply(1:length(nodes$sens) ,function(i) ifelse( is.na(nodes[i,]$loops) == T,nodes[i,]$ID,"" )) %>% unlist()) 
+  nodes<- nodes %>%  mutate(ID=lapply( 1:length(nodes$sens) ,function(i) ifelse( is.na(nodes[i,]$loops) == F,paste0(".",nodes[i,]$ID), nodes[i,]$ID)) %>% unlist())
+  if(only == T){nodes$label_pos<-c(rep("none",nbDay*6),rep(poslabel,replabel))}else{nodes$label_pos<-c(rep(poslabel,replabel))}
+  nodes$label_align<-rep("",length(nodes$ID))
+  if(NODIFF == T){nodes$x<-c(xpos,xpos+1,xpos)}else{ if(only == T){nodes$x<-c(xpos+2,xpos+2,xpos,xpos,xpos-2,xpos-2,rep(xpos,2))} else{nodes$x<-c(xpos,xpos)}}
+  if(NODIFF == T){nodes$y<-c(ypos,rep(0,nbDay),ypos*-1)}else{ if(only == T){nodes$y<-c(ypos-1,(ypos*-1)+1,ypos-2,(ypos*-1)+2,ypos-1,(ypos*-1)+1,ypos,ypos*-1)}else{nodes$y<-c(ypos,ypos*-1)}}
+  if(only == T){nodes$dir<-c(rep("down",nbDay),rep("up",nbDay),rep("left",nbDay*2),rep("up",nbDay),rep("down",nbDay),rep("right",nbDay*2))}else{nodes$dir<-rep("right",nbDay*replabel)}
+  
+  palettes<-data.frame(substance=names(colorvect),
+                       color=colorvect)
+  my_title <- paste0(outputprefix," group by ",group," with sens UP DOWN ",titleNODIFF,"\n Amount of gene ",titlesqrt," depending on the combination of days on a cell type , padj<0.005 ")
+  attr(my_title, "gp") <- grid::gpar(fontsize=6, fontface="bold", col="black")
+  
+  # node style
+  ns <- list(type="arrow",gp=gpar(fill=dblue, col="white", lwd=3),
+             length=0.5,
+             label_gp=gpar(col=dblue, fontsize=6,fontface="bold"),
+             mag_pos="label", mag_fmt="%.0f", mag_gp=gpar(fontsize=6,fontface="bold",col=dblue))
+  
+  #pdf(paste0(analyse,"test_group_",group,"_",titleNODIFF,'_',sqrt,'_',outputprefix,"_sankeyColorUPDOWN.pdf"), width=10, height=7) # Set up PDF device
+  print(nodes)
+  PantaRhei::sankey(nodes, links, palettes,
+                    max_width=0.15, rmin=0.5,
+                    node_style=ns,
+                    page_margin=c(0, 0.05, 0, 0.05),
+                    title=my_title, legend=gpar(fontsize=4, col="blue", ncols=1))
+  #dev.off()
+  
 }
 
 
-palltypecell<-dynamique(signiDEgene,vectTypeCell,"AlltypeCell",FALSE)
-palltypecell
-psCs<-dynamique(signiDEgene,"sCs","sCs",TRUE)
-psCs
-pECs<-dynamique(signiDEgene,"ECs","ECs",TRUE)
-pECs
-pFAPs<-dynamique(signiDEgene,"FAPs","FAPs",TRUE)
-pFAPs
-pM2<-dynamique(signiDEgene,"M2","M2",TRUE)
-pM2
-pM1<-dynamique(signiDEgene,"M1","M1",TRUE)
-pM1
 
+#test for 
 
-concatMeanCountNormalized<-function(age){
-  tempoTable<-read.table(paste0('data/meanCountNormalised_',age,'_D0.ECs.txt'))
-  nbligne=length(tempoTable$GeneID)
-  GeneID=tempoTable$GeneID
-  age.meanCountNormalizedtable<-data_frame(tempoTable,type = rep("ECs",nbligne),days = rep("D0",nbligne))
-  for ( t in Typecellv){
-    for (day in daysv[[t]]){
-      tempoTable<-read.table(paste0('data/meanCountNormalised_',age,'_',day,'.',t,'.txt'))
-      nbligne=length(tempoTable$GeneID)
-      if(GeneID == tempoTable$GeneID){
-        tempo<-data_frame(tempoTable,type = rep(t,nbligne),days = rep(day,nbligne))
-        age.meanCountNormalizedtable<-rbind(age.meanCountNormalizedtable,tempo)
-      }
-    }
-  }
-  age.meanCountNormalizedtable <- age.meanCountNormalizedtable %>% mutate( symbol = genes_df[match(age.meanCountNormalizedtable$GeneID, genes_df$Geneid),]$symbol)
-  age.meanCountNormalizedtable <- age.meanCountNormalizedtable %>% unite( 'GeneDayType' , symbol:days:type ,sep = '_',remove = F)
-  return(age.meanCountNormalizedtable)
+orderTypecell=c("ECs","FAPs","MuSCs","Inflammatory-Mac","Resolving-Mac")
+colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#ff9900ff","#cc0000ff")
+names(colorsType)=orderTypecell
+for(typecell in orderTypecell){
+  
+  pdf(paste0(analyse,"test_All_",typecell,"_sankeyColorUPDOWN.pdf"), width=10, height=7) # Set up PDF device
+  
+  
+  pdf(paste0(analyse,"test_alpha_",typecell,"_sankeyColorUPDOWN.pdf"), width=10, height=7) # Set up PDF device
+  
+  tableSankeyplotFAPs<-tableSankeyplot(signiDEgene,typecell,1,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp1"),F,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp1"),T,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp1"),F,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp1"),T,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp1"),F,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp1"),T,T)
+  
+  tableSankeyplotFAPs<-tableSankeyplot(signiDEgene,typecell,1,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp1"),F,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp1"),T,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp1"),F,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp1"),T,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp1"),F,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp1"),T,F)
+  
+  tableSankeyplotFAPs<-tableSankeyplot(signiDEgene,typecell,2,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp2"),F,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp2"),T,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp2"),F,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp2"),T,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp2"),F,T)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp2"),T,T)
+  
+  tableSankeyplotFAPs<-tableSankeyplot(signiDEgene,typecell,2,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp2"),F,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"NbUpDown",colorNbUpDown,paste0(typecell,"_combisupp2"),T,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp2"),F,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"Nbconnection",colorNbconnection,paste0(typecell,"_combisupp2"),T,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp2"),F,F)
+  sankeyPantaRhei(tableSankeyplotFAPs,colorsType[[typecell]],"CombiDayDEG",colorCombiDayDEG,paste0(typecell,"_combisupp2"),T,F)
+  
+  
+  dev.off()
 }
 
-CountNormalizedYoung<-concatMeanCountNormalized('Young')
-CountNormalizedOld<-concatMeanCountNormalized('Old')
 
+meanCountNormalized<-read.table(paste0(NormData,"MeanCountNormalised.txt"), header=T)
+meanCountNormalized<-as.data.frame(meanCountNormalized) %>% mutate(GeneDayType=paste0(symbol,'_',day,'_',celltype))
+meanCountNormalizedYoung<-meanCountNormalized %>% dplyr::filter(age=="Young")
+meanCountNormalizedOld<- meanCountNormalized %>% dplyr::filter(age=="Old")
 dataFrameTotalUPDOWN <- dataFrameTotalUPDOWN %>% mutate(GeneDayType=paste0(symbol,'_',day,'_',type))
+dataFrameTotalUPDOWN<- dataFrameTotalUPDOWN %>% mutate( meanCountNormalizedYoung = as.numeric(meanCountNormalizedYoung[match(dataFrameTotalUPDOWN$GeneDayType,meanCountNormalizedYoung$GeneDayType),]$meancountnormalised)) 
+dataFrameTotalUPDOWN<- dataFrameTotalUPDOWN %>% mutate( meanCountNormalizedOld = as.numeric(meanCountNormalizedOld[match(dataFrameTotalUPDOWN$GeneDayType,meanCountNormalizedOld$GeneDayType),]$meancountnormalised))
+dataFrameTotalUPDOWN<- dataFrameTotalUPDOWN %>% select(id,symbol,day,type,baseMean,meanCountNormalizedYoung,meanCountNormalizedOld,padj,log2FoldChange,nbDayDE,CombiDayDEG,NbUpDown,CombiDaysUpDown)
+dataFrameTotalUPDOWN<- dataFrameTotalUPDOWN %>% mutate( log2FoldChange = round(dataFrameTotalUPDOWN$log2FoldChange, digits = 4)) %>% mutate( padj = formatC(dataFrameTotalUPDOWN$padj,format = "e", digits = 4)) %>%
+  mutate( meanCountNormalizedYoung = round(dataFrameTotalUPDOWN$meanCountNormalizedYoung, digits = 4)) %>%   mutate( meanCountNormalizedOld = round(dataFrameTotalUPDOWN$meanCountNormalizedOld, digits = 4))
 
-dataFrameTotalUPDOWN<- dataFrameTotalUPDOWN %>% mutate( meanCountNormalizedYoung = as.numeric(CountNormalizedYoung[match(dataFrameTotalUPDOWN$GeneDayType,CountNormalizedYoung$GeneDayType),]$countNormalized)) 
-dataFrameTotalUPDOWN<- dataFrameTotalUPDOWN %>% mutate( meanCountNormalizedOld = as.numeric(CountNormalizedOld[match(dataFrameTotalUPDOWN$GeneDayType,CountNormalizedOld$GeneDayType),]$countNormalized)) 
-dataFrameTotalUPDOWN
 
-saveRDS(dataFrameTotal,paste0(odir,"rds/shot_rds_full_nbDayDE.rds"))
-saveRDS(dataFrameTotalUPDOWN,paste0(odir,"rds/shot_rds_full_Dynamics.rds"))
+saveRDS(dataFrameTotalUPDOWN,paste0(pathcombinaisontableUPDOWN,'.rds'))
+write.csv(dataFrameTotalUPDOWN,paste0(pathcombinaisontableUPDOWN,'.csv'))
+
+rmarkdown::render("~/BulkAnalysis_plusNetwork/scripts/GeneDEsigniOnMoreOneTimePoint.Rmd", output_dir = "~/BulkAnalysis_plusNetwork/reports/")
+rmarkdown::render("~/BulkAnalysis_plusNetwork/scripts/tableDEGsignificantUpDown.Rmd", output_dir = "~/BulkAnalysis_plusNetwork/reports/")
 
 
 ###########################################"
 #Statistiques genes founds only in one days
 ############################################
 
-TotUniqueGene<-Reduce(`+`,lapply(unique(fullDEsta$type), function(t) filter(fullDEsta,type == t) %>% dplyr::select(id) %>% unlist() %>% as.character() %>% unique() %>% length()))
-TotUniqueGeneDE<-Reduce(`+`,lapply(unique(signiDEgene$type), function(t) filter(signiDEgene,type == t) %>% dplyr::select(id) %>% unlist() %>% as.character()%>% unique %>% length()))
+TotUniqueGene<-length(unique(fullDEsta$id))
+TotUniqueGeneDE<-length(unique(signiDEgene$id))
+
 #Exemple gene DE signi in more of one type cellulaire 
 TotGeneDED0<-length(signiDEgene[signiDEgene$day == 'D0',]$id)
 TotUniqueGeneDED0<-length(unique(signiDEgene[signiDEgene$day == 'D0',]$id))
-#In which type cell there are a number max of gene DE in one days
-maxDO<-GeneDEuniqueCond[GeneDEuniqueCond$nbGene == max(GeneDEuniqueCond[GeneDEuniqueCond$Days == "D0",]$nbGene),]
-maxD2<-GeneDEuniqueCond[GeneDEuniqueCond$nbGene == max(GeneDEuniqueCond[GeneDEuniqueCond$Days == "D2" ,]$nbGene),]
-maxD4<-GeneDEuniqueCond[GeneDEuniqueCond$nbGene == max(GeneDEuniqueCond[GeneDEuniqueCond$Days == "D4" ,]$nbGene),]
-maxD7<-GeneDEuniqueCond[GeneDEuniqueCond$nbGene == max(GeneDEuniqueCond[GeneDEuniqueCond$Days == "D7",]$nbGene),]
 
 # Number Gene DE on Only one TypeCell and the percent 
-dataframeDEGonecond <- lapply(unique(dataFrameTotal$type), function(t) filter(dataFrameTotal,type == t) %>% filter(nbDayDE == 1))
-names(dataframeDEGonecond)<-unique(dataFrameTotal$type)
+TotUniqueGene<-Reduce(`+`,lapply(unique(fullDEsta$type), function(t) filter(fullDEsta,type == t) %>% dplyr::select(id) %>% unlist() %>% as.character() %>% unique() %>% length()))
+TotUniqueGeneDE<-Reduce(`+`,lapply(unique(signiDEgene$type), function(t) filter(signiDEgene,type == t) %>% dplyr::select(id) %>% unlist() %>% as.character()%>% unique %>% length()))
+
+dataframeDEGonecond <- lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 1))
+names(dataframeDEGonecond)<-unique(dataFrameTotalUPDOWN$type)
 nbUniqGeneDEonecond<-  Reduce(`+`,lapply(dataframeDEGonecond, function(d) unique(d$id) %>% length()))
 
-dataframeDEGtwocond <- lapply(unique(dataFrameTotal$type), function(t) filter(dataFrameTotal,type == t) %>% filter(nbDayDE == 2))
-names(dataframeDEGtwocond)<-unique(dataFrameTotal$type)
+dataframeDEGtwocond <- lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 2))
+names(dataframeDEGtwocond)<-unique(dataFrameTotalUPDOWN$type)
 nbUniqGeneDEtwocond<-  Reduce(`+`,lapply(dataframeDEGtwocond, function(d) unique(d$id) %>% length()))
 
-dataframeDEGthreecond <- lapply(unique(dataFrameTotal$type), function(t) filter(dataFrameTotal,type == t) %>% filter(nbDayDE == 3))
-names(dataframeDEGthreecond)<-unique(dataFrameTotal$type)
+dataframeDEGthreecond <- lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 3))
+names(dataframeDEGthreecond)<-unique(dataFrameTotalUPDOWN$type)
 nbUniqGeneDEthreecond<-  Reduce(`+`,lapply(dataframeDEGthreecond, function(d) unique(d$id) %>% length()))
 
-dataframeDEGfourcond <- lapply(unique(dataFrameTotal$type), function(t) filter(dataFrameTotal,type == t) %>% filter(nbDayDE == 4))
-names(dataframeDEGfourcond)<-unique(dataFrameTotal$type)
+dataframeDEGfourcond <- lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 4))
+names(dataframeDEGfourcond)<-unique(dataFrameTotalUPDOWN$type)
 nbUniqGeneDEfourcond<-  Reduce(`+`,lapply(dataframeDEGfourcond, function(d) unique(d$id) %>% length()))
 
-nbUniqGeneDEonecondD0 <- Reduce(`+`,lapply(dataframeDEGonecond, function(d) filter(d,day == "D0") %>% dplyr::select(id) %>% unlist() %>% as.character() %>% unique() %>% length()))
-nbUniqGeneDEonecondD2 <- Reduce(`+`,lapply(dataframeDEGonecond, function(d) filter(d,day == "D2") %>% dplyr::select(id) %>% unlist() %>% as.character() %>% unique() %>% length()))
-nbUniqGeneDEonecondD4 <- Reduce(`+`,lapply(dataframeDEGonecond, function(d) filter(d,day == "D4") %>% dplyr::select(id) %>% unlist() %>% as.character() %>% unique() %>% length()))
-nbUniqGeneDEonecondD7 <- Reduce(`+`,lapply(dataframeDEGonecond, function(d) filter(d,day == "D7") %>% dplyr::select(id) %>% unlist() %>% as.character() %>% unique() %>% length()))
-tablePercentgeneDEonecond<- data_frame("D0"=c(nbUniqGeneDEonecondD0,
-                                              round(nbUniqGeneDEonecondD0/nbUniqGeneDEonecond*100, digits =0)),
-                                       "D2"=c(nbUniqGeneDEonecondD2,
-                                              round(nbUniqGeneDEonecondD2/nbUniqGeneDEonecond*100, digits =0)),
-                                       "D4"=c(nbUniqGeneDEonecondD4,
-                                              round(nbUniqGeneDEonecondD4/nbUniqGeneDEonecond*100, digits =0)),
-                                       "D7"=c(nbUniqGeneDEonecondD7,
-                                              round(nbUniqGeneDEonecondD7/nbUniqGeneDEonecond*100, digits =0)),
-                                       "names"=c("Number Gene DE on Only one TypeCell","Percent Gene DE on Only one TypeCell")
-)
-tablePercentgeneDEonecond=column_to_rownames(tablePercentgeneDEonecond, var = "names") 
 # Number Gene DE on 2, 3 and 4 TypeCell and the percent
-tablePercentgeneDEacrosscond<- data_frame("one Day"= c(nbUniqGeneDEonecond,round(nbUniqGeneDEonecond/TotUniqueGeneDE*100,digits = 0)),
+tablePercentgeneDEacrosscond<- data.frame("one Day"= c(nbUniqGeneDEonecond,round(nbUniqGeneDEonecond/TotUniqueGeneDE*100,digits = 0)),
                                           "two Day"=c(nbUniqGeneDEtwocond,round(nbUniqGeneDEtwocond/TotUniqueGeneDE*100,digits = 0)),
                                           "three Day"=c(nbUniqGeneDEthreecond,round(nbUniqGeneDEthreecond/TotUniqueGeneDE*100, digits = 0)),
                                           "four Day"=c(nbUniqGeneDEfourcond, round(nbUniqGeneDEfourcond/TotUniqueGene*100, digits = 0)),
@@ -626,55 +642,41 @@ for (t in dataframeDEGthreecond){ i=i+1; print(i) ; if (dim(t)[1] <1){dataframeD
 i=0
 for (t in dataframeDEGfourcond){ i=i+1; print(i) ; if (dim(t)[1] <1){dataframeDEGfourcond<-dataframeDEGfourcond[-i]; i=i-1}}
 
-maxGE2cond<-lapply(names(dataframeDEGtwocond), function(x) dataframeDEGtwocond[[x]] %>% dplyr::select(Dynamic) %>% unlist() %>% as.character() %>% table() %>% as_data_frame() %>% top_n(1) %>% mutate(n,"numberGene"=n/2))
+maxGE1cond1<-lapply(names(dataframeDEGonecond), function(x) dataframeDEGonecond[[x]] %>% dplyr::select(CombiDayDEG) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq) %>% as.data.frame())
+maxGE1cond2<-lapply(names(dataframeDEGonecond), function(x) dataframeDEGonecond[[x]] %>% dplyr::select(CombiDaysUpDown) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq) %>% as.data.frame())
+maxGE1cond<-lapply(1:length(maxGE1cond1), function(i) cbind(rbind(maxGE1cond1[[i]],maxGE1cond2[[i]]),numberDay=rep(1,dim(rbind(maxGE1cond1[[i]],maxGE1cond2[[i]]))[[1]]),typecell=rep(names(dataframeDEGonecond)[[i]],dim(rbind(maxGE1cond1[[i]],maxGE1cond2[[i]]))[[1]])))
+names(maxGE1cond) = names(dataframeDEGonecond)
+
+
+maxGE2cond1<-lapply(names(dataframeDEGtwocond), function(x) dataframeDEGtwocond[[x]] %>% dplyr::select(CombiDayDEG) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq/2) %>% as.data.frame())
+maxGE2cond2<-lapply(names(dataframeDEGtwocond), function(x) dataframeDEGtwocond[[x]] %>% dplyr::select(CombiDaysUpDown) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq/2) %>% as.data.frame())
+maxGE2cond<-lapply(1:length(maxGE2cond1), function(i) cbind(rbind(maxGE2cond1[[i]],maxGE2cond2[[i]]),numberDay=rep(2,dim(rbind(maxGE2cond1[[i]],maxGE2cond2[[i]]))[[1]]),typecell=rep(names(dataframeDEGtwocond )[[i]],dim(rbind(maxGE2cond1[[i]],maxGE2cond2[[i]]))[[1]])))
 names(maxGE2cond) = names(dataframeDEGtwocond)
-maxGE3cond<-lapply(names(dataframeDEGthreecond), function(x) dataframeDEGthreecond[[x]] %>% dplyr::select(Dynamic) %>% unlist() %>% as.character() %>% table() %>% as_data_frame() %>% top_n(1) %>% mutate(n,"numberGene"=n/3))
+
+maxGE3cond1<-lapply(names(dataframeDEGthreecond), function(x) dataframeDEGthreecond[[x]] %>% dplyr::select(CombiDayDEG) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq/3) %>% as.data.frame())
+maxGE3cond2<-lapply(names(dataframeDEGthreecond), function(x) dataframeDEGthreecond[[x]] %>% dplyr::select(CombiDaysUpDown) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq/3) %>% as.data.frame())
+maxGE3cond<-lapply(1:length(maxGE3cond1), function(i) cbind(rbind(maxGE3cond1[[i]],maxGE3cond2[[i]]),numberDay=rep(3,dim(rbind(maxGE3cond1[[i]],maxGE3cond2[[i]]))[[1]]),typecell=rep(names(dataframeDEGthreecond )[[i]],dim(rbind(maxGE3cond1[[i]],maxGE3cond2[[i]]))[[1]])))
 names(maxGE3cond) = names(dataframeDEGthreecond)
-maxGE4cond<-lapply(names(dataframeDEGfourcond), function(x) dataframeDEGfourcond[[x]] %>% dplyr::select(Dynamic) %>% unlist() %>% as.character() %>% table() %>% as_data_frame() %>% top_n(1) %>% mutate(n,"numberGene"=n/4))
+
+maxGE4cond1<-lapply(names(dataframeDEGfourcond), function(x) dataframeDEGfourcond[[x]] %>% dplyr::select(CombiDayDEG) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq/4) %>% as.data.frame())
+maxGE4cond2<-lapply(names(dataframeDEGfourcond), function(x) dataframeDEGfourcond[[x]] %>% dplyr::select(CombiDaysUpDown) %>% unlist() %>% as.character() %>% table() %>% as.data.frame() %>% top_n(1) %>% mutate("numberGene"=Freq/4) %>% as.data.frame())
+maxGE4cond<-lapply(1:length(maxGE4cond1), function(i) cbind(rbind(maxGE4cond1[[i]],maxGE4cond2[[i]]),numberDay=rep(4,dim(rbind(maxGE4cond1[[i]],maxGE4cond2[[i]]))[[1]]),typecell=rep(names(dataframeDEGfourcond)[[i]],dim(rbind(maxGE4cond1[[i]],maxGE4cond2[[i]]))[[1]])))
 names(maxGE4cond) = names(dataframeDEGfourcond)
-tableMaxGE<-data_frame("ECs.Dynamics"=c(maxGE2cond$ECs$.,maxGE3cond$ECs$.,maxGE4cond$ECs$.),
-                       "ECs.number"=c(maxGE2cond$ECs$numberGene,maxGE3cond$ECs$numberGene,maxGE4cond$ECs$numberGene),
-                       "FAPs.Dynamics"=c(maxGE2cond$FAPs$.,maxGE3cond$FAPs$.,maxGE4cond$FAPs$.),
-                       "FAPs.number"=c(maxGE2cond$FAPs$numberGene,maxGE3cond$FAPs$numberGene,maxGE4cond$FAPs$numberGene),
-                       "sCs.Dynamics"=c(maxGE2cond$sCs$. ,maxGE3cond$sCs$.,maxGE4cond$sCs$.),
-                       "sCs.number"=c(maxGE2cond$sCs$numberGene,maxGE3cond$sCs$numberGene,maxGE4cond$sCs$numberGene),
-                       "M2.Dynamics"=c(maxGE2cond$M2$.,maxGE3cond$M2$.,NA),
-                       "M2.number"=c(maxGE2cond$M2$numberGene,maxGE3cond$M2$numberGene,NA),
-                       "M1.Dynamics"=c(maxGE2cond$M1$.,NA,NA),
-                       "M1.number"=c(maxGE2cond$M1$numberGene,NA,NA),
-)
 
-dataframeDEGtwocondUPDOWN <-  lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 1))
-names(dataframeDEGtwocondUPDOWN)<-unique(dataFrameTotalUPDOWN$type)
-dataframeDEGthreecondUPDOWN <- lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 3))
-names(dataframeDEGthreecondUPDOWN)<-unique(dataFrameTotalUPDOWN$type)
-dataframeDEGfourcondUPDOWN <-  lapply(unique(dataFrameTotalUPDOWN$type), function(t) filter(dataFrameTotalUPDOWN,type == t) %>% filter(nbDayDE == 4))
-names(dataframeDEGfourcondUPDOWN)<-unique(dataFrameTotalUPDOWN$type)
+maxGEcond<-data.frame()
+for(i in 1:length(names(maxGE1cond))){
+  maxGEcond<-rbind(maxGEcond,maxGE1cond[[i]])
+}
+for(i in 1:length(names(maxGE2cond))){
+  maxGEcond<-rbind(maxGEcond,maxGE2cond[[i]])
+}
+for(i in 1:length(names(maxGE3cond))){
+  maxGEcond<-rbind(maxGEcond,maxGE3cond[[i]])
+}
+for(i in 1:length(names(maxGE4cond))){
+  maxGEcond<-rbind(maxGEcond,maxGE4cond[[i]])
+}
 
-i=0
-for (t in dataframeDEGtwocondUPDOWN){ i=i+1; print(i) ; if (dim(t)[1] <1){ dataframeDEGtwocondUPDOWN<-dataframeDEGtwocondUPDOWN[-i] ; i=i-1 }}
-i=0
-for (t in dataframeDEGthreecondUPDOWN){ i=i+1; print(i) ; if (dim(t)[1] <1){dataframeDEGthreecondUPDOWN<-dataframeDEGthreecondUPDOWN[-i]; i=i-1}}
-i=0
-for (t in dataframeDEGfourcondUPDOWN){ i=i+1; print(i) ; if (dim(t)[1] <1){dataframeDEGfourcondUPDOWN<-dataframeDEGfourcondUPDOWN[-i]; i=i-1}}
-
-
-maxGE2condUPDOWN<-lapply(names(dataframeDEGtwocondUPDOWN), function(x) dataframeDEGtwocondUPDOWN[[x]] %>% dplyr::select(Dynamic) %>% unlist() %>% as.character() %>% table() %>% as_data_frame() %>% top_n(3,n) %>% arrange(desc(n)) %>% mutate(n,"numberGene"=n/2) )
-names(maxGE2condUPDOWN) = names(dataframeDEGtwocondUPDOWN)
-maxGE3condUPDOWN<-lapply(names(dataframeDEGthreecondUPDOWN), function(x) dataframeDEGthreecondUPDOWN[[x]] %>% dplyr::select(Dynamic) %>% unlist() %>% as.character() %>% table() %>% as_data_frame() %>% top_n(3,n) %>% arrange(desc(n))%>% mutate(n,"numberGene"=n/3) )
-names(maxGE3condUPDOWN) = names(dataframeDEGthreecondUPDOWN)
-maxGE4condUPDOWN<-lapply(names(dataframeDEGfourcondUPDOWN), function(x) dataframeDEGfourcondUPDOWN[[x]] %>% dplyr::select(Dynamic) %>% unlist() %>% as.character() %>% table() %>% as_data_frame() %>% top_n(3,n) %>% arrange(desc(n))%>% mutate(n,"numberGene"=n/4) )
-names(maxGE4condUPDOWN) = names(dataframeDEGfourcondUPDOWN)
-
-tableMaxGEUPDOWNECs<-data_frame( "ECs.Dynamics"=c(maxGE2condUPDOWN$ECs$.,maxGE3condUPDOWN$ECs$.,maxGE4condUPDOWN$ECs$.),
-                                 "ECs.number"=c(maxGE2condUPDOWN$ECs$numberGene,maxGE3condUPDOWN$ECs$numberGene,maxGE4condUPDOWN$ECs$numberGene))
-tableMaxGEUPDOWNFAPs<-data_frame("FAPs.Dynamics"=c(maxGE2condUPDOWN$FAPs$.,maxGE3condUPDOWN$FAPs$.,maxGE4condUPDOWN$FAPs$.),
-                                 "FAPs.number"=c(maxGE2condUPDOWN$FAPs$numberGene,maxGE3condUPDOWN$FAPs$numberGene,maxGE4condUPDOWN$FAPs$numberGene))
-tableMaxGEUPDOWNsCs<-data_frame("sCs.Dynamics"=c(maxGE2condUPDOWN$sCs$. ,maxGE3condUPDOWN$sCs$.,maxGE4condUPDOWN$sCs$.),
-                                "sCs.number"=c(maxGE2condUPDOWN$sCs$numberGene,maxGE3condUPDOWN$sCs$numberGene,maxGE4condUPDOWN$sCs$numberGene))
-
-tableMaxGEUPDOWNM2<-data_frame( "M2.Dynamics"=c(maxGE2condUPDOWN$M2$.,maxGE3condUPDOWN$M2$.),
-                                "M2.number"=c(maxGE2condUPDOWN$M2$numberGene,maxGE3condUPDOWN$M2$numberGene))
-tableMaxGEUPDOWNM1<-data_frame("M1.Dynamics"=c(maxGE2condUPDOWN$M1$.),
-                               "M1.number"=c(maxGE2condUPDOWN$M1$numberGene))
+names(maxGEcond)<-c("PatternDaysDEG","Freq","numberGene","numberDay","typecell")
+maxGEcond<- as.data.frame(maxGEcond) %>% dplyr::select(typecell,numberDay,PatternDaysDEG,numberGene) %>% arrange(typecell,numberDay,desc(numberGene))
 
