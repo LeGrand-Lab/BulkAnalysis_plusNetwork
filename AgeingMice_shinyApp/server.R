@@ -19,8 +19,8 @@ mywdir <- "~/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/"
 setwd(mywdir)
 source("ui.R") #TODO:  set good ui
 grdir <- "graphobjs_copy/"
-DEclassic_file <- "DE_copy/shot_dataframe.csv"
-aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
+DEclassic_file <- "DE_copy/TableDynamicUpDownDEG.csv"
+aggreg_matrices <- readRDS("Data/aggreg_matrices_TPM.rds")
 mhp = readRDS("Data/fgsea_matrices4heatmaps.rds")
 
 # ===================== declare empty reactiveValues ==========================
@@ -33,13 +33,14 @@ DEclassic.show <- reactiveValues(x=NULL)
 crossedtab <- reactiveValues(x=NULL)
 
 # global variable colors
+
 cellcolors = list(
-  "ECs"="#0072B2",
-  "FAPs"="#F0E442",
-  "M1" = "#D55E00",
-  "M2" =  "#CC79A7",
-  "Neutro" =  "#009E73",
-  "sCs" = "#56B4E9" )
+  "ECs"="#10b387ff",
+  "FAPs"="#3d85c6ff",
+  "MuSCs" = "#b171f1ff",
+  "Neutrophils" = "#f0e442ff",
+  "Inflammatory-Mac" = "#ff9900ff",
+  "Resolving-Mac" = "#cc0000ff")
 
 # ================== function that returns chorddiagram =======================
 dochord <- function(matrx, unicolors){
@@ -74,7 +75,7 @@ server <- function(input, output, session ){
   }
   # ========================== display DEGs by default =========================
   displayDEGS <- function(){
-    DEGs <- read.table(DEclassic_file, sep='\t',header=T) 
+    DEGs <- read_csv(DEclassic_file) 
     DEclassic.show$x <- DEGs %>% dplyr::select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
     rm(DEGs)
     output$DE_classical <- renderDT(

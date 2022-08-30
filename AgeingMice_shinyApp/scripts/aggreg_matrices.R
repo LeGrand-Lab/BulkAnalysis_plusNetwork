@@ -5,6 +5,8 @@
 # ok for color blindness!  hex codes: https://rdrr.io/cran/ggthemes/man/colorblind.html
 #
 # johaGL 2021
+library(igraph)
+library(stringr)
 
 setwd("~/BulkAnalysis_plusNetwork/")
 grdir <- "/networks_explore/graphobjs/"
@@ -53,12 +55,12 @@ dosummarymatrices <- function(G, cellcolors){
 #                      "_igraph.ml"), format="graphml")
 # youpi = givememystuff(Gege)
 cellcolors = list(
-  "ECs"="#0072B2",
-  "FAPs"="#F0E442",
-  "M1" = "#D55E00",
-  "M2" =  "#CC79A7",
-  "Neutro" =  "#009E73",
-  "sCs" = "#56B4E9" )
+  "ECs"="#10b387ff",
+  "FAPs"="#3d85c6ff",
+  "MuSCs" = "#b171f1ff",
+  "Neutrophils" = "#f0e442ff",
+  "Inflammatory-Mac" = "#ff9900ff",
+  "Resolving-Mac" = "#cc0000ff")
 
 aggreg_matrices <- list()
 for ( age in c("Young", "Old")){
@@ -73,6 +75,17 @@ for ( age in c("Young", "Old")){
 #aggreg_matrices[["Old"]] <- list()
 #aggreg_matrices[["Old"]][["D4"]] <- dosummarymatrices(G, cellcolors)
 #system("mkdir Data")
-saveRDS(aggreg_matrices, "Data/aggreg_matrices.rds")
+saveRDS(aggreg_matrices, "AgeingMice_shinyApp/Data/aggreg_matrices_TPM.rds")
+
+aggreg_matrices <- list()
+for ( age in c("Young", "Old")){
+  aggreg_matrices[[age]] <- list()
+  for (day in c("D0","D2", "D4", "D7")){
+    G = read.graph(file=paste0("/home/bioinfo/BulkAnalysis_plusNetwork/networks_explore/graphobjs/", age,"_",day, "_igraph_unfi_CN.ml"), format="graphml")
+    aggreg_matrices[[age]][[day]] <- dosummarymatrices(G, cellcolors)
+  }
+} 
+saveRDS(aggreg_matrices, "AgeingMice_shinyApp/Data/aggreg_matrices_CN.rds")
+
 # idea : make ratio button, by default circos only with RATIO, offer nb and cummul weight
 
