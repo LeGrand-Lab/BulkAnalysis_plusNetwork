@@ -329,8 +329,6 @@ PlotGeneCountNorm <- function(Dynamic7table,msigdbr_list,numberCond){
     leadingEdge_list <- lapply(unique(DynamicPath %>% dplyr::select(DayType) %>% unlist()), function(x) Dynamic7table %>% filter(pathway == path,DayType == x) %>% dplyr::select(leadingEdge) %>% unlist() %>% str_split(pattern = " " ) %>% unlist() %>% str_replace_all(pattern = "\n", replacement = "") %>% keep( ~ any(geneDEGdt_list[[x]] %in% .x)))  
     leadingEdge<-data.frame(x=c(length(leadingEdge_list[[1]]), paste(leadingEdge_list[[1]],collapse = " ")))
     
-    
-    
     if(length(leadingEdge_list) >1){
       for( x in 2:length(leadingEdge_list)){leadingEdge<-cbind(leadingEdge,c(length(leadingEdge_list[[x]]), paste(leadingEdge_list[[x]],collapse = " "))) } 
     }
@@ -471,8 +469,8 @@ ConvertPathwaysName<-read.csv("data/ReactomePathways.txt",sep = "\t",header = F)
 ConvertPathwaysName <- ConvertPathwaysName %>% filter(str_detect(V3,"Mus musculus"))
 
 hierachicalPathway<-read.csv("data/ReactomePathwaysRelation.txt",sep = "\t",header = F)
-hierachicalPathway<-hierachicalPathway %>% filter(str_detect(V1,"R-MMU")) %>% mutate("Node1"= str_replace_all(str_to_upper(ConvertPathwaysName[na.omit(match(hierachicalPathway$V1,ConvertPathwaysName$V1)),]$V2), "[\\ /\\-\\:]",'_'))  %>% mutate("Node1"= str_replace_all(Node1,"[,()]", ""))
-hierachicalPathway<-hierachicalPathway %>% filter(str_detect(V2,"R-MMU")) %>% mutate("Node2"= str_replace_all(str_to_upper(ConvertPathwaysName[na.omit(match(hierachicalPathway$V2,ConvertPathwaysName$V1)),]$V2),"[\\ /\\-\\:]",'_')) %>% mutate("Node2"= str_replace_all(Node2,"[,()]", ""))
+hierachicalPathway<-hierachicalPathway%>% filter(str_detect(V1,"R-MMU")) %>% mutate("Node1"= str_replace_all(str_to_upper(ConvertPathwaysName[na.omit(match(hierachicalPathway$V1,ConvertPathwaysName$V1)),]$V2), "[\\ /\\-\\:]",'_'))  %>% mutate("Node1"= str_replace_all(Node1,"[,()]", ""))
+hierachicalPathway<-hierachicalPathway%>% filter(str_detect(V2,"R-MMU")) %>% mutate("Node2"= str_replace_all(str_to_upper(ConvertPathwaysName[na.omit(match(hierachicalPathway$V2,ConvertPathwaysName$V1)),]$V2),"[\\ /\\-\\:]",'_')) %>% mutate("Node2"= str_replace_all(Node2,"[,()]", ""))
 
 topHierarchie<-setdiff(hierachicalPathway$Node1,hierachicalPathway$Node2)
 hierachicalPathway2<- rbind(cbind(hierachicalPathway$Node1,hierachicalPathway$Node2),cbind(rep("IN_REACTOME_HIERARCHIE",by=length(topHierarchie)),topHierarchie))
@@ -608,7 +606,7 @@ data_nested_full[is.na(data_nested_full)] <- ""
 
 
 for (t in Typecellv){
-for (d in days){
+  for (d in days){
   #prefix_name<-paste0(t)
   #prefix_name<-paste0(d)
   prefix_name<-paste0(d,"_",t)

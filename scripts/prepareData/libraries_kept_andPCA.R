@@ -44,7 +44,7 @@ design <- read.table("data/design.csv",header=T,sep=",", row.names=1)
 
 # Remove transcrits associated with gene witch associated with several genes
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
-pc.TPM.tempo <- data.frame(pc.TPM ,genes_df[match(rownames(pc.TPM), genes_df$Geneid),]$symbol)
+pc.TPM.tempo <- data.frame(pc.TPM ,symbol=genes_df[match(rownames(pc.TPM), genes_df$Geneid),]$symbol)
 extractGeneDuplicate <- rownames(pc.TPM.tempo[duplicated(pc.TPM.tempo$symbol),])
 
 pc.mat<-pc.mat[!rownames(pc.mat) %in% extractGeneDuplicate,]
@@ -128,10 +128,7 @@ cor.mat <- cor(fTPM, method="spearman")
 #batch = read.table("data/batchesinfo.csv") # to add in visuals
 #metadata$batch = batch[match(metadata$sample, batch$sample),]$batch
 
-myannot = data.frame(CellType=factor(metadata$type, levels = unique(metadata$type) ),
-                           Time = factor(metadata$time,levels= str_sort(unique(metadata$time))),
-                     Age = factor(metadata$age, levels = str_sort(unique(metadata$age), decreasing =T)))
-                     #Batch = metadata$batch)
+                     
 rownames(myannot) = rownames(metadata)
 
 

@@ -1,7 +1,7 @@
-cd ~/BulkAnalysis_plusNetwork/natmiOut_TPM/
+cd ~/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM/
 
 for i in Diff_*/; do
-	python ~/NATMI/VisInteractions.py \
+	python ~/Softwares_bio/NATMI/VisInteractions.py \
 	   --sourceFolder $i \
 	   --interDB lrc2p \
 	   --detectionThreshold 0.3 \
@@ -15,10 +15,10 @@ for i in Diff_*/; do
 	   --clusterDistance 1
 done
 
-cd ~/BulkAnalysis_plusNetwork/natmiOut_CountNormalised/
+cd ~/BulkAnalysis_plusNetwork/NatmiData/natmiOut_CountNormalised/
 
 for i in Diff_*/; do
-	python ~/NATMI/VisInteractions.py \
+	python ~/Softwares_bio/NATMI/VisInteractions.py \
 	   --sourceFolder $i \
 	   --interDB lrc2p \
 	   --detectionThreshold 0.3 \

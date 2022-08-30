@@ -110,6 +110,7 @@ nas_df <- data.frame("external_gene_name"=finalabsent, "ensembl_gene_id"=rep("NO
 finaldf <- dplyr::bind_rows(infmart, dfstrains,df_dbi,nas_df)
 write.table(finaldf, file=fileout, sep=';', col.names = T, row.names = F)
 
+finaldf<-read.table(fileout, sep=";",header=T)
 # =====   END
 
 

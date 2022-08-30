@@ -166,6 +166,7 @@ for (d in unique(fullDEsta$day)){
     if ( padjofpathsDEsigni[d, n] == 0 ){padjofpathsDEsigni[d, n]=NA}
   }
 }
+
 totalDay = lapply( days , function(d) round(length(signiDEgene %>% filter(day==d) %>% select(symbol) %>% unlist() %>% unique())/TotUniqueGeneDE*100, digits = 1)) %>% unlist()
 toltalTypeCell = lapply( Typecellv , function(t) round(length(signiDEgene %>% filter(type==t) %>% select(symbol) %>% unlist() %>% unique())/TotUniqueGeneDE*100, digits = 1)) %>% unlist()
 totalDay = c(totalDay,"")
@@ -179,15 +180,19 @@ padjofpathsDEsigni$PercentDEGSigniOnDay<-ifelse(as.numeric(padjofpathsDEsigni$Pe
 padjofpathsDEsigni<-t(padjofpathsDEsigni)
 padjofpathsDEsigni<-as.data.frame(padjofpathsDEsigni)
 padjofpathsDEsigni$PercentDEGSigniOnTyCell<-ifelse(as.numeric(padjofpathsDEsigni$PercentDEGSigniOnTyCell) == max(as.numeric(padjofpathsDEsigni$PercentDEGSigniOnTyCell),na.rm = T),cell_spec(padjofpathsDEsigni$PercentDEGSigniOnTyCell,bold = T), cell_spec(padjofpathsDEsigni$PercentDEGSigniOnTyCell,color ="black"))
+
 ```
-# II.Overview of DEG significant analysis
+# II.Overview of DEG significant analysis {.tabset .tabset-fade .tabset-pills}
 ***
 
 On any given day and cell type there are `r TotUniqueGeneDE` genes differentilly expressed with a good confidence (padj<=0.05) (= DEG significative) on `r TotUniqueGene` genes expressed in total or **`r round(TotUniqueGeneDE/TotUniqueGene*100, digits = 0)`%** of DEG significant.
 
 The table below, is the percent of DEG significant on total genes expressed.
-
+## Percent DEG significant table
 `r kbl(padjofpathsDEsigni,row.names = TRUE,escape=F)%>%kable_paper("striped")`
+
+## Number DEG significant table
+
 
 
 ```{r ViolinePlotGlobal, fig.align='center', echo=FALSE, warning=FALSE , error=FALSE}
@@ -934,4 +939,8 @@ DT::datatable(tablefilter, filter = 'top', extensions = c('RowGroup','Select', '
 
 # IV. Total table gene differential express significant
 
-[linksTableUpDown](/home/bioinfo/BulkAnalysis_plusNetwork/reports/tableDEGsignificantUpDown.html)
+[linksTableUpDown](./tableDEGsignificantUpDown.html)
+
+# V. Next report on genes set enrichment
+
+[linksreportgsea](./fgseaReport.html)

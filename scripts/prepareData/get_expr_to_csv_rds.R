@@ -11,7 +11,7 @@ library(stringr)
 
 setwd("~/BulkAnalysis_plusNetwork/")
 data_p <- "/media/bioinfo/Stockage/DATA_RNAageing/DATA/"
-m_p <- "merged_gene_counts/"
+m_p <- "merged_gene_counts/" # /media/bioinfo/Stockage/DATA_RNAageing/total_results_nfcore/featureCounts/gene_counts
 d_p <- "StringtieFPKM_gene_abund_all_batch/"
 
 odir = "data/"

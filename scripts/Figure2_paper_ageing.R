@@ -28,6 +28,7 @@ library(networkD3)
 library(webshot)
 library(htmlwidgets)
 library(scales)
+library(data.tree)
 ttf_import(paths = "/home/bioinfo/R/fonts")
 fonts()
 loadfonts(device="postscript")
@@ -72,14 +73,16 @@ days<-unique(fullDEsta$day)
 # Correlation matrice , spearman test
 ##
 # =========================================================================
-myannot = data.frame(CellType=factor(metadata$type, levels = unique(metadata$type) ),
+orderTypecell=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
+colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#f0e442ff","#ff9900ff","#cc0000ff")
+names(colorsType) = orderTypecell
+myannot = data.frame(CellType=factor(metadata$type, levels = orderTypecell ),
                            Time = factor(metadata$time,levels= str_sort(unique(metadata$time))),
                      Age = factor(metadata$age, levels = str_sort(unique(metadata$age), decreasing =T)))
 rownames(myannot) = rownames(metadata)
 
-orderTypecell=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
-colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#f0e442ff","#ff9900ff","#cc0000ff")
-names(colorsType) = orderTypecell
+
+
 colorsTime = c(brewer.pal(9,"BuPu")[3],brewer.pal(9,"BuPu")[5],brewer.pal(9,"BuPu")[7],brewer.pal(9,"BuPu")[9])
 names(colorsTime) = sort(unique(myannot$Time))
 colorsAge = c("#ffc35d","#019190")
@@ -100,115 +103,38 @@ GSEAsigni<-fullGSEAconcat %>% filter(padj<=0.05) %>% mutate(sens=ifelse(NES >0,"
 #ggpubr::ggarrange(CovHeatmap_grob,ggpubr::ggarrange(facet1_ld , facet2.5_ld , facet4_ld, ncol=1,heights = c(0.25,0.25,0.5), labels=c("B","C","D")),g5, facet6_ld,ncol=2,nrow = 2, labels = c("A","","E","F"))
 #dev.off()
 
-
-explorer<- function(hierachicalPathway2,node2,path,listSommetparcouru,data_edged, level){
-  level=level+1
-  listSommetparcouru<-c(listSommetparcouru,node2)
-  newpath=paste0(path,".",node2)
-  NamePath<-str_replace_all(node2,pattern = "_", replacement = " ")
-  #size=GSEAtempo %>% filter(pathway==paste0("REACTOME_",node2)) %>% select(size) %>% unlist() %>% as.character() %>% as.numeric()
-  size=ifelse(node2== "root1", 1,GSEAsigni %>% filter(pathway==paste0("REACTOME_",node2)) %>% dplyr::select(size) %>% unlist() %>% as.character() %>% as.numeric() %>% sum(na.rm = T))
-  data_edged<-rbind(data_edged,c(path,newpath,level,size,NamePath))
-  path=newpath
-  for ( node2 in hierachicalPathway2[hierachicalPathway2$Node1 == node2,2]){
-    if (!(node2 %in% listSommetparcouru)){
-      data_edged<-explorer(hierachicalPathway2,node2,path,listSommetparcouru,data_edged,level)
-    }
-  }
-  return(data_edged)
-}  
-
-ConvertPathwaysName<-read.csv("data/ReactomePathways.txt",sep = "\t",header = F)
-ConvertPathwaysName <- ConvertPathwaysName %>% filter(str_detect(V3,"Mus musculus"))
-
-hierachicalPathway<-read.csv("data/ReactomePathwaysRelation.txt",sep = "\t",header = F)
-hierachicalPathway<-hierachicalPathway %>% filter(str_detect(V1,"R-MMU")) %>% mutate("Node1"= str_replace_all(str_to_upper(ConvertPathwaysName[na.omit(match(hierachicalPathway$V1,ConvertPathwaysName$V1)),]$V2), "[\\ /\\-\\:]",'_'))  %>% mutate("Node1"= str_replace_all(Node1,"[,()]", ""))
-hierachicalPathway<-hierachicalPathway %>% filter(str_detect(V2,"R-MMU")) %>% mutate("Node2"= str_replace_all(str_to_upper(ConvertPathwaysName[na.omit(match(hierachicalPathway$V2,ConvertPathwaysName$V1)),]$V2),"[\\ /\\-\\:]",'_')) %>% mutate("Node2"= str_replace_all(Node2,"[,()]", ""))
-
-topHierarchie<-setdiff(hierachicalPathway$Node1,hierachicalPathway$Node2)
-hierachicalPathway2<- rbind(cbind(hierachicalPathway$Node1,hierachicalPathway$Node2),cbind(rep("root1",by=length(topHierarchie)),topHierarchie))
-
-colnames(hierachicalPathway2)<-c("Node1","Node2")
-hierachicalPathway2<-as.data.frame(hierachicalPathway2)
-
-listSommetparcouru<-c()
-data_edged=data.frame()
-data_edged<-explorer(hierachicalPathway2,"root1","root1",listSommetparcouru,data_edged,0)
-colnames(data_edged)<-c("Node1","Node2","level","size","NamePath")
-data_edged<- data_edged %>% mutate(level=factor(as.numeric(level),levels = 1:13)) 
-
-edges <- data_edged %>% dplyr::select(Node1,Node2)
-vertices <- data_edged%>% mutate(showlabel=ifelse(level == 2 , NamePath,NA)) %>% dplyr::select (Node2,size,NamePath,level,showlabel) %>% rbind(c("root1",7,"root",1,NA))
-vertices[vertices$NamePath == "REPRODUCTION",]$showlabel<-""
-# Rebuild the graph object
-mygraph <- graph_from_data_frame( edges, vertices=vertices )
-
-getPalette = colorRampPalette(brewer.pal(7, "Blues"))
-
-circles<-ggraph(mygraph, layout = 'circlepack', weight=as.numeric(level)) + 
-  geom_node_circle(aes(fill = factor(level,levels = 1:13))) +
-  geom_node_label(aes(label=showlabel,size=as.numeric(size)),repel = T, show.legend = F) +
-  theme_void() + 
-  theme(legend.position=c(fill="bottom"),legend.title = element_text(size=6,face="bold"),legend.text=element_text(size=4), legend.key.size = unit(0.4,'cm')) + 
-  #scale_size_manual(name="Number DEG significant in pathway gene set")+
-  scale_fill_manual(name= "Pathway \nHierarchie \nlevel", values = getPalette(13))
-  
-print(circles)
-
-png(file=paste0(ofig,"HirarchieALLpathwaysNEs2.png"),units = "in", width=14, height= 9, res = 800, family = "Arial")
-print(circles)
-dev.off()
-
-
-
-
-NumberPathwaysSigni = array(NA, dim=c(length(days),length(Typecellv)))
-rownames(NumberPathwaysSigni) =  days
-colnames(NumberPathwaysSigni) = Typecellv
-
-NumberPathwaysUniqueOnOneDay<-c()
-NumberPathwaysUniqueOnOneTypeCell<-c()
-for (d in days){
-  NumberPathwaysUniqueOnOneDay<-c(NumberPathwaysUniqueOnOneDay,GSEAsigni %>% filter(day==d) %>% dplyr::select(pathway) %>% unique() %>% unlist() %>% length())
-  for (t in Typecellv){
-    NumberPathwaysSigni[d, t] <- dim(GSEAsigni %>% filter(day==d & type==t))[1]
-    if (d == days[1]){
-      NumberPathwaysUniqueOnOneTypeCell<-c(NumberPathwaysUniqueOnOneTypeCell, GSEAsigni %>% filter(type==t) %>% dplyr::select(pathway) %>% unique() %>% unlist() %>% length())
-    }
-  }
-}
-
-names(NumberPathwaysUniqueOnOneDay)<-days
-names(NumberPathwaysUniqueOnOneTypeCell)<-Typecellv
-NumberPathwaysSigni
-
-Violindata<-data.frame(ViolinDT=paste0(GSEAsigni$day,"_",GSEAsigni$type),
-                       ViolinDay=factor(GSEAsigni$day,levels= unique(GSEAsigni$day)),
-                       CellType=factor(GSEAsigni$type, levels= orderTypecell),
-                       ViolinValue=GSEAsigni$NES,
-                       nbPathwaySignificant = lapply(1:length(GSEAsigni$NES), function(i) NumberPathwaysSigni[GSEAsigni[i,]$day,GSEAsigni[i,]$type] ) %>% unlist(),
-                       a=rep("a",length(GSEAsigni$NES)))
-
-
-PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=a ,y=ViolinValue, fill=nbPathwaySignificant)) +# fill=name allow to automatically dedicate a color for each group
-  geom_jitter( shape=16, size=1, position=position_jitter(0.4), aes(color=nbPathwaySignificant,alpha=0.1), show.legend=F)+
-  geom_violin(scale="count",aes(alpha=0.01),show.legend = c("alpha"=F))+
-  facet_grid_blank(vars(CellType),vars(ViolinDay), drop = FALSE) +
-  scale_fill_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+
-  scale_color_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+
+#Found genes DE on one, or more days
+#Observe the dynamic of expression for Old in comparison to Young across days on one Type cell -> sankeyNetwork
+#Violine plot of DEG 
+signiDEgene<-signiDEgene %>% mutate(day.type=paste0(day,'_',type))
+nbGeneSignificant<-table(signiDEgene$day.type)
+Violindata<-data.frame(ViolinDT=paste0(signiDEgene$day,"_",signiDEgene$type),
+                       ViolinDay=factor(signiDEgene$day,levels= levels(myannot$Time) ),
+                       CellType=factor(signiDEgene$type, levels= levels(myannot$CellType)),
+                       ViolinValue=signiDEgene$log2FoldChange,
+                       nbGeneSignificant = lapply(signiDEgene$day.type, function(dt) nbGeneSignificant[[dt]]) %>% unlist(),
+                       a=rep("a",length(signiDEgene$day.type)))
+PlotDEGonlyOneDayVioline<-ggplot(Violindata, aes(x=a ,y=ViolinValue, fill=nbGeneSignificant)) +# fill=name allow to automatically dedicate a color for each group
+  geom_jitter( shape=16, size=1, position=position_jitter(0.4), aes(color=nbGeneSignificant,alpha=0.001), show.legend=F)+
+  geom_violin(scale="count",aes(alpha=0.001),show.legend = c("alpha"=F))+
+  scale_fill_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+scale_color_gradient(low = "#E7E1EF",high="#67001F",labels = scales::label_comma())+
   coord_flip()+
-  scale_x_discrete(limits=rev)  +   
+  scale_x_discrete(limits=rev)  +   facet_grid_blank(vars(CellType),vars(ViolinDay), drop = FALSE) +
   geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5)+
   ylab("log2FoldChange")+xlab("Type Cell") +
   theme(axis.title = element_text(size=5, face = "bold"),axis.text.x=element_text(size=3,colour = "black", face="bold"),axis.text.y=element_text(colour = "white"),legend.title=element_text( size=6, face = "bold"),legend.text=element_text(size=4),title=element_text(size=7, face = "bold"),
-        legend.spacing= unit(0.1,"points"),legend.position = "bottom",legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"),panel.grid =element_line(color="white"),strip.text.x = element_text(color = "white", face= "bold",size=7),strip.text.y = element_text(color = "black", face= "bold",size=7),
+        legend.spacing= unit(0.1,"points"),legend.position = "bottom",legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"),panel.grid =element_line(color="white"),strip.text.x = element_text(size=10,color = "white", face= "bold"),strip.text.y = element_text(size=5.5,color = "black", face= "bold"),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank())+labs(fill = "Count DEG padj<0.05")+
   ggtitle("Distribution of significatif differentially expressed genes Old vs Young \n according to log2Foldchange")
-#Add color in background grid
+
+
+
+PlotDEGonlyOneDayVioline
 g5 <- ggplot_gtable(ggplot_build(PlotDEGonlyOneDayVioline))
 stripRowName <- which(grepl('strip', g5$layout$name))
+
 k <- 1
 fills <- c(colorsTime,colorsType)
 for (i in stripRowName) {
@@ -217,6 +143,196 @@ for (i in stripRowName) {
   k <- k+1
 }
 grid::grid.draw(g5)
+facet5<-grid.arrange(g5)
+save_plot(paste0(ofig,"PlotDEGsigniDayTypeVioline.png"),g5,base_width = 10, base_height = 7)
+
+### Place sankey plot
+colorCombiDayDEG<-c("#fef6be","#e2f4df","#dbeaf5","#d8d9ea",
+                    "#d6efa6","#c2d9ed","#ffcce4","#a0dbb5","#d5b7d7","#8895c2",
+                    "#008349","#065fa3","#d42857","#7e2175","#67081d")
+names(colorCombiDayDEG)<-c("D0","D2","D4","D7"
+                           ,"D0.D2","D0.D4","D0.D7","D2.D4","D2.D7","D4.D7",
+                           "D0.D2.D4","D0.D2.D7","D0.D4.D7","D2.D4.D7","D0.D2.D4.D7")
+colorCombiDayDEG<-c("#ffe119","#bfef45","#42d4f4","#f032e6","#3cb44b","#4363d8","#911eb4","#006600","#000075","#67081d")
+names(colorCombiDayDEG)<-c("D0","D2","D4","D7"
+                           ,"D0.D2","D2.D4","D4.D7",
+                           "D0.D2.D4","D2.D4.D7","D0.D2.D4.D7")
+
+linksToRemove<-c("D0.D4","D0.D7","D2.D7","D0.D2.D7","D0.D4.D7")
+colorsConditions<-colorCombiDayDEG[! names(colorCombiDayDEG) %in% linksToRemove]
+lgddaysDEG<-Legend(at=names(colorCombiDayDEG),legend_gp = gpar(fill = colorCombiDayDEG), title="days_DEG",labels_gp = gpar (fontsize= 5),title_gp = gpar(fontsize = 6, fontface = "bold"))
+lgddaysDEG_grob=grid.grabExpr(draw(lgddaysDEG)) 
+grid.arrange(lgddaysDEG_grob)
+grid.draw(lgddaysDEG_grob)
+
+Violindata2<-data.frame(ViolinDay=factor(signiDEgene$day,levels= levels(myannot$Time) ),
+                        CellType=factor(signiDEgene$type, levels= levels(myannot$CellType)),
+                        ViolinValue=rep("b",length(signiDEgene$day.type)),
+                        a=rep("a",length(signiDEgene$day.type)))
+PlotDEGonlyOneDayVioline2<-ggplot(Violindata2, aes(x=a ,y=ViolinValue)) +# fill=name allow to automatically dedicate a color for each group
+  geom_jitter(color="white",fill="white",show.legend=F)+
+  coord_flip()+
+  facet_grid_blank(vars(CellType),vars(ViolinDay), drop = FALSE) +
+  ylab("Day")+xlab("Type Cell") +
+  ggtitle("Flow of significatif differentially expressed gene \n on consecutive days and on one cell type")+
+  theme(axis.title = element_text(size=5, face = "bold"),axis.text=element_text(colour = "white"),title=element_text(size=7, face = "bold"),
+        legend.spacing= unit(0.1,"points"),legend.position = "bottom",legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"),panel.grid =element_line(color="white"),strip.text.x = element_text(size=10,color = "white", face= "bold"),strip.text.y = element_text(size=5.5,color = "black", face= "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+
+
+
+PlotDEGonlyOneDayVioline2
+g6 <- ggplot_gtable(ggplot_build(PlotDEGonlyOneDayVioline2))
+stripRowName <- which(grepl('strip', g6$layout$name))
+
+k <- 1
+fills <- c(colorsTime,colorsType)
+for (i in stripRowName) {
+  j <- which(grepl('rect', g6$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g6$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- k+1
+}
+grid::grid.draw(g6)
+facet6_ld<-grid.arrange(blank,lgddaysDEG_grob,ncol=2,widths=c(7,1.5))
+
+png(paste0(ofig,"Figure1_corpus.png"),units = "in", width=8, height= 11, res = 300, family = "Arial")
+ggpubr::ggarrange(CovHeatmap_grob,ggpubr::ggarrange(facet1_ld , facet2.5_ld , facet4_ld, ncol=1,heights = c(0.25,0.25,0.5), labels=c("B","C","D")),g5, facet6_ld,ncol=2,nrow = 2, labels = c("A","","E","F"))
+dev.off()
+
+
+### SankeyPlot
+
+sourceNode<-c()
+targetNode<-c()
+valueEdge<-c()
+Nbconnection<-c()
+CombiDayDEG<-c()
+for ( typeCell in Typecellv ) {
+  tempoSigniDEgene<- signiDEgene %>% filter(type==typeCell)
+  #Get list DEG by day
+  uniqueIdByDay = lapply(unique(tempoSigniDEgene$day), function(x) filter(tempoSigniDEgene, day == x) %>% dplyr::select(id) %>% unlist() %>% as.character())
+  names(uniqueIdByDay) = unique(tempoSigniDEgene$day)
+  
+  #Get all combination DEG 
+  allcombinaison =ComplexHeatmap::make_comb_mat(uniqueIdByDay)
+  #Extract pattern combination
+  Sup2Combi<-allcombinaison[comb_degree(allcombinaison) >= 1]
+  Node_Target<-names(comb_size(Sup2Combi))
+  
+  num_combi<-1
+  
+  #For one combination
+  #Extract the number of day DEG
+  #Found the name of combonation with day
+  for ( name in Node_Target){
+    particulName<-str_extract_all(name,boundary("character"))[[1]]
+    names(particulName)<-1:length(particulName)
+    
+    Nodes<-lapply(1:length(particulName), function(i) if(particulName[i] == "1"){daysv[[typeCell]][i]} ) %>% unlist()
+    if (str_count(name,"1")==1){CombiDayDEG<-c(CombiDayDEG,rep(str_c(Nodes, collapse = "."),4))} else {CombiDayDEG<-c(CombiDayDEG,rep(CombiDayDEG<-c(str_c(Nodes, collapse = ".")),str_count(name,"1")-1))}
+    if (str_count(name,"1")==1){Nbconnection<-c(Nbconnection,rep(1,4))} else {Nbconnection<-c(Nbconnection,rep(str_count(name,"1"),str_count(name,"1")-1))}
+    if (length(Nodes) == 1){
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell,"_only1"))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell,"_only1"))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell,"_only2"))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell,"_only2"))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell,"_only3"))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell,"_only3"))
+      targetNode<-c(targetNode,paste0(Nodes[1],"_",typeCell))
+      valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+    }else{
+      sourceNode<-c(sourceNode,paste0(Nodes[1],"_",typeCell))
+      if(length(Nodes)-1 > 1){
+        for (i in 2:(length(Nodes)-1)){
+          sourceNode<-c(sourceNode,paste0(Nodes[i],"_",typeCell))
+          targetNode<-c(targetNode,paste0(Nodes[i],"_",typeCell))
+          valueEdge<-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+        }}
+      targetNode<-c(targetNode,paste0(Nodes[length(Nodes)],"_",typeCell))
+      valueEdge <-c(valueEdge,unname(comb_size(Sup2Combi)[num_combi]))
+    }
+    num_combi=num_combi+ 1
+  } 
+}  
+#color
+colorNbconnection<-c("white","#FABDA6","#D3DDDC","#C7B19C","#446455")
+names(colorNbconnection)<-c("0","1","2","3","4")
+
+
+# Make a connection data frame
+# Total links
+links <- data.frame(
+  from=str_replace_all(sourceNode,"-",""),
+  to=str_replace_all(targetNode,"-",""),
+  Nbconnection=Nbconnection,
+  CombiDayDEG=CombiDayDEG,
+  substance= CombiDayDEG,
+  quantity=sqrt(valueEdge)
+)
+links<-links %>% arrange(substance)
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(
+  ID=c(as.character(links$from), as.character(links$to)) %>% 
+    unique() %>% str_replace_all("-","")
+)
+nodes$label <- as.factor(c(as.character(links$from), as.character(links$to)) %>% 
+                           unique())
+nodes<-nodes  %>% mutate(day=sapply(strsplit(nodes$ID,"_"), `[`, 1)) %>% mutate(type=factor(sapply(strsplit(nodes$ID,"_"), `[`, 2),levels=str_replace_all(orderTypecell,"-",""),)) %>% mutate(loops=sapply(strsplit(nodes$ID,"_"), `[`, 3))
+nbDay<-length(unique(nodes$day))
+nbtype<-length(unique(nodes$type))
+nodes<-nodes  %>% arrange(loops,type,day)
+nodes<- nodes %>% mutate(label=lapply(1:length(nodes$day) ,function(i) ifelse( is.na(nodes[i,]$loops) == T,nodes[i,]$ID,"" )) %>% unlist()) 
+nodes<- nodes %>%  mutate(ID=lapply( 1:length(nodes$day) ,function(i) ifelse( is.na(nodes[i,]$loops) == F,paste0(".",nodes[i,]$ID), nodes[i,]$ID)) %>% unlist())
+poslabel=c("left","above","below","right")
+nodes$label_pos<-c(rep("none",54),rep("below",18))
+xpos4<-c(-7,-2,3,8)
+xpos3<-c(-2,3,8)
+xpos2<-c(-2,3)
+xpos1<-c(-2)
+nodes$x<-c(rep(xpos4+2,3),xpos1+2,xpos2+2,xpos3+2,rep(xpos4,3),xpos1,xpos2,xpos3,rep(xpos4-2,3),xpos1-2,xpos2-2,xpos3-2,rep(xpos4,3),xpos1,xpos2,xpos3)
+nodes<-nodes  %>% arrange(loops,day,type)
+yposD2<-c(9,4,-1,-6,-11,-16)
+yposD4<-c(9,4,-1,-11,-16)
+yposD7<-c(9,4,-1,-16)
+yposD0<-c(9,4,-1)
+nodes$y<-c(yposD0+1,yposD2+1,yposD4+1,yposD7+1,yposD0+2,yposD2+2,yposD4+2,yposD7+2,yposD0+1,yposD2+1,yposD4+1,yposD7+1,yposD0,yposD2,yposD4,yposD7)
+nodes$dir<-c(rep("up",18),rep("left",18),rep("down",18),rep("right",18))
+
+dblue<-"#67001F"
+# node style
+ns <- list(type="arrow",gp=gpar(fill=dblue, col="white", lwd=3),
+           length=0.5,
+           label_gp=gpar(col="black", fontsize=6,fontface="bold"),
+           mag_pos="label", mag_fmt="%.0f", mag_gp=gpar(fontsize=1,col="white"))
+
+
+palettesCombiDayDEG<-data.frame(substance=names(colorCombiDayDEG),
+                                color=colorCombiDayDEG)
+my_title_CombiDayDEG <- paste0("")
+attr(my_title_CombiDayDEG, "gp") <- grid::gpar(fontsize=12, fontface="bold", col="black")
+links$substance<-links$CombiDayDEG
+rowtoRemove<-subset(links, substance %in% linksToRemove) %>% rownames()%>% as.numeric()
+links2=links[-rowtoRemove,]
+
+testsankeysave<-PantaRhei::sankey(nodes, links2, palettesCombiDayDEG,
+                  max_width=0.2, rmin=0.5,
+                  node_style=ns,
+                  page_margin=c(0, 0.05, 0, 0.05),
+                  title=my_title_CombiDayDEG, legend=NULL)
+
+png(paste0(ofig,"Figure2_tail.png"),units = "in", width=4, height= 5.5, res = 300, family = "Arial")
+PantaRhei::sankey(nodes, links2, palettesCombiDayDEG,
+                  max_width=0.15, rmin=0.5,
+                  node_style=ns,
+                  page_margin=c(0, 0.05, 0, 0.05),
+                  title=my_title_CombiDayDEG, legend=NULL)
+dev.off()
 
 
 tableSankeyplot<- function(signiDEgene,vectTypeCell,minCombi,NODIFF){
@@ -426,16 +542,16 @@ names(colorNbUpDown)<-c("1_UP.1_DOWN" ,"2_UP.2_DOWN",
                         "1_UP.","2_UP.","3_UP.","4_UP.")
 linksToRemove<-c("1_UP.1_DOWN","2_UP.2_DOWN","1_UP.3_DOWN","2_UP.1_DOWN","3_UP.1_DOWN","4_DOWN","4_UP.")
 colorNbUpDown<-colorNbUpDown[! names(colorNbUpDown) %in% linksToRemove]
-lgddaysDEG<-Legend(at=names(colorNbUpDown),legend_gp = gpar(fill = colorNbUpDown), title="Number Pathway\nDay Up Down",labels_gp = gpar (fontsize= 5),title_gp = gpar(fontsize = 6, fontface = "bold"), direction = "horizontal",nrow = 2,title_position ="leftcenter")
-lgddaysDEG_grob=grid.grabExpr(draw(lgddaysDEG)) 
-grid.arrange(lgddaysDEG_grob)
+lgddaysDEGUpDown<-Legend(at=names(colorNbUpDown),legend_gp = gpar(fill = colorNbUpDown), title="Number Day which DEG \n are UP or DOWN",labels_gp = gpar (fontsize= 5),title_gp = gpar(fontsize = 6, fontface = "bold"), direction = "horizontal",nrow = 2,title_position ="leftcenter")
+lgddaysDEG_UpDown_grob=grid.grabExpr(draw(lgddaysDEGUpDown)) 
+grid.arrange(lgddaysDEG_UpDown_grob)
 blank<-grob()
-facet6_ld<-grid.arrange(blank,lgddaysDEG_grob, nrow=2,heights=c(7,1.5))
+facet5.5_ld<-grid.arrange(blank,lgddaysDEG_UpDown_grob, nrow=2,heights=c(7,1.5))
 
 tableSankeyplotFAPs<-tableSankeyplot(signiDEgene,"Resolving-Mac",1,F)
 
 png(paste0(ofig,"SankeyResolvingMac.png"),units = "in", width=3, height=5, res = 800, family = "Arial")
-sankeyPantaRhei(tableSankeyplotFAPs,colorsType[["Resolving-Mac"]],"NbUpDown",colorNbUpDown,paste0("Resolving-Mac","_combisupp1"),F,F)
+sankeyPantaRhei(tableSankeyplotFAPs,colorsType[["Resolving-Mac"]],"NbUpDown",colorNbUpDown,paste0("Resolving-Mac","_combisupp1"),T,F)
 dev.off()
 
 signiDEgeneSelenop<-dataFrameTotalUPDOWN %>% filter(symbol=="Selenop",type=="Resolving-Mac") %>% pivot_longer(cols = starts_with("meanCountNormalized"),names_to = "Age",names_prefix = "meanCountNormalized",values_to ="meanCountNormalized") %>% as.data.frame() %>% mutate(Age=factor(Age,levels=c('Young','Old')))
@@ -445,12 +561,16 @@ PlotGenelogFacrossDay2 <- ggplot(signiDEgeneSelenop, aes(x=day, y=meanCountNorma
   scale_color_gradient2(midpoint=0,  low="blue", mid="darkgrey",high="red",name="log2FoldChange")+
   geom_hline(yintercept = 0, color="black", linetype="dashed",lwd=0.5,slope=F)+
   geom_point(aes(col=log2FoldChange,size=meanCountNormalized),show.legend = c(col=T,size=F))+
-  ylab("Mean count normalised ")+ggtitle("Selenoproteine expression in resolving macrophage : old vs young")+
+  ylab("Mean count normalised ")+ggtitle("Selenoprotein expression in resolving macrophages : Old vs Young")+
   theme_bw()+ theme(axis.title = element_text(size=5, face = "bold"),axis.text=element_text(size=4),legend.title=element_text(size=6, face = "bold"),legend.text=element_text(size=4),title=element_text(size=7, face = "bold"),
                     legend.spacing= unit(0.1,"points"),legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"))
 
 PlotGenelogFacrossDay2
 
-png(paste0(ofig,"Figure2_test.png"),units = "in", width=8, height= 11, res = 300, family = "Arial")
-ggpubr::ggarrange(circles , g5 , facet6_ld,PlotGenelogFacrossDay2, ncol=2,nrow = 2, labels=c("A","B","C","D"))
+grid.arrange(lgddaysDEG_grob)
+#facet5.5_ld<-grid.arrange(blank,lgddaysDEG_UpDown_grob, ncol=2,widths =c(7,1.5))
+
+
+png(paste0(ofig,"Figure2_DEG_Selenop.png"),units = "in", width=10, height= 12, res = 600, family = "Arial")
+ggpubr::ggarrange(facet5  , facet6_ld,facet5.5_ld,PlotGenelogFacrossDay2, ncol=2,nrow = 2, labels=c("A","B","C","D"))
 dev.off()

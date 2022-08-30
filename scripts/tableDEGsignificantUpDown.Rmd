@@ -58,7 +58,7 @@ th {
 
 </style>
 
-[linksAnalysisDEG](/home/bioinfo/BulkAnalysis_plusNetwork/reports/GeneDEsigniOnMoreOneTimePoint.html)
+[linksAnalysisDEG](./GeneDEsigniOnMoreOneTimePoint.html)
 
 ```{r pathsLoads , echo=FALSE,warning=FALSE,message=FALSE }
 library(tidyverse)
@@ -93,3 +93,6 @@ tablefilter<-dataFrameTotalUPDOWN  %>% mutate(n= countNbConditionGeneDE[match(da
 ```{r tableResolvingUPDOWN, echo=FALSE, warning=FALSE}
 DT::datatable(tablefilter, filter = 'top', extensions = c('RowGroup','Select', 'SearchPanes'),options = list(rowGroup = list(dataSrc = c(1,2,3,4)),dom = 'Pfrtip',columnDefs = list(list(searchPanes = list(show = FALSE), targets = 5:11 ))),selection = 'none',escape = F,rownames=F)
 ```
+
+[linksAnalysisGSEA](./fgseaReport.html)
+

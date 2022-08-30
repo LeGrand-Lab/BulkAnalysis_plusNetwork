@@ -228,7 +228,7 @@ if (volcanoneeded){
   png(paste0(staticD,"PlotsDEG/volcano_static.png"),units = "in", width=10, height= 5.5, res = 300, family = "Arial")
   grid::grid.draw(g2)
   dev.off()
-  tiff(paste0(staticD,"PlotsDEG/volcano_static.tiff"),units = "in", width=10, height= 4, res = 300, family = "Arial")
+  tiff(paste0(staticD,"PlotsDEG/volcano_static.tiff"),units = "in", width=10, height= 8, res = 300, family = "Arial")
   grid::grid.draw(g2)
   dev.off()
   pdf(paste0(staticD,"PlotsDEG/volcano_static.pdf"), width=14, height=10)

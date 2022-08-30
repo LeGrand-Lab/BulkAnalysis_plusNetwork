@@ -4,8 +4,8 @@
 library("dplyr")
 library("tidyverse")
 
-setwd("~/BulkAnalysis_plusNetwork2/")
-odir = "inDataNatmi/"
+setwd("~/BulkAnalysis_plusNetwork/")
+odir = "NatmiData/inDataNatmi/"
 
 metadata.rds <- "data/metadata.rds"
 prefil_tpm <- "data/prefiltered_TPM.rds"

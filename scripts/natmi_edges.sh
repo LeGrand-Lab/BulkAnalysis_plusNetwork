@@ -1,10 +1,10 @@
-cd ~/NATMI
+cd ~/Softwares_bio/NATMI
 
-for i in $(ls ~/BulkAnalysis_plusNetwork/inDataNatmi/TPM_*); do 
+for i in $(ls ~/BulkAnalysis_plusNetwork/NatmiData/inDataNatmi/TPM_*); do 
 	echo $i | awk -F '[_.]' '{print $3}'
 	CW=$(echo $i | awk -F '[_.]' '{print $3}')
 	python VisInteractions.py \
-	  --sourceFolder ~/BulkAnalysis_plusNetwork/natmiOut_TPM/${CW}/ \
+	  --sourceFolder ~/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM/${CW}/ \
 	  --interDB lrc2p \
 	  --weightType mean \
 	  --detectionThreshold 0.6 \
@@ -20,11 +20,11 @@ done
 
 
 
-for i in $(ls ~/BulkAnalysis_plusNetwork/inDataNatmi/CountNormalised_*); do 
+for i in $(ls ~/BulkAnalysis_plusNetwork/data/CountNormalised/CountNormalised_*); do 
 	echo $i | awk -F '[_.]' '{print $3}'
 	CW=$(echo $i | awk -F '[_.]' '{print $3}')
 	python VisInteractions.py \
-	  --sourceFolder ~/BulkAnalysis_plusNetwork/natmiOut_CountNormalised/${CW}/ \
+	  --sourceFolder ~/BulkAnalysis_plusNetwork/NatmiData/natmiOut_CountNormalised/${CW}/ \
 	  --interDB lrc2p \
 	  --weightType mean \
 	  --detectionThreshold 0.6 \

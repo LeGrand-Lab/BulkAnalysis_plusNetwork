@@ -148,10 +148,10 @@ tablePathwayHierarchieTotalPathwayEnrichie<-paste0(odir,HierarchieData,"TableRea
 
 # Report
 #Existing
-reportDEGanalysis<-paste0(dir,"reports/GeneDEsigniOnMoreOneTimePoint.html")
-reportDEGtable<-paste0(dir,"reports/tableDEGsignificantUpDown.html")
-reportsuppPathway<-"reports/reportPathwaysEnrichedStatics/"
-reportsuppHierarchie<-"reports/reportPathwaysHierarchie/"
+reportDEGanalysis<-"./GeneDEsigniOnMoreOneTimePoint.html"
+reportDEGtable<-"./tableDEGsignificantUpDown.html"
+reportsuppPathway<-"reportPathwaysEnrichedStatics/"
+reportsuppHierarchie<-"reportPathwaysHierarchie/"
 
 ##################################
 #### Load files
@@ -214,7 +214,7 @@ DynamicPathwayAcrossCond <- function(RepartitionPathway,GSEAsigni,n){
   tableDynamique<-table(Dynamique)
   Dynamiquetable <- Dynamiquetable %>% mutate(NbPathWithDynamique=as.numeric(as.character(tableDynamique[match(Dynamiquetable$CondSigni,names(tableDynamique))]))) %>% mutate(color=lapply(Dynamiquetable$type, function(t) colorsType[[t]]) %>% unlist()) %>% arrange(NbPathWithDynamique,decreasing =T)
   Dynamiquetable <- Dynamiquetable %>% mutate( DayType = paste0(day,'_',type))
-  Dynamiquetable <-  Dynamiquetable %>% mutate( link=paste0("<a href='../",reportsuppPathway,"PathwayEnrichedIn",n,"DayTypeCell_",pathway,"_meanCountNormalizedGene.html","'>FigureSupp</a>"))
+  Dynamiquetable <-  Dynamiquetable %>% mutate( link=paste0("<a href='./",reportsuppPathway,"PathwayEnrichedIn",n,"DayTypeCell_",pathway,"_meanCountNormalizedGene.html","'>FigureSupp</a>"))
   Dynamiquetable <-  Dynamiquetable %>% mutate( NamePathway= str_replace(str_replace_all(pathway,"_"," "), "REACTOME","")) %>% mutate( NES = round(Dynamiquetable$NES, digits = 4)) %>% mutate( padj = formatC(Dynamiquetable$padj,format = "e", digits = 4))
   
   return(Dynamiquetable)
@@ -237,7 +237,7 @@ GetPlot<-function(Dynamic6table,GSEAsigni, nbCond , vertical){
     facet_wrap(~CondSigni+NbPathWithDynamique ,dir = "v", ncol=vertical,labeller = labeller(NbPathWithDynamique = label_facet(Dynamic6table$NbPathWithDynamique,"Number pathways: ")))+
     theme_linedraw()+ theme(strip.text  = element_text(size = 11 , face = "bold"),strip.background = element_rect(fill="grey"),panel.grid.major.x = element_line(color = "gray60", size = 0.8),axis.title= element_text(size=14,face="bold"),axis.text = element_text(face="bold",size=12),legend.position="bottom",legend.title = element_text(size=14,face="bold"),legend.text = element_text(size=12,face="bold"))
   print(typebytime)
-  save_plot(paste0(odir, plots, 'Pathway_enriched_in__',nbCond ,'conditions_Plot2.svg'),typebytime, base_height = 10,
+  save_plot(paste0(odir, plots, 'Pathway_enriched_in_',nbCond ,'conditions_Plot2.svg'),typebytime, base_height = 10,
             base_width = 14)
 }
 
@@ -279,16 +279,16 @@ colnames(NumberPathwaysSigni) = Typecellv
 NumberPathwaysUniqueOnOneDay<-c()
 NumberPathwaysUniqueOnOneTypeCell<-c()
 for (t in Typecellv){
-  link=paste0("[", GSEAsigni %>% filter(type==t) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](",dir,reportsuppHierarchie,"/",t,"_Hierarchical_Figsupp.html)")
+  link=paste0("[", GSEAsigni %>% filter(type==t) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](./",reportsuppHierarchie,"/",t,"_Hierarchical_Figsupp.html)")
   NumberPathwaysUniqueOnOneTypeCell<-c(NumberPathwaysUniqueOnOneTypeCell,link)
   for (d in daysv[[t]]){
-    link=paste0("[",dim(GSEAsigni %>% filter(day==d & type==t))[1],"](",dir,reportsuppHierarchie,"/",d,'_',t,"_Hierarchical_Figsupp.html)")
+    link=paste0("[",dim(GSEAsigni %>% filter(day==d & type==t))[1],"](./",reportsuppHierarchie,"/",d,'_',t,"_Hierarchical_Figsupp.html)")
     if ( dim(GSEAsigni %>% filter(day==d & type==t))[1] == 0){
       NumberPathwaysSigni[d, t] <-0
       }
     else{NumberPathwaysSigni[d, t] <- link}
     if (t == Typecellv[1]){
-      link=paste0("[",GSEAsigni %>% filter(day==d) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](",dir,reportsuppHierarchie,"/",d,'_',"_Hierarchical_Figsupp.html)")
+      link=paste0("[",GSEAsigni %>% filter(day==d) %>% select(pathway) %>% unique() %>% unlist() %>% length(),"](","./",reportsuppHierarchie,"/",d,"_Hierarchical_Figsupp.html)")
        NumberPathwaysUniqueOnOneDay<-c(NumberPathwaysUniqueOnOneDay,link)
     }
   }

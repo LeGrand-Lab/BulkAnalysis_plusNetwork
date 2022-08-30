@@ -15,9 +15,9 @@ library(cowplot)
 require(gridExtra) # calling grid.arrange
 
 setwd("~/BulkAnalysis_plusNetwork/")
-plotsprep_calc_needed = F # iff need re-run preprocessing figures
+plotsprep_calc_needed = T # iff need re-run preprocessing figures
 ulterior = T
-resdir = 'Tau/'# place where 'calc_Tau_Specificity.R' has saved Tau tables 
+resdir = 'ProjetsAnnexes/Tau/'# place where 'calc_Tau_Specificity.R' has saved Tau tables 
 
 # minimal example by hand tau specificity from Yanai:
 vec <- c(0, 8, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0)
@@ -38,11 +38,11 @@ calculateTau <- function(vec){
 # print tau  preprocessing plots if needed,
 if (plotsprep_calc_needed){
   age =  "Young"  # age = "Old"
-  pdf(paste0("Tau/","plotDetailscalc_", age,".pdf"))
+  pdf(paste0("ProjetsAnnexes/Tau/","plotDetailscalc_", age,".pdf"))
   days=c("D0","D2","D4","D7")
   par(mfrow = c(4,3) )
   for (i in days){
-    ktab <- read.table(paste0("data/meanTPM_",age,i,".txt"), sep='\t', header=T,
+    ktab <- read.table(paste0("data/meanTPM/meanTPM_",age,i,".txt"), sep='\t', header=T,
                        row.names=1) 
     logtab <- log10(ktab+1) 
     hist(unlist(logtab),xlim=c(-3,8), col="wheat", prob=T, cex.main=.9,
@@ -75,8 +75,8 @@ if (plotsprep_calc_needed){
 getNOhousekeeping <- function(age){
   tauokgenes <- c()
   myregex = paste0(age,".*\\.txt$")
-  for (i in list.files("Tau/", pattern=myregex)){
-    itext <- read.table(paste0("Tau/",i), sep='\t', header=T, row.names = 1)
+  for (i in list.files(resdir, pattern=myregex)){
+    itext <- read.table(paste0(resdir,i), sep='\t', header=T, row.names = 1)
     tmpvec <- itext %>% dplyr::filter(class !='housekeeping') %>% pull(id)
     tauokgenes <- c(tauokgenes, tmpvec)
   }
@@ -102,13 +102,11 @@ if (ulterior){
                top=paste0("Specific or intermediate genes \n (by Tau >= 0.5)"),
                padding=unit(0.2, "line"))
   dev.off()
-  #days = c("D0","D2","D4","D7")
-  days = c("D4")
-  day = "D4"
+  days = c("D0","D2","D4","D7")
   for (day in days){
-    oldtab <- read.table(paste0("Tau/TauSpecificity_",'Old',day,".txt"), sep='\t',
+    oldtab <- read.table(paste0(resdir,"TauSpecificity_",'Old',day,".txt"), sep='\t',
                        header = T)
-    youngtab <- read.table(paste0("Tau/TauSpecificity_",'Young',day,".txt"), sep='\t',
+    youngtab <- read.table(paste0(resdir,"TauSpecificity_",'Young',day,".txt"), sep='\t',
                          header = T)
     # use ?scale_colour_colorblind
   }
@@ -116,20 +114,14 @@ if (ulterior){
 ###  For each cell type and days post injury, what is the distribution of specific and intermediate genes between young and old condition expression
 getNOhousekeeping2 <- function(age,typeCell,Day){
   tauokgenes <- c()
-  itext <- read.table(paste0("Tau/TauSpecificity_",age,Day,".txt"), sep='\t', header=T, row.names = 1)
+  itext <- read.table(paste0(resdir,"TauSpecificity_",age,Day,".txt"), sep='\t', header=T, row.names = 1)
   geneAgeDayCellSpe <- itext %>% dplyr::filter(class !='housekeeping') %>% dplyr::filter(str_detect(whichMAX,typeCell))
   tmpvec <- geneAgeDayCellSpe %>% pull(id)
   tauokgenes <- c(tauokgenes, tmpvec)
   return(unique(tauokgenes))
 }
 
-cellcolors = list(
-  "ECs"="#0072B2",
-  "FAPs"="#F0E442",
-  "M1" = "#D55E00",
-  "M2" =  "#CC79A7",
-  "Neutro" =  "#009E73",
-  "sCs" = "#56B4E9" )
+cellcolors<-list("ECs"="#10b387ff","FAPs"="#3d85c6ff","MuSCs"="#b171f1ff","Neutrophils"="#f0e442ff","Inflammatory-Mac"="#ff9900ff","Resolving-Mac"="#cc0000ff")
 
 tauokgenes.old <- getNOhousekeeping2("Old","ECs","D0")
 tauokgenes.young <- getNOhousekeeping2("Young","ECs","D0")
@@ -157,9 +149,12 @@ DiagrammVennFacet <- function (typeCell,Day){
 
 pdf(paste0(resdir,"Old_Youg_DiagVenn_byTypeCellDays.pdf"))
 par(mfrow = c(6,4) )
-celltypev=c("ECs","FAPs","sCs")
+celltypev=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
 Daysv=c("D0","D2","D4","D7")
 DVallDays<-list()
+daysv<-lapply( unique(fullDEsta$type), function(t) unique(fullDEsta[fullDEsta$type == t,]$day) )
+names(daysv)<-unique(fullDEsta$type)
+Typecellv<-unique(fullDEsta$type)
 for (typeCell in celltypev){
   for ( Day in Daysv) {
     CellDaysVennDiagramm<- DiagrammVennFacet(typeCell,Day)

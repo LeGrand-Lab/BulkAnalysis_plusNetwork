@@ -10,16 +10,16 @@
 library("dplyr")
 library("tidyverse")
 
-setwd("~/BulkAnalysis_plusNetwork2/")
+setwd("~/BulkAnalysis_plusNetwork/")
 odir = "data/"
 metadata.rds <- "data/metadata.rds"
 prefil_tpm <- "data/prefiltered_TPM.rds"
 
 fTPM <- readRDS(prefil_tpm)
+fTPM<-as.data.frame(fTPM)
 
 genes_df <- read.table("data/genesinfo.csv", sep="\t", header=T)
 fTPM$symbol <- genes_df[match(rownames(fTPM), genes_df$Geneid),]$symbol
-deres
 
 metadata <- readRDS(metadata.rds)
 
@@ -136,9 +136,9 @@ for (age in ages){
     #  filter out zeros TPM and save table
     keepfinal <- apply(newmx[-1], 1, function(row) sum(row)>0)
     newmx <- newmx[keepfinal,]
-    write.table(newmx, paste0(odir,"meanTPM_",age,day,".csv"), sep='\t', 
+    write.table(newmx, paste0(odir,"meanTPM/meanTPM_",age,day,".csv"), sep='\t', 
                 col.names = T, row.names = F)
-    write.table(newmx, paste0(odir,"meanTPM_",age,day,".txt"), sep='\t', 
+    write.table(newmx, paste0(odir,"meanTPM/meanTPM_",age,day,".txt"), sep='\t', 
                 col.names = T, row.names = F)
   }
 }

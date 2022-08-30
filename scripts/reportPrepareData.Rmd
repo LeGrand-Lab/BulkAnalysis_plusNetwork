@@ -1,0 +1,365 @@
+---
+title: "Ageing impact in gene expression on skeletal muscle repair"
+subtitle: "PrepareData report"
+author: "Team Le Grand"
+date: "`r format(Sys.time(),'%d %B,%Y')`"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+    df_print : paged
+    fig_width: 10
+    fig_height: 8
+    toc: true
+    toc_float: true
+   
+---
+
+<style type="text/css">
+
+
+h1.title {
+  background-color: #158cba;
+  font-size: 34px;
+  color: white;
+}
+h1 { /* Header 1 */
+  background-color: #158cba;
+  font-size: 23px;
+    color: white;
+}
+h2 { /* Header 2 */
+  background-color: #158cba ;
+  font-size: 20px;
+    color: white;
+}
+h3 { /* Header 3 */
+  background-color: #158cba ;
+  font-size: 14px;
+    color: white;
+}
+tr:nth-child(even){background-color: #f2f2f2;}
+
+tr:hover {background-color: #ddd;}
+
+th {
+  background-color: #84c1d8ff;
+  color: white;
+}
+
+.btn {
+    border-width: 0 0px 0px 0px;
+    font-weight: normal;
+    text-transform: ;
+}
+.btn-default {
+    color: #2ecc71;
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+
+</style>
+
+# I.Data origine (Mus musculus - tibialis anterior muscle)
+<p>In order to explore cell expression during muscle regeneration in young(2-3 months) and old(18-22 months) cells, RNAseq experiments (paired end 120pb illumina) were performed using cells sorted and FACs at four time points: </p>
+
+  - D0 muscles without injury
+  - D2, 2 days after cardiotoxin-induced injury
+  - D4, 4 days after injury
+  - D7, 7 days after injury
+
+The cell types sampled were as follows:
+
+  - D0 , Endothelial Cells ECs, FibroAdipogenic Progenitors - FAPs, Muscle Stem Cells MuSCs.
+  - D2 , ECs, FAPs, MuSCs., Neutrophile Cells, Inflammatory Macrophages - Inflammatory-Mac and Resolving Macrophages - Resolving-Mac .
+  - D4, ECs, FAPs, MuSCs, Inflammatory-Mac, Resolving-Mac
+  - D7, ECs, FAPs, MuSCs, Resolving-Mac
+
+# I.1 Pretreatment RNA-seq data with pipeline nfcore/rnaseq (v.1.4.2)
+<p>The RNA-seq data is aligned to the GRCm38 genome with STAR and counted with FeatureCount .</p>
+
+<p>Quality report of alignement in [multiQc](/media/bioinfo/Stockage/DATA_RNAageing/total_results_nfcore/MultiQC/multiqc_report.html) </p>
+
+# Summary of scripts
+##get_expre_to_csv_rdf.R: 
+
+Merge gene_counts files by batch then in one file :  **geneID_samp_matrix.rds** (rawcount expression matrix), 
+Keep info batch - sample_name in batchesinfo.csv
+Keep info Geneid - GeneName in genesinfo.csv
+Merge StringtieFPKM_gene_abund_all_batch in three files , **TPMmatrix.cvs** , COVmatrix.csv and FTPMmatrix.csv
+
+##get_biotypes_bulk.R :
+
+Use ENSEMBL_MART_ENSEMBL database to associated gene name with biotype, if discordante information in function strain, keep canonical.
+For gene without biotype attribution (52382 on 55487) , try with other mouse strain in mart database and annotationdbi EnsDb.Mmusculus.v79 (55250 on 55487)
+Final file **biotype_bulk.csv**
+
+##get_protcod_TPMandCounts.R:
+
+Keep only protein coding biotype.
+
+```{r cars, echo=FALSE,warning=FALSE,message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(cowplot)
+library(RColorBrewer)
+library(ggthemes)
+library(MASS)
+library(pheatmap)
+library(DESeq2)
+library(ggsci) # publishing palettes
+library(cowplot)
+library(gridExtra)
+library(ggforce)
+library(extrafont)
+library(colorblindr)
+library(colorBlindness)
+library(ComplexHeatmap)
+library(patchwork)
+library(facetious)
+library(spaceNtime)
+library(networkD3)
+library(webshot)
+library(htmlwidgets)
+library(scales)
+library(data.tree)
+library(ggraph)
+library(igraph)
+library(viridis)
+
+odir<-"/home/bioinfo/BulkAnalysis_plusNetwork/"
+btf <- paste0(odir,"data/biotype_bulk.csv")
+biotype <- read.table(btf, sep=";",header=T)
+biotyfreqs <- table(biotype$gene_biotype)
+
+# for plotting, select only biotypes represented by >10 genes:
+tab.bt <- table(biotype$gene_biotype)
+data2plot = table(biotype$gene_biotype) %>% data.frame() 
+sumFreq=sum(as.numeric(data2plot$Freq))
+data2plot$gene_pourcent = round(as.numeric(data2plot$Freq)/sumFreq*100,2)
+data2plot = data2plot[-as.numeric(rownames(data2plot[data2plot$Var1 == "NOTFOUND",])), ]
+
+print(tab.bt["protein_coding"])
+
+ggbiotypes<-ggplot(dplyr::filter(data2plot,Freq>100), aes(x=reorder(Var1,-gene_pourcent),y=gene_pourcent,fill=Var1)) +
+  geom_bar(stat="identity", show.legend = FALSE) + 
+  labs(title="Gene biotypes (n genes >100)", x="Biotype", y="Pourcent Genes")+
+  coord_flip() + theme_bw()+
+  theme (axis.text.y = element_text(color="black",  face="bold",size =12),
+         axis.text.x = element_text(color="black",  face="bold",size =10, angle =45))
+
+print(ggbiotypes)
+```
+
+##libraries_kept_andPCA.R
+Remove transcrits associated with genes witch have same symbol (36 genes), filter out all-zeroes rows (2289 genes).
+Retain only good quality libraries (8 libraries excluded)
+
+# Explore correlation between sample
+## Spearman correlation
+```{r pressure, echo=FALSE,warning=FALSE,message=FALSE}
+prefil_cou <- paste0(odir,"data/prefiltered_counts.rds")
+prefil_tpm <- paste0(odir,"data/prefiltered_TPM.rds")
+metadatafile <- paste0(odir,"data/metadata.rds")
+metadata <- readRDS(metadatafile)
+batchinfo<-read.csv(paste0(odir,"data/batchesinfo.csv"), sep = "\t")
+metadata<-merge(metadata,batchinfo)
+rownames(metadata)<-metadata$newname
+fTPM <- readRDS(prefil_tpm)
+
+orderTypecell=c("ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac")
+colorsType=c("#10b387ff","#3d85c6ff","#b171f1ff","#f0e442ff","#ff9900ff","#cc0000ff")
+names(colorsType) = orderTypecell
+myannot = data.frame(CellType=factor(metadata$type, levels = orderTypecell),
+                     Time = factor(metadata$time,levels= str_sort(unique(metadata$time))),
+                     Age = factor(metadata$age, levels = str_sort(unique(metadata$age), decreasing =T))
+                     ,Batch = factor(metadata$batch,levels = unique(metadata$batch)))
+rownames(myannot) = rownames(metadata)
+
+colorsTime = c(brewer.pal(9,"BuPu")[3],brewer.pal(9,"BuPu")[5],brewer.pal(9,"BuPu")[7],brewer.pal(9,"BuPu")[9])
+names(colorsTime) = sort(unique(myannot$Time))
+colorsAge = c("#ffc35d","#019190")
+names(colorsAge) = c("Young","Old")
+colorbatch<-c("white","lightgrey","darkgrey","black")
+names(colorbatch)<-unique(myannot$Batch)
+mycolors = list("CellType"=colorsType,"Time" = colorsTime, "Age" =colorsAge , "Batch"=colorbatch)
+
+##
+# Correlation matrice , spearman test
+##
+# =========================================================================
+cor.mat <- cor(fTPM, method="spearman")
+
+heatmap_lib<-pheatmap::pheatmap(cor.mat, fontsize = 8,
+    color = colorRampPalette(c("white","orange"))(100),
+     cluster_rows = TRUE,
+     cluster_cols = TRUE, clustering_distance_rows = "euclidean",
+     clustering_distance_cols = "euclidean",  annotation_col = myannot, annotation_row =myannot,
+     annotation_colors=mycolors, fontsize_row = 5, fontsize_col = 5,
+     show_rownames = F, show_colnames = F,legend_labels = "1 - rho (Spearman correlation)",
+     main= "Distance matrix Spearman correlation")
+heatmap_lib
+print(heatmap_lib)
+
+
+```
+
+## PCA
+
+```{r pressure2, echo=FALSE,warning=FALSE,message=FALSE}
+
+fmat <- readRDS(paste0(odir,"data/prefiltered_counts.rds"))
+metadata <- readRDS(metadatafile)
+
+ds.o <- DESeqDataSetFromMatrix(countData=fmat,
+                                colData=metadata,
+                                design= ~type + time + age:time)
+vst <- varianceStabilizingTransformation(ds.o)
+pca_all <- plotPCA(vst, intgroup=c("type", "time","age"), returnData=T)
+percentVar.subset <- round(100* attr(pca_all,"percentVar"))
+pca_all.perc.P1 <- percentVar.subset[1]
+pca_all.perc.P2 <- percentVar.subset[2]
+
+# PCA on each cell cell type
+pca_df_bytype <- data.frame("PC1"=numeric(),  "PC2"=numeric(), "group"=character(), "time"=character(),"age" =character(),"name"=character() ,"type2"=character())
+perc.PC1.type <- c()
+perc.PC2.type <- c() 
+for (k in unique(myannot$CellType) ){
+  subset <- ds.o[,ds.o$type==k]
+  subset.vst <- varianceStabilizingTransformation(subset)
+  tmp <- plotPCA(subset.vst, intgroup=c("time","age"), returnData=T)
+  tmp$type2 <- k
+  pca_df_bytype <- rbind(pca_df_bytype,tmp)
+  percentVar.subset <- round(100* attr(tmp,"percentVar"))
+  perc.PC1.type <- c(perc.PC1.type, percentVar.subset[1])
+  perc.PC2.type <- c(perc.PC2.type, percentVar.subset[2])
+}
+
+pca_df_bytype$time<-factor(pca_df_bytype$time,levels =  levels(myannot$Time))
+pca_df_bytype$type2<-factor(pca_df_bytype$type2 ,levels =  levels(myannot$CellType))
+#PCA on each time
+
+pca_df_bytime <- data.frame("PC1"=numeric(), "PC2"=numeric(),"group"=character(), "time"=character(), "age" =character(),"name"=character())
+perc_PC1_time <- c()
+perc_PC2_time <- c()
+days <- c("D0","D2","D4","D7")
+for (day in days) {
+  subset <- ds.o[,ds.o$time==day]
+  subset.vst <- varianceStabilizingTransformation(subset)
+  tmp <- plotPCA(subset.vst, intgroup=c("age","type"), returnData=T)
+  tmp <- cbind(tmp,rep(day,dim(tmp)[1]))
+  pca_df_bytime <- rbind(pca_df_bytime,tmp)
+  percentVar.subset <- round(100* attr(tmp,"percentVar"))
+  perc_PC1_time <- c(perc_PC1_time, percentVar.subset[1])
+  perc_PC2_time <- c(perc_PC2_time, percentVar.subset[2])
+}
+pca_df_bytime<-pca_df_bytime %>% mutate(time=`rep(day, dim(tmp)[1])`)
+pca_df_bytime$time<-factor(pca_df_bytime$time,levels =  levels(myannot$Time))
+pca_df_bytime$type<-factor(pca_df_bytime$type ,levels =  levels(myannot$CellType))
+
+# PCA on each time and cell type 
+metadata_daytype  <- metadata %>% mutate(timetype=paste0(time,".",type))
+pca_df_daytype <- data.frame("PC1"=numeric(), "PC2"=numeric(),"group"=character(), "time"=character(), "age" =character(),"name"=character() ,"timetype"=character())
+perc.PC1_daytype <- c()
+perc.PC2.daytype <- c()
+tp <- unique(metadata_daytype$timetype)
+for (k in tp){
+  tup <- str_split(k,"\\.")[[1]]
+  subset <- ds.o[,ds.o$type==tup[2] & ds.o$time==tup[1]]
+  subset.vst <- varianceStabilizingTransformation(subset)
+  tmp <- plotPCA(subset.vst, intgroup=c("age"), returnData=T)
+  tmp$timetype <- k
+  pca_df_daytype <- rbind(pca_df_daytype,tmp)
+  percentVar.subset <- round(100* attr(tmp,"percentVar"))
+  perc.PC1_daytype <- c(perc.PC1_daytype, percentVar.subset[1])
+  perc.PC2.daytype <- c(perc.PC2.daytype, percentVar.subset[2])
+}
+
+pca_df_daytype$time <- unname(sapply(pca_df_daytype$timetype, 
+                              function(x){ str_split(x,"\\.")[[1]][1]}))
+pca_df_daytype$type <- unname(sapply(pca_df_daytype$timetype, 
+                              function(x){ str_split(x,"\\.")[[1]][2]}))
+pca_df_daytype$type <- factor(pca_df_daytype$type, levels = levels(myannot$CellType))
+pca_df_daytype$age<-factor(pca_df_daytype$age, levels = levels(myannot$Age))
+
+## Productio plot
+lgdType<-Legend(at=levels(myannot$CellType),legend_gp = gpar(fill = colorsType), title="CellType",labels_gp = gpar (fontsize= 5),title_gp = gpar(fontsize = 6, fontface = "bold"))
+lgdAge<-Legend(at=levels(myannot$Age),legend_gp = gpar(fill = colorsAge), title="Age",labels_gp = gpar (fontsize= 5),title_gp = gpar(fontsize = 6, fontface = "bold"))
+lgdTime<-Legend(at=levels(myannot$Time),legend_gp = gpar(fill = colorsTime ), title="Time",labels_gp = gpar (fontsize= 5),title_gp = gpar(fontsize = 6, fontface = "bold"))
+
+
+pca_all<-pca_all %>% mutate(type=factor(pca_all$type,level=orderTypecell))
+
+facet1 <- ggplot(pca_all, aes(x=PC1, y=PC2,  color=type)) +
+  geom_point(size=0.8, show.legend = F) + 
+  stat_ellipse(aes(group=type), size=0.2, show.legend = F) + 
+  scale_color_manual(values=colorsType) +
+  theme_light() +
+  theme(axis.title = element_text(size=5, face = "bold"),axis.text=element_text(size=3),legend.title=element_text(size=6, face = "bold"),legend.text=element_text(size=4),title=element_text(size=7, face = "bold"),
+        legend.spacing= unit(0.1,"points"),legend.spacing.y=unit(0.01,"mm"),legend.key.size = unit(3, "mm"),panel.grid =element_line(color="white"))+
+  xlab(paste0("PC1: ", pca_all.perc.P1,"% variance" )) +
+  ylab(paste0("PC2: ", pca_all.perc.P2,"% variance" )) +
+  ggtitle("The first two components of the PCA on whole dataset")
+
+
+lgdType_grob=grid.grabExpr(draw(lgdType)) 
+grid.arrange(facet1,lgdType_grob, ncol=2,widths=c(4,1))
+
+
+facets2.5 <- ggplot(pca_df_bytype, aes(x=PC1, y=PC2, color=time)) +
+  geom_point(size=0.8, show.legend = F) + 
+  scale_color_manual(values=colorsTime) +
+  scale_x_continuous(n.breaks = 3)+
+  stat_ellipse(aes(group=time),size=0.2, show.legend = F) + 
+  theme_bw() +
+  theme(axis.title = element_text(size=5, face = "bold"),axis.text=element_text(size=3),legend.title=element_text(size=6, face = "bold"),legend.text=element_text(size=4),title=element_text(size=7, face = "bold"),
+        legend.spacing= unit(0.1,"points"),legend.spacing.y=unit(0.01,"points"),strip.text.x = element_text(size = 4, face = "bold", color="black"),strip.text.y = element_text(size=4, face = "bold", color="black"),legend.key.size = unit(3, "mm"),panel.spacing = unit(0.5,"mm"),panel.grid =element_line(color="white"))+
+  xlab("PC1") +
+  ylab("PC2") +
+  facet_grid(. ~ type2)+
+  ggtitle("PCA on sub-matrices at each type")
+
+
+g2.5 <- ggplot_gtable(ggplot_build(facets2.5))
+stripRowName <- which(grepl('strip-t', g2.5$layout$name))
+k <- 1
+fills <- c(colorsType)
+for (i in stripRowName) {
+  j <- which(grepl('rect', g2.5$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g2.5$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- k+1
+}
+lgdTime_grob=grid.grabExpr(draw(lgdTime)) 
+grid.arrange(g2.5,lgdTime_grob, ncol=2,widths=c(5,0.6))
+
+# ==== all (time and type) splitted
+
+facet4<-ggplot(pca_df_daytype, aes(x=PC1,y=PC2, color=age)) +
+  geom_point(size=0.2, show.legend = F) +
+  scale_color_manual(values = colorsAge) +
+  facet_grid_blank(vars(type),vars(time), drop = FALSE) +
+  theme_bw() +
+  theme(axis.title = element_text(size=5, face = "bold"),axis.text=element_text(size=3),legend.title=element_text(size=4, face = "bold"),legend.text=element_text(size=2),title=element_text(size=7, face = "bold"),
+        legend.spacing= unit(0.1,"points"),legend.spacing.y=unit(0.01,"points"),strip.text.x = element_text(size = 4, face = "bold", color="white"),strip.text.y = element_text(size=3, face = "bold", color="black"),legend.key.size = unit(3, "mm"),panel.spacing = unit(0.5,"mm"),panel.grid =element_line(color="white"))+ 
+  geom_mark_ellipse(expand = unit(0.6, "mm"),size=0.2, show.legend = F)+
+  facet_grid_blank(vars(type),vars(time), drop = FALSE) +
+  ggtitle("PCA on sub-matrices at each time and type cell")
+
+
+g4 <- ggplot_gtable(ggplot_build(facet4))
+stripRowName <- which(grepl('strip-', g4$layout$name))
+k <- 1
+fills <- c(colorsTime,colorsType)
+for (i in stripRowName) {
+  j <- which(grepl('rect', g4$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g4$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- k+1
+}
+lgdAge_grob=grid.grabExpr(draw(lgdAge)) 
+grid.arrange(g4,lgdAge_grob, ncol=2,widths=c(5,0.6))
+
+
+```
+
+
+

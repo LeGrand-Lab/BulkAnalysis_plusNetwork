@@ -57,7 +57,7 @@ GSEA_plot= "PlotsGSEA/"
   
 
   #####
-  # GESEA analysis
+  # GSEA analysis
   # static old vs young
   # by cell-type by day
   #####
