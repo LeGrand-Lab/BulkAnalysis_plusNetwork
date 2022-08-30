@@ -8,7 +8,7 @@ RNA-seq data are pre-processed with nf-core pipeline https://nf-co.re/rnaseq (Ma
 
 `scripts` folder contains R code which is detailed in [this relative link](scripts/README_scripts.md). 
 In summary:
-- they run DEG and GSEA analyses with result in exam_INTER_conditions/static/ and reports in reports/.
+- they run DEG and GSEA analyses with result in exam_INTER_conditions/static/ and reports are in https://github.com/LeGrand-Lab/Ageing-impact_in_gene_expression_on_skeletal_muscle_repair.
 - Prepare data for ligand-receptor network and finally launch NATMI  https://github.com/asrhou/NATMI. 
 
 Many thanks to Dr.Rui Hou for advice concerning NATMI to use it specifically in our context.
@@ -19,6 +19,7 @@ Three jupyter notebooks are available in folder `networks_explore`:
 * Young_D7_test_initial.ipynb : checks properties and how to get connected components (using Young D7 for demo purposes)
 
 Folder `AgeingMice_shinyApp` contains Shiny application code, in active development.
+
 
 
 For more information write to:

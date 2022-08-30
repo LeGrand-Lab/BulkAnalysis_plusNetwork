@@ -1,0 +1,193 @@
+./natmi_viz.sh 
+OldD0
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD0/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 8038 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD0/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+OldD2
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD2/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 26725 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD2/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+OldD4
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD4/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 18547 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD4/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+OldD7
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD7/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 13354 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/OldD7/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+YoungD0
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD0/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 7735 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD0/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+YoungD2
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD2/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 26045 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD2/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+YoungD4
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD4/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 18490 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD4/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
+YoungD7
+===================================================
+Input data:
+The source dataset folder: /home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD7/
+The ligand-receptor interaction database: lrc2p
+The weight type of cell-to-cell signaling: mean
+The detection threshold for interactions to draw is: 0.6
+The specicificity threshold for interactions to draw is: 0
+The expression threshold for interactions to draw is: 0
+The network layout: kk
+The font size for cluster labels: 8
+The edge width: 0.0
+The maximum radius of the clusters: 0
+The relative distance between clusters: 1.0
+The plot width: 12
+The plot height: 10
+The plot format: pdf
+===================================================
+#### start to construct the cell-to-cell communication network
+#### 12725 edges are loaded
+#### plotting the weighted directed cell-to-cell communication network
+#### the folder "/home/bioinfo/BulkAnalysis_plusNetwork/natmiOut/YoungD7/Network_exp_0_spe_0_det_0.6_top_0_signal_lrc2p_weight_mean" has been created to save the analysis results
+#### DONE
+
