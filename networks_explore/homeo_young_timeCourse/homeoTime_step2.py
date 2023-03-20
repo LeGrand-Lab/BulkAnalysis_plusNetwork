@@ -66,7 +66,12 @@ def reorderdico_fillvariancew(dicow):
 lr = pickle.load( open( '../graphobjs/dictio_lr.p', 'rb') )
 hom = lr['Young']
 days = ['D0', 'D2', 'D4', 'D7']
-allcelltypes = ['ECs', 'FAPs','M1','M2', 'Neutro', 'sCs']
+allcelltypes =  [ "ECs" ,
+    "FAPs"  ,
+    "Inflammatory-Mac"  ,
+    "Resolving-Mac"  ,
+    "Neutrophils" ,
+    "MuSCs" ]
 
 #fileligs = "selectedLigands.txt"
 fileligs = "selectedLigandsVersion3.txt"
@@ -75,20 +80,20 @@ Nligs = 15
 NtoprecBylig = 4
 print(f"'\n'Finding top {Nligs} ligands, every celltype, you can modify this number")
 topdicoligs = yieldtopUnique(fileligs, allcelltypes, Nligs)
-print("printing top sCs to show up what we got")
-print(topdicoligs['sCs'])
+print("printing top Satellite Cells to show up what we got")
+print(topdicoligs['MuSCs'])
 topligslt_ = []
 for k in topdicoligs.keys():
     for tup in topdicoligs[k]: 
         topligslt_.append('_'.join([tup[0],k])) # ex: 'Ptn_FAPs'
         
 
-######### find only for sCs the receptors for selected ligands
+######### find only for muscular satellites the receptors for selected ligands
 print("Show ligands from all cell types targeting receptor in Satellite Cells")
 prepsatelly = {}
 for day in days:
     daydf = hom[day].frame
-    prepadf = daydf[daydf['Target cluster'] == 'sCs']
+    prepadf = daydf[daydf['Target cluster'] == 'MuSCs']
     topligdfrec = prepadf[prepadf['uniq_Ligand_symbol'].isin(topligslt_)]
     prepsatelly = filldaywvectorstodict(topligdfrec, prepsatelly,day)
     

@@ -50,13 +50,13 @@ class LRinfos:
 
 def importcelltycolorsdico():
     celltycolors = {
-          "ECs" : "#0072B2",
-          "FAPs" : "#F0E442",
-          "M1" : "#D55E00",
-          "M2" :  "#CC79A7",
-          "Neutro" : "#009E73",
-          "sCs" : "#56B4E9"
-        }
+    "ECs" : "#0072B2",
+    "FAPs" : "#F0E442",
+    "Inflammatory-Mac" : "#D55E00",
+    "Resolving-Mac" :  "#CC79A7",
+    "Neutrophils" : "#009E73",
+    "MuSCs" : "#56B4E9"
+     }
     return celltycolors
 
 def filldicoSenders(dex, daydf, allcelltypes, day): 
@@ -199,7 +199,7 @@ def groupsdicoUnique(uniquerelsdico, allcelltypes):
     organize dico by gene, into dico by celltype:
        {  'Neutro' : 
         [('Icam1', 266.706), ('Il1b', 4022.527), ('Cd14', 21...   ] , 
-         'sCs'  :
+         'MuSC'  :
         [('Serping1', 1157.37), ('Col1a2', 3402.00), ('Igf2', 585 ... ]  ... }                                    
     """
     groupedbct = {}
@@ -215,7 +215,7 @@ def groupsdicoUnique(uniquerelsdico, allcelltypes):
 
 def yieldtopUnique(fileligs, allcelltypes, N=None):
     """"outputs a dictionary with keys celltypes:
-        { 'sCs' : [('Vim', '9538.6709'), ('Jam3', '93.680415'),  ...   
+        { 'MuSC' : [('Vim', '9538.6709'), ('Jam3', '93.680415'),  ...   
     """
     if N is None:
         N = 25

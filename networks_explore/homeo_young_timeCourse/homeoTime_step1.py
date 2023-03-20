@@ -26,13 +26,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import copy
-from boxFunClassVersion3 import *
+from boxFunClass import *
 
 lr = pickle.load( open( '../graphobjs/dictio_lr.p', 'rb') )
 
 hom = lr['Young']
 days = ['D0', 'D2', 'D4', 'D7']
-allcelltypes = ['ECs', 'FAPs','M1','M2', 'Neutro', 'sCs']
+allcelltypes = [ "ECs" ,
+    "FAPs"  ,
+    "Inflammatory-Mac"  ,
+    "Resolving-Mac"  ,
+    "Neutrophils" ,
+    "MuSCs" ]
 ds = {}
 for k in days:
     df1 = hom[k].frame  # hom[k].frame.sample(n=100) helps tests
