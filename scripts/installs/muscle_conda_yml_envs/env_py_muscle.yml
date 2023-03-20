@@ -1,0 +1,24 @@
+name: envpy_muscle
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9.12
+  - pip  
+  - numpy
+  - pandas
+  - xlwt
+  - pygraphviz
+  - holoviews
+  - python-igraph
+  - pyyaml
+  - scipy
+  - matplotlib
+  - seaborn
+  - pyreadr  # from channel conda-forge
+  - networkx
+  - jupyter
+
+
+
+  
