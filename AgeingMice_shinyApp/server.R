@@ -1,4 +1,4 @@
-# johaGL 2021
+# johaGL 2021, Pauline
 library(shiny)
 library(ggplot2)
 library(dplyr)
@@ -14,9 +14,9 @@ library(heatmap3)
 # TODO: !!somewhere take note: 'dynamic' DE, for M1 yielded no significant 
 #  because from one day to the next the change was not important
 # that is why I take only old vs young in staticsnapshot comparisons
-dir<-getwd()
-mywdir <- paste0(dir,"/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/")
-#setwd(mywdir)
+
+mywdir <- "~/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/"
+setwd(mywdir)
 source("ui.R") #TODO:  set good ui
 grdir <- "graphobjs_copy/"
 DEclassic_file <- "DE_copy/TableDynamicUpDownDEG.csv"
@@ -76,7 +76,7 @@ server <- function(input, output, session ){
   # ========================== display DEGs by default =========================
   displayDEGS <- function(){
     DEGs <- read_csv(DEclassic_file) 
-    DEclassic.show$x <- DEGs 
+    DEclassic.show$x <- DEGs %>% dplyr::select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
     rm(DEGs)
     output$DE_classical <- renderDT(
       DEclassic.show$x,
@@ -167,7 +167,7 @@ server <- function(input, output, session ){
           inFile = currentday$x
           if (!is.null(inFile))
             read.graph(file=paste0(grdir, age,"_",currentday$x,
-                                  "_igraph_unfi_CN.ml"), format="graphml")
+                                  "_igraph_unfi.ml"), format="graphml")
         })
         igElems_list$x[[age]] <- isolate(tmpReacGraph())
         print(paste("okloaded", age, currentday$x))

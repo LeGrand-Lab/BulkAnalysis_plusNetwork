@@ -1,4 +1,4 @@
-# johaGL 2021
+# johaGL 2021, Pauline 
 library(shiny)
 library(ggplot2)
 library(dplyr)

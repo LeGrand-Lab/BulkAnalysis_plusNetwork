@@ -4,7 +4,7 @@
 # universal colors used for cell types
 # ok for color blindness!  hex codes: https://rdrr.io/cran/ggthemes/man/colorblind.html
 #
-# johaGL 2021
+# johaGL 2021, Pauline
 library(igraph)
 <<<<<<< HEAD
 library(tidyverse)
