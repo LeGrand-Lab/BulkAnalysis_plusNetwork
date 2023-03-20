@@ -6,10 +6,16 @@
 #
 # johaGL 2021
 library(igraph)
+<<<<<<< HEAD
+library(tidyverse)
+
+grdir <- "../graphobjs_copy/"
+=======
 library(stringr)
 
 setwd("~/BulkAnalysis_plusNetwork/")
 grdir <- "/networks_explore/graphobjs/"
+>>>>>>> f8052c63143e8d6abf54325f61cf5382a3804a4c
 
 dosummarymatrices <- function(G, cellcolors){
   # input :  igraph objects (plus attributes) and a compatible colors list
@@ -55,6 +61,14 @@ dosummarymatrices <- function(G, cellcolors){
 #                      "_igraph.ml"), format="graphml")
 # youpi = givememystuff(Gege)
 cellcolors = list(
+<<<<<<< HEAD
+  "ECs"="#0072B2",
+  "FAPs"="#F0E442",
+  "Inflammatory-Mac" = "#D55E00",
+  "Resolving-Mac" =  "#CC79A7",
+  "Neutrophils" =  "#009E73",
+  "MuSCs" = "#56B4E9" )  
+=======
   "ECs"="#10b387ff",
   "FAPs"="#3d85c6ff",
   "MuSCs" = "#b171f1ff",
@@ -62,11 +76,17 @@ cellcolors = list(
   "Inflammatory-Mac" = "#ff9900ff",
   "Resolving-Mac" = "#cc0000ff")
 
+>>>>>>> f8052c63143e8d6abf54325f61cf5382a3804a4c
 aggreg_matrices <- list()
 for ( age in c("Young", "Old")){
   aggreg_matrices[[age]] <- list()
   for (day in c("D0","D2", "D4", "D7")){
+<<<<<<< HEAD
+    G = igraph::read.graph(file=paste0(grdir, age,"_",day, "_igraph_unfi.ml"),
+                           format="graphml")
+=======
     G = read.graph(file=paste0("/home/bioinfo/BulkAnalysis_plusNetwork/networks_explore/graphobjs/", age,"_",day, "_igraph_unfi.ml"), format="graphml")
+>>>>>>> f8052c63143e8d6abf54325f61cf5382a3804a4c
     aggreg_matrices[[age]][[day]] <- dosummarymatrices(G, cellcolors)
   }
 } 
@@ -75,6 +95,9 @@ for ( age in c("Young", "Old")){
 #aggreg_matrices[["Old"]] <- list()
 #aggreg_matrices[["Old"]][["D4"]] <- dosummarymatrices(G, cellcolors)
 #system("mkdir Data")
+<<<<<<< HEAD
+saveRDS(aggreg_matrices, "../Data/aggreg_matrices.rds")
+=======
 saveRDS(aggreg_matrices, "AgeingMice_shinyApp/Data/aggreg_matrices_TPM.rds")
 
 aggreg_matrices <- list()
@@ -87,5 +110,6 @@ for ( age in c("Young", "Old")){
 } 
 saveRDS(aggreg_matrices, "AgeingMice_shinyApp/Data/aggreg_matrices_CN.rds")
 
+>>>>>>> f8052c63143e8d6abf54325f61cf5382a3804a4c
 # idea : make ratio button, by default circos only with RATIO, offer nb and cummul weight
 

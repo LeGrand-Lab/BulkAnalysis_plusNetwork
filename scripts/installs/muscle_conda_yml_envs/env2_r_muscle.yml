@@ -1,0 +1,41 @@
+name: env2_r_muscle # for bulk muscle
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.2.2
+  - r-tidyverse
+  - r-biocmanager
+  - r-MASS
+  - r-ggthemes
+  - r-gridExtra
+  - r-ggforce
+  - r-extrafont
+  - r-colorBlindness
+  - r-patchwork
+  - r-networkD3
+  - r-webshot
+  - r-htmlwidgets
+  - r-scales
+  - r-data.tree
+  - r-ggraph
+  - r-igraph
+  - r-viridis
+  - r-msigdbr
+  - r-shiny
+  - r-DT
+  - r-visnetwork
+  - r-circlize
+  - r-shinythemes
+  - r-shinyjs
+  - r-shinyalert
+  - r-kableextra
+  - r-heatmap3
+  - bioconductor-DESeq2
+  - bioconductor-complexheatmap
+  - bioconductor-fgsea
+
+# when installed run: conda install -c r rstudio
+# then install facetious, spacentime and colorblindr from R
+
