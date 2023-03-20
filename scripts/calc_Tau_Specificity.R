@@ -9,13 +9,16 @@
 # if several tissues exhibit max logTPM, they are all registered separated 
 # by commas as single string in column whichMAX
 # so 'housekeeping' and 'specific' are going to appear at the  class column
+# Tau >= 0.8 ~ "specific",
+# Tau >= 0.5 & Tau < 0.8 ~ "intermediate",
+# Tau < 0.5 ~ "housekeeping"
 # A consensus is also generated : 
 library(dplyr)
 library(tidyverse)
 library(openxlsx)
 library(reshape2)
 
-setwd("~/BulkAnalysis_plusNetwork/")
+setwd("~/BulkAnalysis_plusNetwork2/")
 
 genes_df <- read.table("data/genesinfo.csv",sep="\t",header=T)
 consensusfile <- "conseTau_ensemblid.rds"
@@ -95,10 +98,10 @@ for (age in ages){
       print("ok happy news")
     }
     print(dim(itab))
-    #write.table(itab, paste0("Tau/filtered/TauSpecificity_",age,day,".txt"), sep='\t',
+    #write.table(itab, paste0("Tau/specifivOnly/TauSpecificity_",age,day,".txt"), sep='\t',
     #             col.names=T, row.names=T)
     # prepare xls file
-    xfile = paste0("Tau/filtered/TauSpecificity_",age,day,".xlsx")
+    xfile = paste0("Tau/specificOnly/TauSpecificity_",age,day,".xlsx")
     wb <- createWorkbook()
     typesspe = unique(itab$whichMAX)
     print(typesspe)
@@ -113,6 +116,7 @@ for (age in ages){
     #openXL("...xlsx")
   }
 }
+
 
 # END formal Tau calc
 ## ============================ Consensus ====================================

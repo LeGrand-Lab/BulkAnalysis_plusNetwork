@@ -1,0 +1,12 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"2" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "EUKARYOTIC TRANSLATION INITIATION" "" "" "" "" "" "" "" "" "" 112
+"3" "IN REACTOME HIERARCHIE" "METABOLISM OF RNA" "" "" "" "" "" "" "" "" "" "" "" 625
+"4" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "transcriptional regulation by runx1" "RUNX1 REGULATES TRANSCRIPTION OF GENES INVOLVED IN INTERLEUKIN SIGNALING" "" "" "" "" "" "" "" 4
+"5" "IN REACTOME HIERARCHIE" "developmental biology" "nervous system development" "axon guidance" "signaling by robo receptors" "REGULATION OF EXPRESSION OF SLITS AND ROBOS" "" "" "" "" "" "" "" 149
+"6" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "" "" "" "" "" "" "" "" "" "" 280
+"7" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "EUKARYOTIC TRANSLATION ELONGATION" "" "" "" "" "" "" "" "" "" 85
+"8" "IN REACTOME HIERARCHIE" "METABOLISM OF RNA" "RRNA PROCESSING" "" "" "" "" "" "" "" "" "" "" 192
+"9" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "SRP DEPENDENT COTRANSLATIONAL PROTEIN TARGETING TO MEMBRANE" "" "" "" "" "" "" "" "" "" 105
+"10" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by tgfb family members" "SIGNALING BY BMP" "" "" "" "" "" "" "" "" "" 16
+"11" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf

@@ -11,7 +11,7 @@ library(stringr)
 
 setwd("~/BulkAnalysis_plusNetwork/")
 data_p <- "/media/bioinfo/Stockage/DATA_RNAageing/DATA/"
-m_p <- "merged_gene_counts/"
+m_p <- "merged_gene_counts/" # /media/bioinfo/Stockage/DATA_RNAageing/total_results_nfcore/featureCounts/gene_counts
 d_p <- "StringtieFPKM_gene_abund_all_batch/"
 
 odir = "data/"
@@ -45,7 +45,7 @@ for(i in 1:length(files)){
     #print(head(tmpdf,3))
   }else{
     # B2: exceptional column 'Number' before Geneid and gene_name
-    tmpdf <- select(tmpdf,-Number)
+    tmpdf <- dplyr::select(tmpdf,-Number)
     # no need to format colnames, are already ok
     #print(head(tmpdf,3))
   }
@@ -83,7 +83,7 @@ write.table(genesinfos, paste0(odir,genes_f), col.names=T,sep="\t")
 # transform data.frame into matrix
 # =========================================================================
 rownames(df) <- df$Geneid
-df <- select(df,-c(Geneid,gene_name))
+df <- dplyr::select(df,-c(Geneid,gene_name))
 saveRDS(df, paste0(odir,g_samp_mat))
 rm(mat)
 
@@ -108,11 +108,11 @@ print(head(newnames))
 # extract only genes infos first into 'featdf': 
 fullpath = paste0(data_p, d_p, tie_fl[1])
 tmp <- read.table(fullpath, sep="\t", header=T)
-featdf <- tmp %>% select(!c(Coverage,FPKM,TPM))
+featdf <- tmp %>% dplyr::select(!c(Coverage,FPKM,TPM))
 for (i in 1:length(tie_fl)){
   print(tie_fl[i])
   fullpath = paste0(data_p, d_p, tie_fl[i])
-  pre_feat <- tmp %>% select(!c(Coverage,FPKM,TPM))
+  pre_feat <- tmp %>% dplyr::select(!c(Coverage,FPKM,TPM))
   featdf <- rbind(featdf, pre_feat)
   featdf <- unique(featdf) #remove duplicated rows
 }

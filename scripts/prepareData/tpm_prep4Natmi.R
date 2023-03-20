@@ -5,7 +5,8 @@ library("dplyr")
 library("tidyverse")
 
 setwd("~/BulkAnalysis_plusNetwork/")
-odir = "inDataNatmi/"
+odir = "NatmiData/inDataNatmi/"
+
 metadata.rds <- "data/metadata.rds"
 prefil_tpm <- "data/prefiltered_TPM.rds"
 
@@ -33,6 +34,16 @@ fTPM <- fTPM[!rownames(fTPM) %in% idszerocover,]
 
 ages <- c("Young","Old")
 days <- c("D0","D2", "D4", "D7")
+
+daysv<-list()
+daysv$ECs=c("D0","D2","D4","D7")
+daysv$FAPs<-c("D0","D2","D4","D7")
+daysv$M1<-c("D2","D4")
+daysv$M2<-c("D2","D4","D7")
+daysv$Neutro<-c("D2")
+daysv$sCs<-c("D0","D2","D4","D7")
+Typecellv<-vectTypeCell <- c("ECs","FAPs","M1","M2","Neutro","sCs")
+
 for (iage in ages){
   TPM.i <- fTPM[, str_detect(colnames(fTPM),iage)]
   meta.i <- metadata %>% filter(age==iage)
@@ -44,7 +55,7 @@ for (iage in ages){
     metax <- meta.i %>% filter(time==day)
     print(all(colnames(mymx)[-1]==rownames(metax)))
     annot <- metax %>% mutate(Sample=newname, Cell_type=type) %>%
-      select(Sample,Cell_type) %>% tibble()
+      dplyr::select(Sample,Cell_type) %>% tibble()
     write.table(mymx, paste0(odir,"TPM_",iage,day,".txt"), sep='\t', 
               col.names = T, row.names = F)
     write.table(annot, paste0(odir,"annot_",iage,day,".txt"),sep='\t', 

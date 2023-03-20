@@ -40,12 +40,14 @@ ui <- navbarPage("Muscle and Age",
                  #   HTML(paste("This text is ", tags$span(style="color:cyan", "cyan"), sep = ""))
                  #   
                  # ),
-                 strong(tags$li("Antiinflamatory Macrophages (M2)", style="color:#CC79A7")),
-                 strong(tags$li("Endothelial cells (ECs)", style="color:#0072B2")),
-                 strong(tags$li("Fibroadipogenic Progenitors (FAPs)", style="color:#F0E442")),
-                 strong(tags$li("Neutrophils (Neutro)", style="color:#009E73")),
-                 strong(tags$li("Proinflamatory Macrophages (M1)", style="color:#D55E00")),
-                 strong(tags$li("Satellite cells/MuSC (sCs)", style="color:#56B4E9")), 
+
+                 strong(tags$li("Endothelial cells (ECs)", style="color:#10b387ff")),
+                 strong(tags$li("Fibroadipogenic Progenitors (FAPs)", style="color:#3d85c6ff")),
+                 strong(tags$li("Muscle Stem cells (MuSCs)", style="color:#b171f1ff")), 
+                 strong(tags$li("Neutrophils ", style="color:#f0e442ff")),
+                 strong(tags$li("Pro-inflamatory Macrophages (Inflammatory-Mac)", style="color:#ff9900ff")),
+                 strong(tags$li("Anti-inflamatory Macrophages (Resolving-Mac)", style="color:#cc0000ff")),
+
                  
                  br(),
                 
@@ -266,11 +268,11 @@ tabPanel("Pathways",
                     p(paste("\nThis application contains bioinformatic analysis",
                             "related to Bulk RNA-seq experiment conducted on skeletal muscle of",
                             "young and ageing backgrounds in mice. Main authors are",
-                            "DH. Hoang, (...) , W. Jarassier,  F. Le Grand, B. Chazaud, and  J Feigé ")),
+                            "DH. Hoang, (...) , W. Jarassier, P.Moullé ,  F. Le Grand, B. Chazaud, and  J Feigé ")),
                     br(),
                     p(paste("Bioinformatic analysis presented here (including this shiny", 
                             "application you are exploring right now)",
-                            "was performed by Johanna Galvis, M2 Intern in Bioinformatics 2021")),
+                            "was performed by Johanna Galvis , M2 Intern in Bioinformatics 2021")),
                     style="background-color : #f1f0fa"
                     ),
             column(1), #empty column

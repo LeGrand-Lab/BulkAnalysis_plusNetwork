@@ -1,0 +1,4 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf
+"2" "IN REACTOME HIERARCHIE" "immune system" "innate immune system" "complement cascade" "ACTIVATION OF C3 AND C5" "" "" "" "" "" "" "" "" 6
+"3" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" -Inf

@@ -1,0 +1,97 @@
+"level1" "level2" "level3" "level4" "level5" "level6" "level7" "level8" "level9" "level10" "level11" "level12" "level13" "value"
+"1" "IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" 0
+"2" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RECEPTOR TYROSINE KINASES" "" "" "" "" "" "" "" "" "" "" 894
+"3" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "" "" "" "" "" "" "" "" "" "" 1012
+"4" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "" "" "" "" "" "" "" "" "" 741
+"5" "IN REACTOME HIERARCHIE" "VESICLE MEDIATED TRANSPORT" "" "" "" "" "" "" "" "" "" "" "" 601
+"6" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE CHECKPOINTS" "" "" "" "" "" "" "" "" "" "" 272
+"7" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "TELOMERE MAINTENANCE" "" "" "" "" "" "" "" "" "" 93
+"8" "IN REACTOME HIERARCHIE" "DEVELOPMENTAL BIOLOGY" "" "" "" "" "" "" "" "" "" "" "" 1582
+"9" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RHO GTPASES MIRO GTPASES AND RHOBTB3" "" "" "" "" "" "" "" "" "" "" 642
+"10" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by gpcr" "gpcr ligand binding" "class a 1 rhodopsin like receptors" "eicosanoid ligand binding receptors" "PROSTANOID LIGAND RECEPTORS" "" "" "" "" "" "" 8
+"11" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC PROPHASE" "" "" "" "" "" "" "" "" 231
+"12" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RHO GTPASES MIRO GTPASES AND RHOBTB3" "signaling by rho gtpases" "RHO GTPASE EFFECTORS" "RHO GTPASES ACTIVATE PKNS" "ACTIVATED PKN1 STIMULATES TRANSCRIPTION OF AR ANDROGEN RECEPTOR REGULATED GENES KLK2 AND KLK3" "" "" "" "" "" "" 82
+"13" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "EUKARYOTIC TRANSLATION INITIATION" "cap dependent translation initiation" "ACTIVATION OF THE MRNA UPON BINDING OF THE CAP BINDING COMPLEX AND EIFS AND SUBSEQUENT BINDING TO 43S" "" "" "" "" "" "" "" 59
+"14" "IN REACTOME HIERARCHIE" "TRANSPORT OF SMALL MOLECULES" "" "" "" "" "" "" "" "" "" "" "" 585
+"15" "IN REACTOME HIERARCHIE" "metabolism" "biological oxidations" "phase i   functionalization of compounds" "cytochrome p450   arranged by substrate type" "VITAMINS" "" "" "" "" "" "" "" 5
+"16" "IN REACTOME HIERARCHIE" "METABOLISM OF RNA" "" "" "" "" "" "" "" "" "" "" "" 640
+"17" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "" "" "" "" "" "" "" "" 198
+"18" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "RUNX1 REGULATES TRANSCRIPTION OF GENES INVOLVED IN DIFFERENTIATION OF HSCS" "" "" "" "" "" "" "" 103
+"19" "IN REACTOME HIERARCHIE" "gene expression transcription" "rna polymerase ii transcription" "generic transcription pathway" "TRANSCRIPTIONAL REGULATION BY RUNX1" "RUNX1 REGULATES GENES INVOLVED IN MEGAKARYOCYTE DIFFERENTIATION AND PLATELET FUNCTION" "" "" "" "" "" "" "" 74
+"20" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RHO GTPASES MIRO GTPASES AND RHOBTB3" "signaling by rho gtpases" "RHO GTPASE EFFECTORS" "" "" "" "" "" "" "" "" 278
+"21" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RHO GTPASES MIRO GTPASES AND RHOBTB3" "signaling by rho gtpases" "RHO GTPASE EFFECTORS" "RHO GTPASES ACTIVATE PKNS" "" "" "" "" "" "" "" 70
+"22" "IN REACTOME HIERARCHIE" "DEVELOPMENTAL BIOLOGY" "nervous system development" "axon guidance" "signaling by robo receptors" "REGULATION OF EXPRESSION OF SLITS AND ROBOS" "" "" "" "" "" "" "" 158
+"23" "IN REACTOME HIERARCHIE" "dna repair" "BASE EXCISION REPAIR" "base excision repair ap site formation" "depurination" "RECOGNITION AND ASSOCIATION OF DNA GLYCOSYLASE WITH SITE CONTAINING AN AFFECTED PURINE" "" "" "" "" "" "" "" 38
+"24" "IN REACTOME HIERARCHIE" "dna repair" "BASE EXCISION REPAIR" "" "" "" "" "" "" "" "" "" "" 71
+"25" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RECEPTOR TYROSINE KINASES" "SIGNALING BY MET" "MET PROMOTES CELL MOTILITY" "MET ACTIVATES PTK2 SIGNALING" "" "" "" "" "" "" "" 28
+"26" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "DNA DAMAGE TELOMERE STRESS INDUCED SENESCENCE" "" "" "" "" "" "" "" "" 61
+"27" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CELL CYCLE MITOTIC" "M PHASE" "MITOTIC PROPHASE" "CONDENSATION OF PROPHASE CHROMOSOMES" "" "" "" "" "" "" "" 98
+"28" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RECEPTOR TYROSINE KINASES" "signaling by ntrks" "SIGNALING BY NTRK3 TRKC" "ACTIVATED NTRK3 SIGNALS THROUGH PI3K" "" "" "" "" "" "" "" 6
+"29" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RECEPTOR TYROSINE KINASES" "signaling by ntrks" "SIGNALING BY NTRK3 TRKC" "" "" "" "" "" "" "" "" 17
+"30" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RECEPTOR TYROSINE KINASES" "SIGNALING BY MET" "MET PROMOTES CELL MOTILITY" "" "" "" "" "" "" "" "" 39
+"31" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY RECEPTOR TYROSINE KINASES" "SIGNALING BY MET" "" "" "" "" "" "" "" "" "" 151
+"32" "IN REACTOME HIERARCHIE" "HEMOSTASIS" "PLATELET ACTIVATION SIGNALING AND AGGREGATION" "" "" "" "" "" "" "" "" "" "" 228
+"33" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "EUKARYOTIC TRANSLATION INITIATION" "" "" "" "" "" "" "" "" "" 114
+"34" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "ESR MEDIATED SIGNALING" "" "" "" "" "" "" "" "" "" 173
+"35" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY NOTCH" "" "" "" "" "" "" "" "" "" "" 210
+"36" "IN REACTOME HIERARCHIE" "metabolism" "METABOLISM OF AMINO ACIDS AND DERIVATIVES" "" "" "" "" "" "" "" "" "" "" 303
+"37" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "NEGATIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "SIRT1 NEGATIVELY REGULATES RRNA EXPRESSION" "" "" "" "" "" "" "" "" 88
+"38" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "SENESCENCE ASSOCIATED SECRETORY PHENOTYPE SASP" "" "" "" "" "" "" "" "" 167
+"39" "IN REACTOME HIERARCHIE" "gene expression transcription" "RNA POLYMERASE I TRANSCRIPTION" "" "" "" "" "" "" "" "" "" "" 170
+"40" "IN REACTOME HIERARCHIE" "gene expression transcription" "RNA POLYMERASE I TRANSCRIPTION" "rna polymerase i promoter clearance" "RNA POLYMERASE I PROMOTER ESCAPE" "" "" "" "" "" "" "" "" 130
+"41" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "SIGNALING BY RETINOIC ACID" "RA BIOSYNTHESIS PATHWAY" "" "" "" "" "" "" "" "" 13
+"42" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "OXIDATIVE STRESS INDUCED SENESCENCE" "" "" "" "" "" "" "" "" 196
+"43" "IN REACTOME HIERARCHIE" "immune system" "cytokine signaling in immune system" "signaling by interleukins" "INTERLEUKIN 7 SIGNALING" "" "" "" "" "" "" "" "" 28
+"44" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by wnt" "tcf dependent signaling in response to wnt" "FORMATION OF THE BETA CATENIN TCF TRANSACTIVATING COMPLEX" "" "" "" "" "" "" "" "" 132
+"45" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "ESR MEDIATED SIGNALING" "ESTROGEN DEPENDENT GENE EXPRESSION" "" "" "" "" "" "" "" "" 114
+"46" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "nucleosome assembly" "DEPOSITION OF NEW CENPA CONTAINING NUCLEOSOMES AT THE CENTROMERE" "" "" "" "" "" "" "" "" 56
+"47" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "" "" "" "" "" "" "" "" "" "" 285
+"48" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "COLLAGEN FORMATION" "ASSEMBLY OF COLLAGEN FIBRILS AND OTHER MULTIMERIC STRUCTURES" "" "" "" "" "" "" "" "" "" 56
+"49" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "COLLAGEN FORMATION" "COLLAGEN BIOSYNTHESIS AND MODIFYING ENZYMES" "COLLAGEN CHAIN TRIMERIZATION" "" "" "" "" "" "" "" "" 39
+"50" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "POSITIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "B WICH COMPLEX POSITIVELY REGULATES RRNA EXPRESSION" "" "" "" "" "" "" "" "" 68
+"51" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR RESPONSE TO STARVATION" "" "" "" "" "" "" "" "" "" 145
+"52" "IN REACTOME HIERARCHIE" "metabolism" "METABOLISM OF AMINO ACIDS AND DERIVATIVES" "SELENOAMINO ACID METABOLISM" "" "" "" "" "" "" "" "" "" 109
+"53" "IN REACTOME HIERARCHIE" "signal transduction" "SIGNALING BY NOTCH" "PRE NOTCH EXPRESSION AND PROCESSING" "" "" "" "" "" "" "" "" "" 81
+"54" "IN REACTOME HIERARCHIE" "HEMOSTASIS" "" "" "" "" "" "" "" "" "" "" "" 492
+"55" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "NEGATIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "" "" "" "" "" "" "" "" "" 166
+"56" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "EUKARYOTIC TRANSLATION ELONGATION" "" "" "" "" "" "" "" "" "" 87
+"57" "IN REACTOME HIERARCHIE" "cellular responses to stimuli" "cellular responses to stress" "CELLULAR SENESCENCE" "" "" "" "" "" "" "" "" "" 330
+"58" "IN REACTOME HIERARCHIE" "METABOLISM OF RNA" "RRNA PROCESSING" "" "" "" "" "" "" "" "" "" "" 193
+"59" "IN REACTOME HIERARCHIE" "gene expression transcription" "GENE SILENCING BY RNA" "TRANSCRIPTIONAL REGULATION BY SMALL RNAS" "" "" "" "" "" "" "" "" "" 162
+"60" "IN REACTOME HIERARCHIE" "metabolism of proteins" "TRANSLATION" "SRP DEPENDENT COTRANSLATIONAL PROTEIN TARGETING TO MEMBRANE" "" "" "" "" "" "" "" "" "" 106
+"61" "IN REACTOME HIERARCHIE" "signal transduction" "signaling by nuclear receptors" "SIGNALING BY RETINOIC ACID" "" "" "" "" "" "" "" "" "" 33
+"62" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "RMTS METHYLATE HISTONE ARGININES" "" "" "" "" "" "" "" "" "" 117
+"63" "IN REACTOME HIERARCHIE" "neuronal system" "PROTEIN PROTEIN INTERACTIONS AT SYNAPSES" "" "" "" "" "" "" "" "" "" "" 72
+"64" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "PRC2 METHYLATES HISTONES AND DNA" "" "" "" "" "" "" "" "" "" 98
+"65" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "POSITIVE EPIGENETIC REGULATION OF RRNA EXPRESSION" "" "" "" "" "" "" "" "" "" 83
+"66" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "" "" "" "" "" "" "" "" "" "" 474
+"67" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "" "" "" "" "" "" "" "" "" "" "" 493
+"68" "IN REACTOME HIERARCHIE" "MUSCLE CONTRACTION" "" "" "" "" "" "" "" "" "" "" "" 152
+"69" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HDMS DEMETHYLATE HISTONES" "" "" "" "" "" "" "" "" "" 38
+"70" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HDACS DEACETYLATE HISTONES" "" "" "" "" "" "" "" "" "" 135
+"71" "IN REACTOME HIERARCHIE" "chromatin organization" "CHROMATIN MODIFYING ENZYMES" "HATS ACETYLATE HISTONES" "" "" "" "" "" "" "" "" "" 227
+"72" "IN REACTOME HIERARCHIE" "HEMOSTASIS" "PLATELET ACTIVATION SIGNALING AND AGGREGATION" "GP1B IX V ACTIVATION SIGNALLING" "" "" "" "" "" "" "" "" "" 11
+"73" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "DEGRADATION OF THE EXTRACELLULAR MATRIX" "COLLAGEN DEGRADATION" "" "" "" "" "" "" "" "" "" 54
+"74" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "COLLAGEN FORMATION" "COLLAGEN BIOSYNTHESIS AND MODIFYING ENZYMES" "" "" "" "" "" "" "" "" "" 122
+"75" "IN REACTOME HIERARCHIE" "TRANSPORT OF SMALL MOLECULES" "ABC FAMILY PROTEINS MEDIATED TRANSPORT" "ABC TRANSPORTERS IN LIPID HOMEOSTASIS" "" "" "" "" "" "" "" "" "" 15
+"76" "IN REACTOME HIERARCHIE" "METABOLISM OF RNA" "NONSENSE MEDIATED DECAY NMD" "" "" "" "" "" "" "" "" "" "" 109
+"77" "IN REACTOME HIERARCHIE" "gene expression transcription" "GENE SILENCING BY RNA" "" "" "" "" "" "" "" "" "" "" 208
+"78" "IN REACTOME HIERARCHIE" "gene expression transcription" "EPIGENETIC REGULATION OF GENE EXPRESSION" "" "" "" "" "" "" "" "" "" "" 125
+"79" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "DEGRADATION OF THE EXTRACELLULAR MATRIX" "" "" "" "" "" "" "" "" "" "" 217
+"80" "IN REACTOME HIERARCHIE" "CELL CYCLE" "CHROMOSOME MAINTENANCE" "" "" "" "" "" "" "" "" "" "" 120
+"81" "IN REACTOME HIERARCHIE" "VESICLE MEDIATED TRANSPORT" "BINDING AND UPTAKE OF LIGANDS BY SCAVENGER RECEPTORS" "" "" "" "" "" "" "" "" "" "" 32
+"82" "IN REACTOME HIERARCHIE" "TRANSPORT OF SMALL MOLECULES" "ABC FAMILY PROTEINS MEDIATED TRANSPORT" "" "" "" "" "" "" "" "" "" "" 96
+"83" "IN REACTOME HIERARCHIE" "REPRODUCTION" "" "" "" "" "" "" "" "" "" "" "" 107
+"84" "IN REACTOME HIERARCHIE" "DEVELOPMENTAL BIOLOGY" "TRANSCRIPTIONAL REGULATION OF GRANULOPOIESIS" "" "" "" "" "" "" "" "" "" "" 120
+"85" "IN REACTOME HIERARCHIE" "MUSCLE CONTRACTION" "STRIATED MUSCLE CONTRACTION" "" "" "" "" "" "" "" "" "" "" 31
+"86" "IN REACTOME HIERARCHIE" "MUSCLE CONTRACTION" "SMOOTH MUSCLE CONTRACTION" "" "" "" "" "" "" "" "" "" "" 34
+"87" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "INTEGRIN CELL SURFACE INTERACTIONS" "" "" "" "" "" "" "" "" "" "" 73
+"88" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "ECM PROTEOGLYCANS" "" "" "" "" "" "" "" "" "" "" 69
+"89" "IN REACTOME HIERARCHIE" "EXTRACELLULAR MATRIX ORGANIZATION" "COLLAGEN FORMATION" "" "" "" "" "" "" "" "" "" "" 157
+"90" "NOT IN REACTOME HIERARCHIE" "" "" "" "" "" "" "" "" "" "" "" "" 0
+"91" "NOT IN REACTOME HIERARCHIE" "RESPONSE OF EIF2AK4 GCN2 TO AMINO ACID DEFICIENCY" "" "" "" "" "" "" "" "" "" "" "" 94
+"92" "NOT IN REACTOME HIERARCHIE" "ERCC6 CSB AND EHMT2 G9A POSITIVELY REGULATE RRNA EXPRESSION" "" "" "" "" "" "" "" "" "" "" "" 55
+"93" "NOT IN REACTOME HIERARCHIE" "DNA METHYLATION" "" "" "" "" "" "" "" "" "" "" "" 81
+"94" "NOT IN REACTOME HIERARCHIE" "CELLULAR RESPONSES TO EXTERNAL STIMULI" "" "" "" "" "" "" "" "" "" "" "" 610
+"95" "IN REACTOME HIERARCHIE" "CELL CYCLE" "" "" "" "" "" "" "" "" "" "" "" 1258
+"96" "NOT IN REACTOME HIERARCHIE" "ACTIVATED NTRK3 SIGNALS THROUGH RAS" "" "" "" "" "" "" "" "" "" "" "" 8

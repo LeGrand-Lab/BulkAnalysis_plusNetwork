@@ -28,7 +28,7 @@ infmart <- getBM(attributes = c("external_gene_name", "ensembl_gene_id",
                  filters = "ensembl_gene_id",
                  mart=mmusRef)
 #pop = infmart %>% group_by(strain_name) %>% summarise(count = n())
-# CUSTOM DEDUPLICATE: split(uniq, dup), then exclude non canonical chr from dup:
+# CUSTOM DEDUPLICATE: split(uniq, dup), then exclude non canonical chr from dup:hen exclude non canonical chr from dup:
 uniqmart <- infmart %>% group_by(ensembl_gene_id) %>% dplyr::filter(n()==1) 
 dupmart <- infmart %>% group_by(ensembl_gene_id) %>% 
   dplyr::filter(n()>1) %>%
@@ -110,6 +110,7 @@ nas_df <- data.frame("external_gene_name"=finalabsent, "ensembl_gene_id"=rep("NO
 finaldf <- dplyr::bind_rows(infmart, dfstrains,df_dbi,nas_df)
 write.table(finaldf, file=fileout, sep=';', col.names = T, row.names = F)
 
+finaldf<-read.table(fileout, sep=";",header=T)
 # =====   END
 
 
