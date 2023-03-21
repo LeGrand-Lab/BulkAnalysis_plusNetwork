@@ -16,11 +16,11 @@ library(heatmap3)
 # that is why I take only old vs young in staticsnapshot comparisons
 
 mywdir <- "~/BulkAnalysis_plusNetwork/AgeingMice_shinyApp/"
-setwd(mywdir)
+#setwd(mywdir)
 source("ui.R") #TODO:  set good ui
 grdir <- "graphobjs_copy/"
 DEclassic_file <- "DE_copy/TableDynamicUpDownDEG.csv"
-aggreg_matrices <- readRDS("Data/aggreg_matrices_TPM.rds")
+aggreg_matrices <- readRDS("Data/aggreg_matrices.rds")
 mhp = readRDS("Data/fgsea_matrices4heatmaps.rds")
 
 # ===================== declare empty reactiveValues ==========================
@@ -41,6 +41,8 @@ cellcolors = list(
   "Neutrophils" = "#f0e442ff",
   "Inflammatory-Mac" = "#ff9900ff",
   "Resolving-Mac" = "#cc0000ff")
+par(mar = c(1, 1, 1, 1))
+
 
 # ================== function that returns chorddiagram =======================
 dochord <- function(matrx, unicolors){
@@ -76,7 +78,7 @@ server <- function(input, output, session ){
   # ========================== display DEGs by default =========================
   displayDEGS <- function(){
     DEGs <- read_csv(DEclassic_file) 
-    DEclassic.show$x <- DEGs %>% dplyr::select(day,type, symbol, id, log2FoldChange, padj, baseMean) 
+    DEclassic.show$x <- DEGs 
     rm(DEGs)
     output$DE_classical <- renderDT(
       DEclassic.show$x,
@@ -422,7 +424,7 @@ server <- function(input, output, session ){
                cexRow = 1,
                cexCol = 1,
                ColSideWidth = ncol(mhp[[k]][[CT]][["UP"]]),
-               margins = c(7,10),
+               margins = c(5,5),
                main = paste(k, CT, "UP"))
     })
     output[[paste0(k,"_",CT,"_","DOWN")]] <- renderPlot({
@@ -433,7 +435,7 @@ server <- function(input, output, session ){
                cexRow = 1,
                cexCol = 1,
                ColSideWidth = ncol(mhp[[k]][[CT]][["DOWN"]]),
-               margins = c(7,10),
+               margins = c(5,5),
                main = paste(k, CT, "DOWN"))
     })
   }) # end sapply D0

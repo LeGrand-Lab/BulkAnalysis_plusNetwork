@@ -1,10 +1,10 @@
 README
 
-Reference dataset: /home/bioinfo/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM/OldD0
-Target dataset: /home/bioinfo/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM/YoungD0
+Reference dataset: /home/mopa/Documents/INMG/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM/OldD0
+Target dataset: /home/mopa/Documents/INMG/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM/YoungD0
 
-Reference dataset has 10114 edges
-Target dataset has 10480 edges
+Reference dataset has 9467 edges
+Target dataset has 9547 edges
 
 cluster_comparison.xlsx: cluster size and fraction of each cluster in two datasets
 cluster_size_comparison.pdf: comparison of the cluster sizes of each cluster in two datasets

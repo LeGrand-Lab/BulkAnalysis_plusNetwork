@@ -36,7 +36,7 @@ library(facetious)
 
 #Directories
 setwd("~/BulkAnalysis_plusNetwork/")
-dir<-"/home/bioinfo/BulkAnalysis_plusNetwork/"
+dir<-"~/Documents/INMG/BulkAnalysis_plusNetwork/"
 odir <- paste0(dir,"/exam_INTER_conditions/static/")
 
 plots<-"GSEA/PlotsGSEA/"
@@ -49,8 +49,8 @@ HierarchieData= "GSEA/HierarchieData/"
 gseaoutfull2padjfile = paste0(odir,tableGSEA,"GSEA_table_static_full.rds" )
 fullGSEAconcatfile<-paste0(odir,tableGSEA,"GSEA_table_static_full.csv" )
 gseaout_filtered_full2padjfile = paste0(odir,tableGSEA,"GSEA_table_static_softfilter.rds" )
-countnormalisedfile=paste0(NormData,"CountNormalised.txt")
-meancountnormalisedfile=paste0(NormData,"MeanCountNormalised.txt")
+countnormalisedfile=paste0(dir,NormData,"CountNormalised.txt")
+meancountnormalisedfile=paste0(dir,NormData,"MeanCountNormalised.txt")
 DEGtableTotalUPDOWNfile<-paste0(odir,"TableDEG/TableDynamicUpDownDEG.rds")
 DEGtablefile<-paste0(odir,"TableDEG/DEG_table_static_full.rds")
 
@@ -457,7 +457,7 @@ for ( path in  pathway_list){
     
 }
 saveRDS(Dynamictable,paste0(odir,tableGSEA,TableGSEADynamics,'.rds'))
-saveRDS(Dynamictable,paste0(odir,tableGSEA,TableGSEADynamics,'.csv'))
+write_csv(Dynamictable,paste0(odir,tableGSEA,TableGSEADynamics,'.csv'))
 
 #####################################################
 #### Looking pathways with hierarchical point of view

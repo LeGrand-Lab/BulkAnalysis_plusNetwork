@@ -12,7 +12,7 @@ library(cowplot)
 
 #Directories
 setwd("~/BulkAnalysis_plusNetwork/")
-dir<-"/home/bioinfo/BulkAnalysis_plusNetwork/"
+dir<-getwd()
 odir <- paste0(dir,"/exam_INTER_conditions/static/")
 
 plots<-"GSEA/PlotsGSEA/"

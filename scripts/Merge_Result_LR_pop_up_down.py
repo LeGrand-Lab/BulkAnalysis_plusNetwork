@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 
-NatmiOutDirectory = "/home/bioinfo/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM"
+NatmiOutDirectory = "/home/mopa/Documents/INMG/BulkAnalysis_plusNetwork/NatmiData/natmiOut_TPM"
 Days=["D0","D2","D4","D7"]
 TypeCell=["ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac"]
 intDirectory = "Delta_CltPair_exp_0_spe_0_det_0.3_top_0_signal_lrc2p_weight_mean"
@@ -37,10 +37,9 @@ for D in Days:
                 tableSheetconcat=pd.concat([tableSheetconcat,tableSheet])
         if tableSheetconcat.shape[0] > 2:
             tableSheetconcat.to_excel(writer,sheet_name=D+'_'+ct)
-writer.save()
+writer.close()
     
-
-
+"""
 NatmiOutDirectory = "/home/bioinfo/BulkAnalysis_plusNetwork/NatmiData/natmiOut_CountNormalised"
 Days=["D0","D2","D4","D7"]
 TypeCell=["ECs","FAPs","MuSCs","Neutrophils","Inflammatory-Mac","Resolving-Mac"]
@@ -68,3 +67,6 @@ for D in Days:
         if tableSheetconcat.shape[0] > 2:
             tableSheetconcat.to_excel(writer,sheet_name=D+'_'+ct)
 writer.save()
+
+"""
+
