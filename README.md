@@ -13,21 +13,43 @@ In summary:
 
 Many thanks to Dr.Rui Hou for advice concerning NATMI to use it specifically in our context.
 
-Three jupyter notebooks are available in folder `networks_explore`:
-* LR_networks_all.ipynb : networks data manipulation, LRinfos and Networkx objects saved into dictionnaries, then into two binary files.
-* LR_nx_to_igraph.ipynb : transforms Networkx objects into igraph objects, then into separate graphml files
-* Young_D7_test_initial.ipynb : checks properties and how to get connected components (using Young D7 for demo purposes)
+### Ligands-Receptors part
 
-Folder `AgeingMice_shinyApp` contains Shiny application code, in active development.
+The dedicated analysis started as shown in `networks_explore/` folder: the "Edges" tables of the Natmi results were processed by the jupyter notebook 1_  to generate the .ml files. Those .ml files were then copied into the Shiny app  `AgeingMice_shinyApp`. This application allow to navigate, by day, the results of DEGs, L-R networks and enrichment. It can be deployed locally, see "Technical note" below. 
+
+####  Technical note
+
+For conda users we provide the two .yml files  [here](scripts/installs/muscle_conda_yml_envs) to create, respectively, the Python and R environments with all the libraries and packages (the part "networks_explore" requires the Python environment, whereas  the Shiny app requires the R environment). 
+
+Fast run (after conda steps) : 
+```
+cd $HOME/BulkAnalysis_plusNetwork
+R -e "shiny::runApp('AgeingMice_shinyApp')"
+```
 
 
 
-For more information write to:
-deisy.lascroux@etu.univ-lyon1.fr (or juana7@gmail.com), 
-william.jarassier@univ-lyon1.fr
-pauline.moulle@cnrs.fr
 
-### author
+Otherwise, you must install the packages in your preferred way and run the app in RStudio.
+
+
+
+###  More about Pathways in this dataset
+
+See also 
+https://github.com/LeGrand-Lab/Ageing-impact_in_gene_expression_on_skeletal_muscle_repair (authored by Pauline) for interactive reports regarding advanced reactome pathways analysis on full dataset, and more!
+
+
+##### Contact info
+
+* juana7@gmail.com (Johanna), 
+
+* pauline.moulle@cnrs.fr
+
+* william.jarassier@univ-lyon1.fr
+
+
+### authors
 [johaGL](https://github.com/johaGL/)
 M2 intern Bio-informatics
 Université Claude Bernard Lyon 1
