@@ -57,9 +57,7 @@ dosummarymatrices <- function(G, cellcolors){
               "Colorsmat"=colormatrix))
 }
 # ==================  End function ============================
-# Gege = read.graph(file=paste0(grdir, "Old","_","D2",
-#                      "_igraph.ml"), format="graphml")
-# youpi = givememystuff(Gege)
+
 cellcolors = list(
 <<<<<<< HEAD
   "ECs"="#0072B2",
