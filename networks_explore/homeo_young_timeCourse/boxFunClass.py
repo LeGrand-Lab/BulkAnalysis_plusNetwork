@@ -50,13 +50,14 @@ class LRinfos:
 
 def importcelltycolorsdico():
     celltycolors = {
-    "ECs" : "#0072B2",
-    "FAPs" : "#F0E442",
-    "Inflammatory-Mac" : "#D55E00",
-    "Resolving-Mac" :  "#CC79A7",
-    "Neutrophils" : "#009E73",
-    "MuSCs" : "#56B4E9"
+ 	   "ECs" : "#10b387ff",
+ 	   "FAPs" : "#3d85c6ff",
+    	 "MuSCs" : "#b171f1ff",
+ 		 "Neutrophils" : "#f0e442ff",
+ 		 "Inflammatory-Mac" : "#ff9900ff",
+ 		 "Resolving-Mac" : "#cc0000ff"  
      }
+     
     return celltycolors
 
 def filldicoSenders(dex, daydf, allcelltypes, day): 
